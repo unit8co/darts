@@ -34,7 +34,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed `ic()` reporting missing (NaN) actual values as interval misses instead of NaN, which biased `mic()` low for series with missing values. [#3232](https://github.com/unit8co/darts/pull/3232) by [mayuriphad](https://github.com/mayuriphad).
+- Fixed metric `ic()` (interval coverage) reporting missing (NaN) actual values as interval misses instead of NaN, which biased `mic()` low for series with missing values. [#3232](https://github.com/unit8co/darts/pull/3232) by [mayuriphad](https://github.com/mayuriphad).
 - Fixed `Diff.transform()` raising an error with `dropna=True` (the default) for integer-indexed series whose `RangeIndex` does not start at 0 or has a step other than 1. [#3229](https://github.com/unit8co/darts/pull/3229) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
 - Fixed `TimeSeries.slice_n_points_after()` and `slice_n_points_before()` raising an error when called with an integer on integer-indexed series with fewer than `n` points available, a `RangeIndex` step other than 1, or a point that is not in the index, and on datetime-indexed series (where integers are positional indices). [#3220](https://github.com/unit8co/darts/pull/3220) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
 - Fixed `r2_score` returning `NaN` for a perfect forecast and `-inf` otherwise when the `actual_series` is constant. It now follows the `zero_division` convention of the other metrics, returning the best score `1.0` for a perfect forecast, `NaN` when the forecast is wrong, and raising under `zero_division="raise"`. [#3225](https://github.com/unit8co/darts/pull/3225) by [Miral Amin](https://github.com/aminmiral).

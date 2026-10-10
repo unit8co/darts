@@ -3983,10 +3983,8 @@ def ic(
     )
     y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
     covered = np.where((y_pred_lo <= y_true) & (y_true <= y_pred_hi), 1.0, 0.0)
-    # keep missing values as NaN so that they are ignored by `nan*` reductions (e.g. in `mic`)
-    return np.where(
-        np.isnan(y_true) | np.isnan(y_pred_lo) | np.isnan(y_pred_hi), np.nan, covered
-    )
+    # keep missing values as NaN (checking on `y_true` covers all NaNs thanks to `remove_nan_union`
+    return np.where(np.isnan(y_true), np.nan, covered)
 
 
 @interval_support

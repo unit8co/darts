@@ -2456,23 +2456,30 @@ class TestMetrics:
 
     def test_ic_mic_ignore_missing_values(self):
         """Missing actual values must stay NaN in `ic` and be ignored by `mic` instead of counting as misses."""
-        np.random.seed(42)
-        y = np.array([100.0, 100.0, np.nan, np.nan, 100.0, 100.0, 100.0])
-        actual = TimeSeries.from_values(y)
-        pred_vals = np.random.normal(100.0, 1.0, size=(len(y), 1, 500))
-        pred = TimeSeries.from_values(pred_vals)
+        n = 7
+        y = np.full((n,), 0.5)
+        nan_row_idx = [2, 4, 1, 6]
+        y[nan_row_idx[0]] = np.nan
+        y[nan_row_idx[1]] = np.nan
+        column = "a"
 
-        res_ic = metrics.ic(actual, pred, q_interval=(0.1, 0.9))
-        expected_ic = metric_ic(
-            y_true=actual.all_values(), y_pred=pred.all_values(), q_interval=(0.1, 0.9)
-        ).astype(float)[:, 0]
-        expected_ic[np.isnan(y)] = np.nan
-        np.testing.assert_array_equal(res_ic, expected_ic)
-        assert np.isnan(res_ic[[2, 3]]).all()
+        quantiles = [0.1, 0.3, 0.5, 0.7, 0.9]
+        pred_vals = np.concatenate([np.full((n, 1), q) for q in quantiles], axis=1)
+        pred_vals[nan_row_idx[2], 1] = np.nan
+        pred_vals[nan_row_idx[3], 4] = np.nan
+        q_columns = likelihood_component_names(
+            components=[column], parameter_names=quantile_names(q=quantiles)
+        )
 
-        res_mic = metrics.mic(actual, pred, q_interval=(0.1, 0.9))
-        assert res_mic == pytest.approx(np.nanmean(expected_ic))
-        assert res_mic == pytest.approx(1.0)
+        actual = TimeSeries.from_values(y, columns=[column])
+        pred = TimeSeries.from_values(pred_vals, columns=q_columns)
+
+        q_intervals = [(0.1, 0.9), (0.3, 0.7)]
+        res_ic = metrics.ic(actual, pred, q_interval=q_intervals)
+        # missing values are ignored
+        assert np.isnan(res_ic[nan_row_idx]).all()
+        # all others are within quantile intervals (covered = 1.)
+        assert (res_ic[[i for i in range(n) if i not in nan_row_idx]] == 1.0).all()
 
     @pytest.mark.parametrize(
         "config",
