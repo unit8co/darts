@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `ZeroInflatedLikelihood` for `TorchForecastingModel`: it wraps any univariate torch likelihood and adds a zero-inflation probability per component, e.g. a zero-inflated Poisson or negative binomial for intermittent demand, or a hurdle model with a continuous likelihood such as `GammaLikelihood` for targets that contain zeros. [#3245](https://github.com/unit8co/darts/pull/3245) by [Abhay Juloori](https://github.com/AbhayJuloori).
+
 **Fixed**
 
 **Dependencies**
