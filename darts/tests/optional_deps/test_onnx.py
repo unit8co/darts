@@ -306,6 +306,41 @@ class TestOnnx:
         )
         self._assert_forecasts_equal(onnx_pred, pred)
 
+    @pytest.mark.parametrize("start,freq", [(0, 1), (9, 2)])
+    def test_onnx_range_index(self, tmpdir_fn, start, freq):
+        """Inputs of integer-indexed series must be sliced by time index, not position."""
+        series = tg.linear_timeseries(
+            start=start, freq=freq, length=15, dtype="float32"
+        )
+        past_cov = tg.constant_timeseries(
+            start=start, freq=freq, length=20, dtype="float32"
+        )
+        future_cov = tg.sine_timeseries(
+            start=start, freq=freq, length=20, dtype="float32"
+        )
+
+        n = 5
+        model = self._make_model(NLinearModel)
+        model.fit(series=series, past_covariates=past_cov, future_covariates=future_cov)
+        pred = model.predict(
+            n=n,
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+        )
+        onnx_filename = f"test_range_index_{model.model_name}.onnx"
+        model.to_onnx(onnx_filename)
+        _, session = self._load_spec(onnx_filename)
+        onnx_pred = run_onnx_prediction(
+            n=n,
+            session=session,
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+            verbose=False,
+        )
+        self._assert_forecasts_equal(onnx_pred, pred)
+
     @pytest.mark.parametrize("model_cls", [RNNModel, TiDEModel])
     def test_onnx_autoregressive_horizon(self, tmpdir_fn, model_cls):
         """ONNX autoregression matches torch predict when n > output_chunk_length."""
