@@ -372,8 +372,10 @@ class NegativeBinomialLikelihood(TorchLikelihood):
         - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).
         - Parameters: number of failures :math:`r > 0`, success probability :math:`p \\in (0, 1)`.
 
-        Behind the scenes the distribution is reparameterized so that the actual outputs of the
-        network are in terms of the mean :math:`\\mu` and shape :math:`\\alpha`.
+        Behind the scenes the network outputs two unconstrained values :math:`\\mu` and :math:`\\alpha`
+        which are mapped to :math:`r = 1 / \\alpha` and :math:`p = r / (\\mu + r)`. Note that the returned
+        :math:`p` follows PyTorch's convention (probability of success, mean :math:`r p / (1 - p)`), so
+        :math:`\\mu` is not the mean of the predicted distribution.
         """
         self.softplus = nn.Softplus()
         super().__init__(
