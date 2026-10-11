@@ -33,6 +33,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - `TimeSeries.to_json()` and `from_json()` now properly support serializing and deserializing stochastic series. [#3237](https://github.com/unit8co/darts/pull/3237) by [Raashish Aggarwal](https://github.com/raashish1601) and [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
+- Fixed classification metrics (`accuracy`, `precision`, `recall`, `f1`, `confusion_matrix`) misreading single-class probability forecasts as class labels: probability forecasts are now distinguished from label forecasts by the component naming convention `<component_name>_p<label>`, not by the number of components, which is identical when each component has a single class. [#3252](https://github.com/unit8co/darts/issues/3252) by [Manas Choksi](https://github.com/choksi2212).
 
 - Fixed metric `ic()` (interval coverage) reporting missing (NaN) actual values as interval misses instead of NaN, which biased `mic()` low for series with missing values. [#3232](https://github.com/unit8co/darts/pull/3232) by [mayuriphad](https://github.com/mayuriphad).
 - Fixed `Diff.transform()` raising an error with `dropna=True` (the default) for integer-indexed series whose `RangeIndex` does not start at 0 or has a step other than 1. [#3229](https://github.com/unit8co/darts/pull/3229) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).

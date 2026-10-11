@@ -333,6 +333,62 @@ class TestClassificationMetrics:
             ])
         )
 
+    def test_single_class_probability_forecasts_are_decoded(self):
+        """A probability forecast where every component has a single class has the same
+        number of components as the actual series, so the classification metrics must
+        distinguish it from a label forecast by the component naming convention, not by
+        width (see issue #3252)."""
+        # actual class labels: class 0 observed throughout
+        y_true = TimeSeries.from_values(
+            values=np.array([[0.0], [0.0]]),
+            columns=["state"],
+        )
+        # single-class probability forecast: the width matches the actual series
+        y_pred_proba = TimeSeries.from_values(
+            values=np.array([[1.0], [1.0]]),
+            columns=["state_p0"],
+        )
+        # the same forecast as labels
+        y_pred_label = TimeSeries.from_values(
+            values=np.array([[0.0], [0.0]]),
+            columns=["state"],
+        )
+
+        # the probability forecast must decode to the class label it represents:
+        # state_p0 = 1.0 predicts class 0 with certainty, not class 1
+        assert metrics.accuracy(y_true, y_pred_proba) == 1.0
+        assert metrics.recall(y_true, y_pred_proba, labels=[0]) == 1.0
+        assert metrics.precision(y_true, y_pred_proba, labels=[0]) == 1.0
+        assert metrics.f1(y_true, y_pred_proba, labels=[0]) == 1.0
+
+        # the label forecast of the same prediction is unaffected
+        assert metrics.accuracy(y_true, y_pred_label) == 1.0
+
+        # confusion matrix decodes the probability forecast as well
+        np.testing.assert_array_equal(
+            metrics.confusion_matrix(y_true, y_pred_proba, labels=[0]),
+            metrics.confusion_matrix(y_true, y_pred_label, labels=[0]),
+        )
+
+        # multivariate: every component with a single class of its own
+        y_true_mv = TimeSeries.from_values(
+            values=np.array([[0.0, 1.0], [0.0, 1.0]]),
+            columns=["comp_a", "comp_b"],
+        )
+        y_pred_proba_mv = TimeSeries.from_values(
+            values=np.array([[1.0, 1.0], [1.0, 1.0]]),
+            columns=["comp_a_p0", "comp_b_p1"],
+        )
+        assert metrics.accuracy(y_true_mv, y_pred_proba_mv) == 1.0
+
+        # control: an extra class in the forecast makes the width check give the
+        # same answer as the naming-convention check
+        y_pred_proba_2c = TimeSeries.from_values(
+            values=np.array([[1.0, 0.0], [1.0, 0.0]]),
+            columns=["state_p0", "state_p1"],
+        )
+        assert metrics.accuracy(y_true, y_pred_proba_2c) == 1.0
+
     def test_wrong_label_reduction(self):
         y = TimeSeries.from_values(np.array([[4]]))
 
