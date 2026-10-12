@@ -159,7 +159,9 @@ def metric_f1(y_true, y_pred):
     return sklearn.metrics.f1_score(y_true.flatten(), y_pred.flatten(), average="macro")
 
 
-def metric_autc(y_true, y_pred, n_tolerances=101, **kwargs):
+def metric_autc(
+    y_true, y_pred, min_tolerance=0.0, max_tolerance=1.0, step=0.01, **kwargs
+):
     """Reference implementation for AUTC metric."""
     y_true = y_true[:, 0]  # univariate
     y_pred = y_pred[:, 0]
@@ -167,7 +169,8 @@ def metric_autc(y_true, y_pred, n_tolerances=101, **kwargs):
     abs_errors = np.abs(y_true - y_pred)
     half_range = y_range / 2
     normalized_errors = abs_errors / half_range
-    tolerances = np.linspace(0, 1, n_tolerances)
+    n_tolerances = int(round((max_tolerance - min_tolerance) / step)) + 1
+    tolerances = np.linspace(min_tolerance, max_tolerance, n_tolerances)
     coverages = np.array([np.mean(normalized_errors <= tol) for tol in tolerances])
     return _NP_TRAPEZOID_FN(coverages, tolerances)
 
@@ -2454,6 +2457,33 @@ class TestMetrics:
         # multiple intervals
         check_ref(q_interval=[(0.1, 0.5), (0.5, 0.8)])
 
+    def test_ic_mic_ignore_missing_values(self):
+        """Missing actual values must stay NaN in `ic` and be ignored by `mic` instead of counting as misses."""
+        n = 7
+        y = np.full((n,), 0.5)
+        nan_row_idx = [2, 4, 1, 6]
+        y[nan_row_idx[0]] = np.nan
+        y[nan_row_idx[1]] = np.nan
+        column = "a"
+
+        quantiles = [0.1, 0.3, 0.5, 0.7, 0.9]
+        pred_vals = np.concatenate([np.full((n, 1), q) for q in quantiles], axis=1)
+        pred_vals[nan_row_idx[2], 1] = np.nan
+        pred_vals[nan_row_idx[3], 4] = np.nan
+        q_columns = likelihood_component_names(
+            components=[column], parameter_names=quantile_names(q=quantiles)
+        )
+
+        actual = TimeSeries.from_values(y, columns=[column])
+        pred = TimeSeries.from_values(pred_vals, columns=q_columns)
+
+        q_intervals = [(0.1, 0.9), (0.3, 0.7)]
+        res_ic = metrics.ic(actual, pred, q_interval=q_intervals)
+        # missing values are ignored
+        assert np.isnan(res_ic[nan_row_idx]).all()
+        # all others are within quantile intervals (covered = 1.)
+        assert (res_ic[[i for i in range(n) if i not in nan_row_idx]] == 1.0).all()
+
     @pytest.mark.parametrize(
         "config",
         param_product(
@@ -2727,6 +2757,23 @@ class TestMetrics:
     def test_autc_invalid_params(self, kwargs, match):
         with pytest.raises(ValueError, match=match):
             metrics.autc(self.series1, self.series2, **kwargs)
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {},
+            {"step": 0.1},
+            {"max_tolerance": 0.5},
+            {"max_tolerance": 0.5, "step": 0.005},
+            {"min_tolerance": 0.5},
+            {"min_tolerance": 0.2, "max_tolerance": 0.4, "step": 0.05},
+        ],
+    )
+    def test_autc_tolerance_params(self, kwargs):
+        """Check that `min_tolerance`, `max_tolerance` and `step` are used to compute the coverages."""
+        score = metrics.autc(self.series1, self.series2, **kwargs)
+        score_ref = metric_autc(self.series1.values(), self.series2.values(), **kwargs)
+        np.testing.assert_almost_equal(score, score_ref)
 
     def test_autc_constant_series(self):
         series1_const = self.series1.with_values(np.ones(self.series1.shape))

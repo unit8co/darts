@@ -2814,6 +2814,9 @@ def autc(
         actual_series,
         pred_series,
         intersect,
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
         q=q,
     )
     tolerances = _get_tolerance_levels(
@@ -3982,7 +3985,9 @@ def ic(
         q=q,
     )
     y_pred_lo, y_pred_hi = _get_quantile_intervals(y_pred, q=q, q_interval=q_interval)
-    return np.where((y_pred_lo <= y_true) & (y_true <= y_pred_hi), 1.0, 0.0)
+    covered = np.where((y_pred_lo <= y_true) & (y_true <= y_pred_hi), 1.0, 0.0)
+    # keep missing values as NaN (checking on `y_true` covers all NaNs thanks to `remove_nan_union`
+    return np.where(np.isnan(y_true), np.nan, covered)
 
 
 @interval_support
