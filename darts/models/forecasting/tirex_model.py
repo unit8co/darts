@@ -167,11 +167,10 @@ class TiRexModel(FoundationModel):
         """
         TiRex foundation model for zero-shot time series forecasting.
 
-        .. attention::
+        .. tip::
             TiRex-2 extends TiRex with joint multivariate and covariate capabilities and achieves better performance
-            on public benchmarks. It is now available in Darts as
-            :class:`~darts.models.forecasting.tirex2_model.TiRex2Model`. For new use cases, we recommend using TiRex-2
-            instead of TiRex.
+            on public benchmarks. It is available in Darts as
+            :class:`~darts.models.forecasting.tirex2_model.TiRex2Model`. We recommend using TiRex-2 over TiRex.
 
         This is a Darts wrapper around the TiRex model introduced in Auer et al. (2025) [1]_. The implementation
         delegates all forecasting logic and weight loading to the optional `tirex-ts
@@ -181,14 +180,14 @@ class TiRexModel(FoundationModel):
         TiRex is a pre-trained foundation model designed for zero-shot forecasting across both short and long horizons.
 
         This model supports either univariate or multivariate time series, but does not support covariates.
-        For multivariate time series, the model is applied independently to each component.
-        For joint multivariate forecasting with past and future covariates, use
-        :class:`~darts.models.forecasting.tirex2_model.TiRex2Model` (TiRex-2).
+        For multivariate time series, the model is applied independently to each component. For joint multivariate
+        forecasting with past and future covariates, use :class:`~darts.models.forecasting.tirex2_model.TiRex2Model`
+        (TiRex-2).
 
         By default, the model is deterministic (median forecast only). To enable probabilistic forecasts, pass a
         :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
-        It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True`` or ``num_samples >> 1``
-        to get meaningful results.
+        For probabilistic forecasts, it is recommended to call :func:`predict()` with
+        ``predict_likelihood_parameters=True`` or ``num_samples >> 1`` to get meaningful results.
 
         For more details on the TiRex model, see the original paper [1]_, the `TiRex base repo
         <https://github.com/NX-AI/tirex>`_, `model card <https://huggingface.co/NX-AI/TiRex>`_, and `docs

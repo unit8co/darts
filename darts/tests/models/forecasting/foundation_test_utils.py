@@ -149,6 +149,10 @@ class TiRex2Stub(torch.nn.Module):
         forecasts = [forecast] * B
         return forecasts
 
+    @property
+    def model(self):
+        return self
+
 
 # ── TimesFM 2.5 tiny model ─────────────────────────────────────────────────
 #

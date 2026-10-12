@@ -234,13 +234,16 @@ class TiRex2Model(FoundationModel):
         - Efficient memory usage and inference speed.
         - A permissive Apache 2.0 license, which allows commercial use.
 
-        This wraps the pretrained xLSTM model from Podest et al. (2026) [1]_ using the `tirex-2
-        <https://pypi.org/project/tirex-2/>`_ package. Please install it alongside ``darts[torch]``.
+        This a Darts wrapper around the TiRex2 model introduced in Podest et al. (2026) [1]_. The implementation
+        delegates all forecasting logic and weight loading to the optional
+        `tirex-2 <https://pypi.org/project/tirex-2/>`_ package while exposing a standard :class:`TorchForecastingModel`
+        interface.
 
-        TiRex-2 jointly forecasts all target components and supports past and future covariates. The default
-        forecast is the median; pass :class:`~darts.utils.likelihood_models.torch.QuantileRegression` to
-        ``likelihood`` and call :func:`predict()` with ``predict_likelihood_parameters=True`` or ``num_samples >>
-        1`` to obtain quantiles or probabilistic samples.
+        TiRex-2 jointly forecasts all target components and supports past and future covariates. By default, the model
+        is deterministic (median forecast only). To enable probabilistic forecasts, pass a
+        :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
+        For probabilistic forecasts, it is recommended to call :func:`predict()` with
+        ``predict_likelihood_parameters=True`` or ``num_samples >> 1`` to get meaningful results.
 
         For more details on the TiRex-2 model, see the original paper [1]_ and `docs
         <https://nx-ai.github.io/tirex-2/>`_.
@@ -253,6 +256,9 @@ class TiRex2Model(FoundationModel):
         .. note::
             TiRex-2 supports full or partial fine-tuning. For small datasets, fine-tune only the final decoder layer
             and output head with ``enable_finetuning={"unfreeze": ["*.stack.11.*", "*.output_patch_embedding.*"]}``.
+            See the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
+            notebook for more details.
 
         Parameters
         ----------
@@ -283,9 +289,12 @@ class TiRex2Model(FoundationModel):
             the quantiles must be a subset of those used during TiRex-2 pre-training:
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].
             Default: ``None``, which will make the model deterministic (median quantile only).
+            When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
+            preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
+            only affects prediction output.
         hub_model_name
-            The model ID on Hugging Face Hub, or a local checkpoint directory containing
-            ``model-config.yaml`` and ``model.ckpt``. Default: ``"NX-AI/TiRex-2"``.
+            The model ID on Hugging Face Hub, or a local checkpoint directory containing ``model-config.yaml`` and
+            ``model.ckpt``. Default: ``"NX-AI/TiRex-2"``.
         hub_model_revision
             The model version to use. This can be a branch name, tag name, or commit hash. Default: ``None``, which
             will use the default branch from ``hub_model_name``.
@@ -294,9 +303,9 @@ class TiRex2Model(FoundationModel):
             managed by ``huggingface_hub``. To load an existing checkpoint without downloading, pass its
             directory as ``hub_model_name`` instead.
         tirex2_kwargs
-            Additional arguments to ``tirex2.load_model()``, such as ``use_flex_attention`` and ``hf_kwargs``.
+            Additional keyword arguments forwarded to ``tirex2.load_model()``.
         predict_kwargs
-            Optional arguments to ``tirex2.TiRex2._predict()``, such as ``tta_diff``.
+            Optional keyword arguments forwarded to ``tirex2.TiRex2._predict()``, such as ``tta_diff``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`. Training-related options below are inherited from the
