@@ -159,7 +159,9 @@ def metric_f1(y_true, y_pred):
     return sklearn.metrics.f1_score(y_true.flatten(), y_pred.flatten(), average="macro")
 
 
-def metric_autc(y_true, y_pred, n_tolerances=101, **kwargs):
+def metric_autc(
+    y_true, y_pred, min_tolerance=0.0, max_tolerance=1.0, step=0.01, **kwargs
+):
     """Reference implementation for AUTC metric."""
     y_true = y_true[:, 0]  # univariate
     y_pred = y_pred[:, 0]
@@ -167,7 +169,8 @@ def metric_autc(y_true, y_pred, n_tolerances=101, **kwargs):
     abs_errors = np.abs(y_true - y_pred)
     half_range = y_range / 2
     normalized_errors = abs_errors / half_range
-    tolerances = np.linspace(0, 1, n_tolerances)
+    n_tolerances = int(round((max_tolerance - min_tolerance) / step)) + 1
+    tolerances = np.linspace(min_tolerance, max_tolerance, n_tolerances)
     coverages = np.array([np.mean(normalized_errors <= tol) for tol in tolerances])
     return _NP_TRAPEZOID_FN(coverages, tolerances)
 
@@ -2754,6 +2757,23 @@ class TestMetrics:
     def test_autc_invalid_params(self, kwargs, match):
         with pytest.raises(ValueError, match=match):
             metrics.autc(self.series1, self.series2, **kwargs)
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {},
+            {"step": 0.1},
+            {"max_tolerance": 0.5},
+            {"max_tolerance": 0.5, "step": 0.005},
+            {"min_tolerance": 0.5},
+            {"min_tolerance": 0.2, "max_tolerance": 0.4, "step": 0.05},
+        ],
+    )
+    def test_autc_tolerance_params(self, kwargs):
+        """Check that `min_tolerance`, `max_tolerance` and `step` are used to compute the coverages."""
+        score = metrics.autc(self.series1, self.series2, **kwargs)
+        score_ref = metric_autc(self.series1.values(), self.series2.values(), **kwargs)
+        np.testing.assert_almost_equal(score, score_ref)
 
     def test_autc_constant_series(self):
         series1_const = self.series1.with_values(np.ones(self.series1.shape))
