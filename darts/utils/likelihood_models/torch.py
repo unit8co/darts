@@ -1445,14 +1445,16 @@ class ZeroInflatedLikelihood(TorchLikelihood):
             parameter_names=likelihood.parameter_names + ["zi_p"],
         )
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         params = self.likelihood._params_from_output(model_output[:, :, :, :-1])
-        if isinstance(params, torch.Tensor):
-            params = (params,)
         gate = torch.sigmoid(model_output[:, :, :, -1])
         return *params, gate
 
-    def _distr_from_params(self, params: tuple) -> _ZeroInflatedDistribution:
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> _ZeroInflatedDistribution:
         *base_params, gate = params
         base_distr = self.likelihood._distr_from_params(tuple(base_params))
         return _ZeroInflatedDistribution(base_distr, gate)
