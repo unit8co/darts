@@ -21,7 +21,6 @@ import torch.nn.functional as F
 from torch import nn
 
 from darts.logging import raise_log
-from darts.models.components.huggingface_connector import HuggingFaceConnector
 from darts.models.components.timesfm2p5_submodels import (
     _ResidualBlock,
     _ResidualBlockConfig,
@@ -620,12 +619,6 @@ class TimesFM2p5Model(FoundationModel):
         1961-05-01          405.622437          468.185883          541.932739
         1961-06-01          394.438660          465.574554          539.628723
         """
-        hf_connector = HuggingFaceConnector(
-            model_name=hub_model_name,
-            model_revision=hub_model_revision,
-            local_dir=local_dir,
-        )
-
         # As per the original implementation, the model config is ignored and default
         # parameters are used instead.
         config = _TimesFM2p5_200M_Definition()
@@ -684,7 +677,6 @@ class TimesFM2p5Model(FoundationModel):
                     ),
                 )
 
-        self.hf_connector = hf_connector
         super().__init__(**kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:

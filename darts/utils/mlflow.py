@@ -430,7 +430,8 @@ def load_model(
         Optional local path for downloading remote artifacts.
     **kwargs
         Additional keyword arguments forwarded to the model's ``load()`` method
-        (e.g. ``map_location`` for a `TorchForecastingModel`).
+        (e.g. ``trusted=False`` for safe-loading , ``map_location`` for a
+        ``TorchForecastingModel``, etc.).
 
     Returns
     -------

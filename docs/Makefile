@@ -77,7 +77,8 @@ generate-api:
         ../darts/utils/likelihood_models/base.py \
         ../darts/utils/multioutput.py \
         ../darts/utils/onnx/export.py \
-        ../darts/utils/serialization/* \
+        ../darts/utils/serialization/base.py \
+        ../darts/utils/serialization/torch.py \
         ../darts/utils/ts_utils.py \
     	../darts/typing.py \
 

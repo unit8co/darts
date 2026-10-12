@@ -1035,7 +1035,7 @@ class TestVariableInputChunkLength:
             ),
             pytest.param(
                 PatchTSTFMModel,
-                {"local_dir": PATCHTST_FM_TINY_DIR},
+                {"local_dir": str(PATCHTST_FM_TINY_DIR)},
                 contextlib.nullcontext,
                 True,
                 id="PatchTSTFM",
@@ -1049,7 +1049,7 @@ class TestVariableInputChunkLength:
             ),
             pytest.param(
                 TimesFM3Model,
-                {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+                {"accept_license": True, "local_dir": str(TIMESFM3_TINY_DIR)},
                 contextlib.nullcontext,
                 True,
                 id="TimesFM3",
@@ -1187,7 +1187,7 @@ class TestVariableInputChunkLength:
             ),
             pytest.param(
                 PatchTSTFMModel,
-                {"local_dir": PATCHTST_FM_TINY_DIR},
+                {"local_dir": str(PATCHTST_FM_TINY_DIR)},
                 contextlib.nullcontext,
                 id="PatchTSTFM",
             ),
@@ -1199,7 +1199,7 @@ class TestVariableInputChunkLength:
             ),
             pytest.param(
                 TimesFM3Model,
-                {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+                {"accept_license": True, "local_dir": str(TIMESFM3_TINY_DIR)},
                 contextlib.nullcontext,
                 id="TimesFM3",
             ),
@@ -1310,7 +1310,7 @@ class TestVariableInputChunkLength:
             ),
             pytest.param(
                 PatchTSTFMModel,
-                {"local_dir": PATCHTST_FM_TINY_DIR},
+                {"local_dir": str(PATCHTST_FM_TINY_DIR)},
                 contextlib.nullcontext,
                 id="PatchTSTFM",
             ),
@@ -1322,7 +1322,7 @@ class TestVariableInputChunkLength:
             ),
             pytest.param(
                 TimesFM3Model,
-                {"accept_license": True, "local_dir": TIMESFM3_TINY_DIR},
+                {"accept_license": True, "local_dir": str(TIMESFM3_TINY_DIR)},
                 contextlib.nullcontext,
                 id="TimesFM3",
             ),

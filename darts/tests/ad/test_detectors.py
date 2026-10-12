@@ -703,3 +703,47 @@ class TestAnomalyDetectionDetector:
         detection = detector.detect(anomalous_ts)
 
         assert detection.sum(axis=0).all_values().flatten()[0] == expected_anomalies
+
+    @pytest.mark.parametrize(
+        "detector_kwargs",
+        [
+            {"low_quantile": 0.1, "high_quantile": 0.9},
+            {"high_quantile": [0.9]},
+            {"low_quantile": 0.1},
+        ],
+    )
+    def test_quantile_detector_fit_with_missing_values(self, detector_kwargs):
+        """Missing values in the fit series must be ignored when computing the quantiles."""
+        values = np.arange(20.0)
+        values[[3, 11]] = np.nan
+
+        detector = QuantileDetector(**detector_kwargs).fit(
+            TimeSeries.from_values(values)
+        )
+        expected = QuantileDetector(**detector_kwargs).fit(
+            TimeSeries.from_values(values[~np.isnan(values)])
+        )
+        assert detector.low_threshold == expected.low_threshold
+        assert detector.high_threshold == expected.high_threshold
+
+        # outliers are detected, missing values are not flagged
+        test_series = TimeSeries.from_values(np.array([-100.0, 10.0, np.nan, 100.0]))
+        detection = detector.detect(test_series).values().flatten()
+        np.testing.assert_array_equal(
+            detection,
+            [
+                "low_quantile" in detector_kwargs,
+                0,
+                0,
+                "high_quantile" in detector_kwargs,
+            ],
+        )
+
+    def test_iqr_detector_fit_with_missing_values(self):
+        values = np.arange(20.0)
+        values[[3, 11]] = np.nan
+
+        detector = IQRDetector().fit(TimeSeries.from_values(values))
+        expected = IQRDetector().fit(TimeSeries.from_values(values[~np.isnan(values)]))
+        assert detector.low_threshold == expected.low_threshold
+        assert detector.high_threshold == expected.high_threshold

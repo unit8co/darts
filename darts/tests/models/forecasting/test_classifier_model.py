@@ -17,6 +17,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import Tags
 
+from darts.metrics import accuracy
 from darts.models import (
     CatBoostClassifierModel,
     LightGBMClassifierModel,
@@ -197,6 +198,30 @@ class TestClassifierModel:
             str(err.value)
             == "`SKLearnClassifierModel` must be initialized with a classifier `model`."
         )
+
+    def test_single_class_probabilities_metric_accuracy(self):
+        """End-to-end regression test for issue #3252: a classifier trained on a
+        single observed class produces a one-column probability forecast whose width
+        equals the actual series width. The classification metrics must decode it from
+        the component naming convention instead of misreading the probabilities as
+        labels (accuracy 1.0 as labels, 0.0 as likelihood parameters)."""
+        series = TimeSeries.from_values(np.zeros(8), columns=["state"])
+        model = SKLearnClassifierModel(
+            model=DecisionTreeClassifier(random_state=0),
+            lags=1,
+        )
+        model.fit(series[:-1])
+        actual = series[-1:]
+        labels = model.predict(1)
+        probabilities = model.predict(1, predict_likelihood_parameters=True)
+
+        assert labels.components.tolist() == ["state"]
+        assert probabilities.components.tolist() == ["state_p0"]
+        np.testing.assert_array_equal(labels.values(), [[0.0]])
+        np.testing.assert_array_equal(probabilities.values(), [[1.0]])
+
+        assert accuracy(actual, labels) == 1.0
+        assert accuracy(actual, probabilities) == 1.0
 
     @pytest.mark.parametrize("clf_params", param_list(process_model_list(classifiers)))
     def test_univariate_class_labels(self, clf_params):

@@ -1194,8 +1194,11 @@ class SKLearnModel(GlobalForecastingModel):
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
         num_samples : int, default: 1
-            Number of times a prediction is sampled from a probabilistic model. Should be set to 1
-            for deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be set to 1 for deterministic
+            models. When ``num_samples > 1``, predictions within each output chunk are sampled
+            independently across output steps and components. When `n > output_chunk_length`, each sample trajectory
+            is generated autoregressively across output chunks, by feeding sampled values of a previous chunk as
+            input to forecast the distribution of the next chunk.
         verbose
             Optionally, set the prediction verbosity. Not effective for all models.
         predict_likelihood_parameters

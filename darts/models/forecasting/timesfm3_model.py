@@ -1115,12 +1115,12 @@ class TimesFM3Model(FoundationModel):
             )
 
         # load the model configuration for validation, as done by `Chronos2Model`
-        self.hf_connector = HuggingFaceConnector(
+        hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,
             model_revision=hub_model_revision,
             local_dir=local_dir,
         )
-        config = self.hf_connector.load_config()
+        config = hf_connector.load_config()
         self._model_quantiles = tuple(config["quantiles"])
         self._max_variates = config["transformer_config"]["transformer"]["max_variates"]
 

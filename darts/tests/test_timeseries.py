@@ -197,7 +197,7 @@ class TestTimeSeries:
             df = pl.DataFrame(data)
             if date_type != "str":
                 # we must first convert to Date before optional Datetime
-                df = df.cast({"time": pl.Date})
+                df = df.with_columns(pl.col("time").str.to_date())
                 if date_type == "datetime":
                     df = df.cast({"time": pl.Datetime})
 
@@ -1893,6 +1893,36 @@ class TestTimeSeries:
         )
 
         assert data_darts1 == data_darts2
+
+    @pytest.mark.parametrize("dtype", ["float16", "float32", "float64"])
+    @pytest.mark.parametrize("with_nan", [False, True])
+    @pytest.mark.parametrize("freq", ["D", "2D", 1, 2])
+    @pytest.mark.parametrize("stochastic", [False, True])
+    def test_json_roundtrip_keeps_float_precision2(
+        self, dtype, with_nan, freq, stochastic
+    ):
+        np.random.seed(42)
+        shape = (10, 3) if not stochastic else (10, 3, 2)
+        values = np.random.random(shape).astype(dtype)
+
+        values[5, 2] = 1 / 3
+        values[6, 2] = 1e-12
+
+        if with_nan:
+            values[3, 0] = np.nan
+
+        static_covariates = pd.DataFrame({"num": [1 / 3], "cat": ["abc"]})
+
+        start = "20200101" if isinstance(freq, str) else 1
+        series = TimeSeries.from_times_and_values(
+            times=generate_index(start=start, freq=freq, length=len(values)),
+            values=values,
+            static_covariates=static_covariates,
+            columns=["a", "b", "c"],
+        )
+        restored = TimeSeries.from_json(series.to_json())
+        assert restored == series
+        assert restored.dtype == series.dtype
 
     def test_index_creation(self):
         times = pd.date_range(start="20210312", periods=15, freq="MS")

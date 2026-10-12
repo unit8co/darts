@@ -62,6 +62,7 @@ from darts.utils.likelihood_models.base import (
     quantile_interval_names,
     quantile_names,
 )
+from darts.utils.serialization.base import restricted_pickle_load
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -1671,7 +1672,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         val_series: TimeSeries | None = None,
         use_fitted_values: bool = False,
         metric: Callable[[TimeSeries, TimeSeries], METRIC_OUTPUT_TYPE] = metrics.mape,
-        reduction: Callable[[np.ndarray], float] = np.mean,
+        reduction: Callable[[np.ndarray], float] = np.nanmean,
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: int | float | None = None,
@@ -1689,7 +1690,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         provided in the `parameters` dictionary by instantiating the `model_class` subclass
         of ForecastingModel with each combination, and returning the best-performing model with regard
         to the `metric` function. The `metric` function is expected to return an error value,
-        thus the model resulting in the smallest `metric` output will be chosen.
+        thus the model resulting in the smallest `metric` output will be chosen. Combinations with a NaN score are
+        excluded from the selection.
 
         The relationship of the training data and test data depends on the mode of operation.
 
@@ -1770,7 +1772,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Only used in expanding window mode. Whether to use the whole forecasts or only the last point of each
             forecast to compute the error.
         show_warnings
-            Only used in expanding window mode. Whether to show warnings related to the `start` parameter.
+            Whether to show warnings related to the `start` parameter (expanding window mode only), and about
+            hyperparameter combinations excluded from the selection because of a NaN `metric` score.
         val_series
             The TimeSeries instance used for validation in split mode. If provided, this series must start right after
             the end of `series`; so that a proper comparison of the forecast can be made.
@@ -1784,7 +1787,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `TimeSeries` and returns the error
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
-            on the different validation series when backtesting. By default it'll compute the mean of errors.
+            on the different validation series when backtesting. By default it'll compute the mean of errors, ignoring
+            NaN values.
         verbose
             Whether to print the progress.
         n_jobs
@@ -2030,10 +2034,28 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             iterator, _evaluate_combination, n_jobs, {}, {}
         )
 
-        min_error = min(errors)
+        errors_arr = np.asarray(errors, dtype=series.dtype)
+        if errors_arr.size == 0:
+            raise_log(ValueError("No hyperparameter combinations to evaluate."))
+        nan_count = np.isnan(errors_arr).sum()
+        if nan_count == errors_arr.size:
+            raise_log(
+                ValueError(
+                    "All hyperparameter combinations resulted in a NaN `metric` score."
+                )
+            )
+        elif nan_count > 0 and show_warnings:
+            logger.warning(
+                f"{int(nan_count)} of {errors_arr.size} hyperparameter combinations resulted in a "
+                "NaN `metric` score and were excluded from the selection."
+            )
+
+        # `np.nanargmin` ignores NaN scores and returns the first index in case of ties
+        best_idx = int(np.nanargmin(errors_arr))
+        min_error = float(errors_arr[best_idx])
 
         best_param_combination = dict(
-            list(zip(parameters.keys(), params_cross_product[errors.index(min_error)]))
+            zip(parameters.keys(), params_cross_product[best_idx])
         )
 
         logger.info("Chosen parameters: " + str(best_param_combination))
@@ -2761,14 +2783,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
     @staticmethod
-    def load(path: str | os.PathLike | BinaryIO) -> "ForecastingModel":
+    def load(
+        path: str | os.PathLike | BinaryIO,
+        trusted: bool = False,
+    ) -> "ForecastingModel":
         """
         Loads a model from a given path or file handle.
+
+        .. warning::
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         Parameters
         ----------
         path
             Path or file handle from which to load the model.
+        trusted
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         """
 
         if isinstance(path, str | os.PathLike):
@@ -2776,9 +2810,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 raise_log(ValueError(f"The file {path} doesn't exist."))
 
             with open(path, "rb") as handle:
-                model = pickle.load(file=handle)
+                model = restricted_pickle_load(
+                    handle,
+                    trusted=trusted,
+                )
         elif isinstance(path, io.BufferedReader):
-            model = pickle.load(file=path)
+            model = restricted_pickle_load(
+                path,
+                trusted=trusted,
+            )
         else:
             raise_log(
                 ValueError(

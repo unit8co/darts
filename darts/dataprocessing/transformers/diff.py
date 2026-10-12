@@ -165,7 +165,8 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
             diffed = diffed.diff(n=1, periods=lag, dropna=dropna)
         # `series` needs same `n_timesteps` as `diffed` for `unapply_component_mask`
         if dropna:
-            series = series.drop_before(sum(lags) - 1)
+            # slice by position, as integers are labels for integer-indexed series
+            series = series[sum(lags) :]
         return Diff.unapply_component_mask(series, diffed, component_mask)
 
     @staticmethod

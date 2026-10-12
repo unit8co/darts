@@ -306,6 +306,40 @@ class TestTimeSeriesWindowTransform:
         transformed_ts = self.series_multi_prob.window_transform(transforms=transforms)
         assert transformed_ts.n_samples == 2
 
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [["a", "b"], ["units_sold", "b"]],  # component names
+            [None, [1, 0], [1]],  # indices of the components to transform
+        ),
+    )
+    def test_ts_windowtransf_stochastic_components(self, config):
+        """Transforming a stochastic series must give the same result as transforming each sample,
+        for any component names and order of `components`."""
+        columns, comp_indices = config
+        vals = np.random.default_rng(seed=42).random((10, 2, 3))
+        series = TimeSeries.from_values(vals, columns=columns)
+
+        transformation = {"function": "sum", "mode": "rolling", "window": 2}
+        if comp_indices is not None:
+            transformation["components"] = [columns[idx] for idx in comp_indices]
+        transformed_ts = series.window_transform(transformation)
+
+        expected_components = [
+            f"rolling_sum_2_{comp}"
+            for comp in transformation.get("components", columns)
+        ]
+        assert transformed_ts.components.to_list() == expected_components
+        assert transformed_ts.n_samples == series.n_samples
+        for sample_idx in range(series.n_samples):
+            transformed_sample = TimeSeries.from_values(
+                vals[:, :, sample_idx], columns=columns
+            ).window_transform(transformation)
+            np.testing.assert_array_almost_equal(
+                transformed_ts.all_values()[:, :, sample_idx],
+                transformed_sample.values(),
+            )
+
     def test_user_defined_function_behavior(self):
         def count_above_mean(array):
             mean = np.mean(array)

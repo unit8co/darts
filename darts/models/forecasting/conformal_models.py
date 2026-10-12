@@ -1432,10 +1432,17 @@ class ConformalModel(GlobalForecastingModel, ABC):
     def load(
         path: str | os.PathLike | BinaryIO,
         pl_trainer_kwargs: dict | None = None,
+        trusted: bool = False,
         **kwargs,
     ) -> "ConformalModel":
         """
         Loads a model from a given path or file handle.
+
+        .. warning::
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         Parameters
         ----------
@@ -1448,19 +1455,23 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
             `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
             for more information about the supported kwargs.
+        trusted
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         **kwargs
             Only effective if the underlying forecasting model is a `TorchForecastingModel`.
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
         """
-        model: ConformalModel = GlobalForecastingModel.load(path)
+        model: ConformalModel = GlobalForecastingModel.load(path, trusted=trusted)
 
         if TORCH_AVAILABLE and issubclass(type(model.model), TorchForecastingModel):
             path_tfm = f"{path}.{type(model.model).__name__}.pt"
             model.model = TorchForecastingModel.load(
                 path_tfm,
                 pl_trainer_kwargs=pl_trainer_kwargs,
+                trusted=trusted,
                 **kwargs,
             )
         return model
@@ -1578,6 +1589,25 @@ class ConformalModel(GlobalForecastingModel, ABC):
         return self._likelihood
 
 
+def _conformal_quantile(residuals: np.ndarray, q: np.ndarray) -> np.ndarray:
+    """Finite-sample conformal quantiles of the non-conformity scores along the last axis.
+
+    With `n` calibration scores, the split conformal quantile at level `q` is the `ceil((n + 1) * q)`-th smallest
+    score, which guarantees a coverage of at least `q` for exchangeable scores. The empirical quantile at level `q`
+    can pick a lower rank and under-cover for small `n`. When `ceil((n + 1) * q)` exceeds `n`, the largest score
+    is used.
+
+    Returns an array of shape `(len(q),) + residuals.shape[:-1]`.
+    """
+    n = residuals.shape[-1]
+    # rounding guards against `(n + 1) * q` landing just above an integer
+    rank = np.minimum(np.ceil(np.round((n + 1) * np.asarray(q), 8)), n)
+    # the position `rank - 1` is an integer, so "nearest" selects exactly that order statistic
+    return np.quantile(
+        residuals, q=(rank - 1) / max(n - 1, 1), method="nearest", axis=-1
+    )
+
+
 class ConformalNaiveModel(ConformalModel):
     def __init__(
         self,
@@ -1677,12 +1707,8 @@ class ConformalNaiveModel(ConformalModel):
     ) -> tuple[np.ndarray, np.ndarray]:
         def q_hat_from_residuals(residuals_):
             # compute quantiles of shape (forecast horizon, n components, n quantile intervals)
-            return np.quantile(
-                residuals_,
-                q=self.interval_range_sym,
-                method="higher",
-                axis=2,
-            ).transpose((1, 2, 0))
+            q_hat_ = _conformal_quantile(residuals_, self.interval_range_sym)
+            return q_hat_.transpose((1, 2, 0))
 
         # residuals shape (horizon, n components, n past forecasts)
         if self.symmetric:
@@ -1828,8 +1854,8 @@ class ConformalQRModel(ConformalModel):
             # TODO: is there a more efficient way?
             # compute quantiles with shape (horizon, n components, n quantile intervals)
             # over all past residuals
-            q_hat_tmp = np.quantile(
-                residuals_, q=self.interval_range_sym, method="higher", axis=2
+            q_hat_tmp = _conformal_quantile(
+                residuals_, self.interval_range_sym
             ).transpose((1, 2, 0))
             q_hat_ = np.empty((len(residuals_), n_comps, n_intervals))
             for i in range(n_intervals):
