@@ -143,6 +143,11 @@ def get_safe_globals() -> list[SafeGlobal]:
 def clear_safe_globals() -> None:
     """Clear all user-added safe globals.
 
+    Clears both the process-wide globals added with :func:`add_safe_globals` and any
+    globals currently added by an enclosing :func:`safe_globals` block. Inside such a
+    block the context manager restores the globals it added when the block exits, so
+    clearing does not reach past it.
+
     Examples
     --------
     >>> from darts.utils.serialization import add_safe_globals, clear_safe_globals, get_safe_globals
@@ -157,6 +162,7 @@ def clear_safe_globals() -> None:
     """
     with _process_lock:
         _process_globals.clear()
+    _context_stack.set([])
 
 
 def _parse_safe_global(entry: SafeGlobal) -> tuple[Callable[..., object], str]:
