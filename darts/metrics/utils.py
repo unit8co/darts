@@ -539,14 +539,12 @@ def _get_values(
     """
     # classification metrics
     if is_classification:
-        # probability forecasts are distinguished from deterministic label forecasts by
-        # the component naming convention "<component_name>_p<label>" (checked in
-        # _classification_handling), *not* by the number of components: a forecast with
-        # a single class per component has the same number of components as the actual
-        # series, so a width check would silently skip probability decoding
         if vals.shape[SMPL_AX] != 1:  # sampled class labels
             vals = _get_highest_count_label(vals)
         elif not vals_components.equals(actual_components):  # class label probabilities
+            # probability forecasts follow convention "<component_name>_p<label>"; _classification_handling() already
+            # checked that actuals and predictions have the same base components; make sure that single class
+            # probability forecasts also use below logic
             vals = _get_highest_probability_label(
                 vals=vals,
                 vals_components=vals_components,
@@ -611,8 +609,8 @@ def _get_values_or_raise(
         If `pred_series` contains class probabilities, it will extract the class label with the highest
         probability for each time step and component.
         If `pred_series` contains sampled class labels, it will extract the class label with the highest frequency.
-        If `pred_series` is deterministic and has the same components as `actual_series` (the component names, not
-        their number, distinguish probability forecasts from label forecasts), it will return the class labels as is.
+        If `pred_series` is deterministic and has the same components as `actual_series`, it will return the class
+        labels as is.
 
     Raises
     ------
