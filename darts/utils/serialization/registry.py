@@ -162,8 +162,6 @@ def clear_safe_globals() -> None:
     """
     with _process_lock:
         _process_globals.clear()
-    # Context-scoped entries are part of the allow-list that `get_safe_globals()`
-    # reports and that model loading consults, so clearing must drop them too.
     _context_stack.set([])
 
 
