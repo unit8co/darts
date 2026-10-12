@@ -113,7 +113,7 @@ class TestTorchLikelihoodModel:
         if isinstance(likelihood, QuantileRegression):
             target = torch.randn(batch_size, n_times, n_components)
         else:
-            params = likelihood._as_tuple(likelihood._params_from_output(model_output))
+            params = likelihood._params_from_output(model_output)
             target = likelihood._distr_from_params(params).sample()
 
         loss = likelihood.compute_loss(model_output, target, None)
