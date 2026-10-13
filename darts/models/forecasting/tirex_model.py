@@ -51,15 +51,15 @@ class _TiRexModule(PLForecastingModule):
 
     def __init__(
         self,
-        tirex_kwargs: dict[str, Any],
+        setup_kwargs: dict[str, Any],
         all_quantiles: tuple[float, ...],
         enable_finetuning: bool | dict = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
 
-        tirex_kwargs["device"] = str(self.device)
-        self.tirex: TiRexZero = load_model(**tirex_kwargs)
+        setup_kwargs["device"] = str(self.device)
+        self.tirex: TiRexZero = load_model(**setup_kwargs)
 
         self.future_len = (self.output_chunk_length or 0) + self.output_chunk_shift
         # bool(dict) is True for a non-empty dict; _setup_finetuning() handles the actual
@@ -162,7 +162,7 @@ class TiRexModel(FoundationModel):
         hub_model_name: str = "NX-AI/TiRex",
         hub_model_revision: str | None = None,
         local_dir: str | os.PathLike | None = None,
-        tirex_kwargs: dict[str, Any] | None = None,
+        setup_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
         """
@@ -200,7 +200,7 @@ class TiRexModel(FoundationModel):
 
         .. note::
             TiRex supports partial fine-tuning of the last sLSTM blocks and the output head. To enable it, set
-            ``tirex_kwargs={"backend": "torch"}`` and select the layers to unfreeze with
+            ``setup_kwargs={"backend": "torch"}`` and select the layers to unfreeze with
             ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``.
 
             Full fine-tuning (``enable_finetuning=True``) is **not supported** because backpropagation through
@@ -251,8 +251,9 @@ class TiRexModel(FoundationModel):
             model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
             use a cache directory managed by ``huggingface_hub`` instead. Note that this is different from the
             ``work_dir`` parameter used for saving model checkpoints during fine-tuning.
-        tirex_kwargs
-            Additional keyword arguments forwarded to ``tirex.load_model()``.
+        setup_kwargs
+            Additional keyword arguments forwarded to ``tirex.load_model()`` when the backend is
+            initialized. Not passed to Darts :func:`predict`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -476,12 +477,12 @@ class TiRexModel(FoundationModel):
                 ),
             )
 
-        tirex_kwargs = tirex_kwargs or {}
-        if "path" in tirex_kwargs:
+        setup_kwargs = setup_kwargs or {}
+        if "path" in setup_kwargs:
             raise_log(
                 ValueError(
                     "The `path` argument for loading the TiRex model should be passed via `hub_model_name`,"
-                    "not `tirex_kwargs`."
+                    "not `setup_kwargs`."
                 ),
             )
 
@@ -501,12 +502,12 @@ class TiRexModel(FoundationModel):
                 else {}
             ),
             **({"local_dir": local_dir} if local_dir is not None else {}),
-            **(tirex_kwargs.get("hf_kwargs", {})),
+            **(setup_kwargs.get("hf_kwargs", {})),
         }
-        self.tirex_kwargs = {
+        self._setup_kwargs = {
             "path": hub_model_name,
             **({"hf_kwargs": hf_kwargs} if hf_kwargs else {}),
-            **tirex_kwargs,
+            **setup_kwargs,
         }
 
     @property
@@ -526,7 +527,7 @@ class TiRexModel(FoundationModel):
         # enable_finetuning is injected into pl_module_params by the base class;
         # _TiRexModule accepts it as an explicit parameter and converts dict form to bool
         return _TiRexModule(
-            tirex_kwargs=self.tirex_kwargs,
+            setup_kwargs=self._setup_kwargs,
             all_quantiles=self._DEFAULT_QUANTILES,
             **pl_module_params,
         )

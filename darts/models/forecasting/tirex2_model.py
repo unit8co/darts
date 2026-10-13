@@ -56,17 +56,17 @@ if TYPE_CHECKING:
 class _TiRex2Module(PLForecastingModule):
     def __init__(
         self,
-        tirex2_kwargs: dict[str, Any],
-        predict_kwargs: dict[str, Any],
+        setup_kwargs: dict[str, Any],
+        inference_kwargs: dict[str, Any],
         **kwargs,
     ):
         """PyTorch Lightning module wrapping a pre-loaded TiRex-2 forecaster.
 
         Parameters
         ----------
-        tirex2_kwargs
+        setup_kwargs
             Additional keyword arguments forwarded to ``tirex2.load_model()``.
-        predict_kwargs
+        inference_kwargs
             Optional keyword arguments forwarded to ``tirex2.TiRex2._predict()``, such as ``tta_diff``.
         **kwargs
             Additional arguments passed to `PLForecastingModule`.
@@ -76,8 +76,8 @@ class _TiRex2Module(PLForecastingModule):
         load_device: torch.device | None = kwargs.pop("load_device", None)
         super().__init__(**kwargs)
 
-        self._tirex2_kwargs = tirex2_kwargs
-        self._predict_kwargs = predict_kwargs
+        self._setup_kwargs = setup_kwargs
+        self._inference_kwargs = inference_kwargs
 
         self.tirex2: TiRex2 = self._load_tirex2(load_device)
 
@@ -115,7 +115,7 @@ class _TiRex2Module(PLForecastingModule):
             else nullcontext()
         )
         with context:
-            model: TiRex2 = load_model(**self._tirex2_kwargs, device=device_type).model
+            model: TiRex2 = load_model(**self._setup_kwargs, device=device_type).model
         model.to(dtype=self.dtype)
         return model
 
@@ -180,11 +180,11 @@ class _TiRex2Module(PLForecastingModule):
         # Each sample remains a joint multivariate task, independent of other
         # samples in the batch. Native output: B tensors of shape
         # (C, Q, H + S), with all pretrained quantiles.
-        predict_kwargs = self._predict_kwargs
+        inference_kwargs = self._inference_kwargs
         if x_in.stage is ModuleStage.TRAIN:
-            predict_kwargs = {**predict_kwargs, "preserve_grad": True}
+            inference_kwargs = {**inference_kwargs, "preserve_grad": True}
         forecasts = self.tirex2._predict(
-            timeseries, prediction_length=self._future_len, **predict_kwargs
+            timeseries, prediction_length=self._future_len, **inference_kwargs
         )
         # Stack and permute the forecasts: (B, S + H, C, Q)
         output = torch.stack(forecasts).permute(0, 3, 1, 2)
@@ -233,8 +233,8 @@ class TiRex2Model(FoundationModel):
         hub_model_name: str = "NX-AI/TiRex-2",
         hub_model_revision: str | None = None,
         local_dir: str | os.PathLike | None = None,
-        tirex2_kwargs: dict[str, Any] | None = None,
-        predict_kwargs: dict[str, Any] | None = None,
+        setup_kwargs: dict[str, Any] | None = None,
+        inference_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
         """TiRex-2 foundation model for zero-shot multivariate forecasting.
@@ -314,10 +314,12 @@ class TiRex2Model(FoundationModel):
             Optional download directory forwarded to Hugging Face. Default: ``None``, which uses the cache
             managed by ``huggingface_hub``. To load an existing checkpoint without downloading, pass its
             directory as ``hub_model_name`` instead.
-        tirex2_kwargs
-            Additional keyword arguments forwarded to ``tirex2.load_model()``.
-        predict_kwargs
-            Optional keyword arguments forwarded to ``tirex2.TiRex2._predict()``, such as ``tta_diff``.
+        setup_kwargs
+            Additional keyword arguments forwarded to ``tirex2.load_model()`` when the backend is initialized. Not
+            passed to Darts :func:`predict`.
+        inference_kwargs
+            Optional keyword arguments forwarded to ``tirex2.TiRex2._predict()`` on each internal forecast call
+            (e.g. ``tta_diff``). Not passed to Darts :func:`predict`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`. Training-related options below are inherited from the
@@ -530,18 +532,16 @@ class TiRex2Model(FoundationModel):
                 ),
             )
 
-        # Validate tirex2_kwargs argument
-        load_kwargs = dict(tirex2_kwargs or {})
+        # Validate setup_kwargs argument
+        load_kwargs = dict(setup_kwargs or {})
         if "ckpt_path" in load_kwargs:
             raise_log(
-                ValueError(
-                    "Pass `ckpt_path` via `hub_model_name`, not `tirex2_kwargs`."
-                )
+                ValueError("Pass `ckpt_path` via `hub_model_name`, not `setup_kwargs`.")
             )
         if "device" in load_kwargs:
             raise_log(
                 ValueError(
-                    'Pass `device` via `pl_trainer_kwargs["accelerator"]`, not `tirex2_kwargs`.'
+                    'Pass `device` via `pl_trainer_kwargs["accelerator"]`, not `setup_kwargs`.'
                 )
             )
         hf_kwargs = dict(load_kwargs.pop("hf_kwargs", {}) or {})
@@ -549,14 +549,14 @@ class TiRex2Model(FoundationModel):
             hf_kwargs["revision"] = hub_model_revision
         if local_dir is not None:
             hf_kwargs["local_dir"] = local_dir
-        self._tirex2_kwargs = {
+        self._setup_kwargs = {
             "ckpt_path": hub_model_name,
             **load_kwargs,
         }
         if hf_kwargs:
-            self._tirex2_kwargs["hf_kwargs"] = hf_kwargs
+            self._setup_kwargs["hf_kwargs"] = hf_kwargs
 
-        self._predict_kwargs = predict_kwargs or {}
+        self._inference_kwargs = inference_kwargs or {}
 
         super().__init__(**kwargs)
 
@@ -566,8 +566,8 @@ class TiRex2Model(FoundationModel):
         trainer: pl.Trainer,
     ) -> PLForecastingModule:
         return _TiRex2Module(
-            tirex2_kwargs=self._tirex2_kwargs,
-            predict_kwargs=self._predict_kwargs,
+            setup_kwargs=self._setup_kwargs,
+            inference_kwargs=self._inference_kwargs,
             load_device=trainer.strategy.root_device,
             **self.pl_module_params,
         )

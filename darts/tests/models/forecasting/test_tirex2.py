@@ -292,19 +292,19 @@ class TestTiRex2Model:
             **kwargs,
         )
 
-        # cannot use `ckpt_path` in `tirex2_kwargs`
+        # cannot use `ckpt_path` in `setup_kwargs`
         with pytest.raises(
             ValueError,
-            match="Pass `ckpt_path` via `hub_model_name`, not `tirex2_kwargs`.",
+            match="Pass `ckpt_path` via `hub_model_name`, not `setup_kwargs`.",
         ):
             TiRex2Model(
                 input_chunk_length=7,
                 output_chunk_length=6,
-                tirex2_kwargs={"ckpt_path": "/tmp/weights"},
+                setup_kwargs={"ckpt_path": "/tmp/weights"},
                 **kwargs,
             )
 
-        # cannot use `device` in `tirex2_kwargs`
+        # cannot use `device` in `setup_kwargs`
         with pytest.raises(
             ValueError,
             match='Pass `device` via `pl_trainer_kwargs\\["accelerator"\\]`',
@@ -312,7 +312,7 @@ class TestTiRex2Model:
             TiRex2Model(
                 input_chunk_length=7,
                 output_chunk_length=6,
-                tirex2_kwargs={"device": "cpu"},
+                setup_kwargs={"device": "cpu"},
                 **kwargs,
             )
 
@@ -541,13 +541,13 @@ class TestTiRex2Model:
         assert model_weights_from_ckpt_loaded.model.tirex2.device == "cpu"
         model_weights_from_ckpt_loaded.predict(n=5, series=self.series)
 
-    def test_predict_kwargs(self, pipeline):
-        predict_kwargs = {"tta_diff": False}
+    def test_inference_kwargs(self, pipeline):
+        inference_kwargs = {"tta_diff": False}
 
         model = TiRex2Model(
             input_chunk_length=3,
             output_chunk_length=4,
-            predict_kwargs=predict_kwargs,
+            inference_kwargs=inference_kwargs,
             **tfm_kwargs,
         )
         model.fit(self.series)

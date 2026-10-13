@@ -213,7 +213,7 @@ class TestTiRexModel:
             TiRexModel(
                 input_chunk_length=7,
                 output_chunk_length=6,
-                tirex_kwargs={"path": "dummy_path"},
+                setup_kwargs={"path": "dummy_path"},
                 **kwargs,
             )
 
