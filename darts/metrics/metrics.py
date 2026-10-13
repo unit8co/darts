@@ -2814,6 +2814,9 @@ def autc(
         actual_series,
         pred_series,
         intersect,
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
         q=q,
     )
     tolerances = _get_tolerance_levels(

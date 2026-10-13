@@ -102,6 +102,34 @@ class TestRegistryLifecycle:
         user_globals = get_safe_globals()
         assert _user_fn not in user_globals
 
+    def test_clear_inside_context_clears_context_globals(self):
+        add_safe_globals([_UserClass])
+
+        with safe_globals([_user_fn]):
+            clear_safe_globals()
+
+            assert get_safe_globals() == []
+            assert _get_user_safe_globals() == {}
+
+    def test_clear_inside_context_does_not_leak_past_block(self):
+        with safe_globals([_UserClass]):
+            with safe_globals([_user_fn]):
+                clear_safe_globals()
+                assert get_safe_globals() == []
+
+            # leaving the inner block restores what the outer one added
+            assert get_safe_globals() == [_UserClass]
+
+        assert get_safe_globals() == []
+
+    def test_clear_inside_context_restores_after_exception(self):
+        with pytest.raises(RuntimeError, match="boom"):
+            with safe_globals([_UserClass]):
+                clear_safe_globals()
+                raise RuntimeError("boom")
+
+        assert get_safe_globals() == []
+
 
 class TestRestrictedLoadWithRegistry:
     def setup_method(self):
@@ -121,6 +149,20 @@ class TestRestrictedLoadWithRegistry:
         buf.seek(0)
         add_safe_globals([_UserClass])
         assert isinstance(restricted_pickle_load(buf), _UserClass)
+
+    def test_clear_inside_context_revokes_the_load(self):
+        buf = io.BytesIO()
+        pickle.dump(_UserClass(), buf)
+
+        with safe_globals([_UserClass]):
+            buf.seek(0)
+            assert isinstance(restricted_pickle_load(buf), _UserClass)
+
+            clear_safe_globals()
+
+            buf.seek(0)
+            with pytest.raises(UnpicklingError):
+                restricted_pickle_load(buf)
 
     def test_torch_load_uses_merged_registry(self, tmp_path):
         torch = pytest.importorskip("torch")
