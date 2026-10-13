@@ -121,10 +121,10 @@ class TiRex2Stub(torch.nn.Module):
 
     quantiles: tuple[float, ...] = TIREX2_QUANTILES
     future_len: int = TIREX2_MAX_PREDICTION_LENGTH
-    device: str = "cpu"
 
-    def __init__(self):
+    def __init__(self, device: str = "cpu"):
         super().__init__()
+        self.device = device
         self.weight = torch.nn.Parameter(torch.ones(1))
 
     def _predict(self, timeseries, prediction_length: int, **_kwargs):

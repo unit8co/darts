@@ -4,6 +4,7 @@ N-HiTS
 """
 
 import numpy as np
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -825,7 +826,11 @@ class NHiTSModel(PastCovariatesTorchModel):
 
         return pooling_kernel_sizes, n_freq_downsample
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+    def _create_model(
+        self,
+        train_sample: TorchTrainingSample,
+        trainer: pl.Trainer,
+    ) -> PLForecastingModule:
         past_target = train_sample.past_target
         past_covariates = train_sample.past_covariates
         input_dim = past_target.shape[1] + (

@@ -16,6 +16,7 @@ For detailed examples and tutorials, see:
 import os
 from typing import Any
 
+import pytorch_lightning as pl
 import torch
 from tirex import load_model
 from tirex.models.tirex import TiRexZero
@@ -516,7 +517,11 @@ class TiRexModel(FoundationModel):
     def supports_future_covariates(self) -> bool:
         return False
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
+    def _create_model(
+        self,
+        train_sample: TorchTrainingSample,
+        trainer: pl.Trainer,
+    ) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
         # enable_finetuning is injected into pl_module_params by the base class;
         # _TiRexModule accepts it as an explicit parameter and converts dict form to bool

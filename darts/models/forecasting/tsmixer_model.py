@@ -24,6 +24,7 @@ Time-Series Mixer (TSMixer)
 
 from collections.abc import Callable
 
+import pytorch_lightning as pl
 import torch
 from torch import nn
 
@@ -769,7 +770,11 @@ class TSMixerModel(MixedCovariatesTorchModel):
         self.hidden_size = hidden_size
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> nn.Module:
+    def _create_model(
+        self,
+        train_sample: TorchTrainingSample,
+        trainer: pl.Trainer,
+    ) -> PLForecastingModule:
         """
         Parameters
         ----------

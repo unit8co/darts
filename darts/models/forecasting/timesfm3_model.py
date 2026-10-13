@@ -15,6 +15,7 @@ For detailed examples and tutorials, see:
 import math
 import os
 
+import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -1147,7 +1148,11 @@ class TimesFM3Model(FoundationModel):
 
         super().__init__(**kwargs)
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
+    def _create_model(
+        self,
+        train_sample: TorchTrainingSample,
+        trainer: pl.Trainer,
+    ) -> PLForecastingModule:
         n_variates = sum(
             el.shape[1]
             for el in [

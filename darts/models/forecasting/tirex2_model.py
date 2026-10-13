@@ -33,6 +33,7 @@ import os
 from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
 
+import pytorch_lightning as pl
 import torch
 from tirex2 import TimeseriesType, load_model
 
@@ -53,51 +54,46 @@ if TYPE_CHECKING:
 
 
 class _TiRex2Module(PLForecastingModule):
-    """Adapt TiRex-2's native multivariate inputs and quantiles to Darts."""
-
     def __init__(
-        self, tirex2_kwargs: dict[str, Any], predict_kwargs: dict[str, Any], **kwargs
+        self,
+        tirex2_kwargs: dict[str, Any],
+        predict_kwargs: dict[str, Any],
+        **kwargs,
     ):
+        """PyTorch Lightning module wrapping a pre-loaded TiRex-2 forecaster.
+
+        Parameters
+        ----------
+        tirex2_kwargs
+            Additional keyword arguments forwarded to ``tirex2.load_model()``.
+        predict_kwargs
+            Optional keyword arguments forwarded to ``tirex2.TiRex2._predict()``, such as ``tta_diff``.
+        **kwargs
+            Additional arguments passed to `PLForecastingModule`.
+        """
         # for fine-tuning, model should be trained on pre-trained quantiles
         self._enable_finetuning = kwargs.pop("enable_finetuning", False)
+        load_device: torch.device | None = kwargs.pop("load_device", None)
         super().__init__(**kwargs)
 
         self._tirex2_kwargs = tirex2_kwargs
         self._predict_kwargs = predict_kwargs
 
-        # Always load the model on CPU first, then move to the execution device during
-        # configure_model(). This is because Trainer is not yet set up during __init__(),
-        # so we cannot know the execution device.
-        self.tirex2: TiRex2 = load_model(**self._tirex2_kwargs, device="cpu").model
-        self.tirex2.to(dtype=self.dtype)
+        self.tirex2: TiRex2 = self._load_tirex2(load_device)
 
         # Validate against the checkpoint's maximum prediction length
-        self._future_len = self.output_chunk_length + self.output_chunk_shift
-        if self._future_len > self.tirex2.future_len:
-            raise_log(
-                ValueError(
-                    f"`output_chunk_length` {self.output_chunk_length} plus "
-                    f"`output_chunk_shift` {self.output_chunk_shift} cannot exceed "
-                    f"the checkpoint's maximum prediction length {self.tirex2.future_len}."
-                )
-            )
+        self._future_len = (self.output_chunk_length or 0) + self.output_chunk_shift
 
         # Validate against the checkpoint's pretrained quantiles
         all_quantiles = [round(float(q), 6) for q in self.tirex2.quantiles]
         user_quantiles = self.likelihood.quantiles if self.likelihood else [0.5]
-        if not set(user_quantiles).issubset(all_quantiles):
-            raise_log(
-                ValueError(
-                    f"The checkpoint does not support the requested quantiles: {user_quantiles}. "
-                    f"Supported quantiles are: {all_quantiles}."
-                )
-            )
 
         # Register the indices of the requested quantiles
         self.register_buffer(
             "_user_quantile_indices",
             torch.tensor([all_quantiles.index(q) for q in user_quantiles]),
         )
+        # TODO: is this needed? should not have to select anything
         self.register_buffer(
             "_finetuning_quantile_indices",
             torch.tensor(list(range(len(all_quantiles)))),
@@ -110,6 +106,19 @@ class _TiRex2Module(PLForecastingModule):
         else:
             self._finetuning_likelihood = None
 
+    def _load_tirex2(self, load_device: torch.device | None) -> "TiRex2":
+        """Load TiRex-2 on ``load_device``, or CPU when the device is unknown."""
+        device_type = load_device.type if load_device is not None else "cpu"
+        context = (
+            torch.cuda.device(load_device)
+            if load_device is not None and load_device.type == "cuda"
+            else nullcontext()
+        )
+        with context:
+            model: TiRex2 = load_model(**self._tirex2_kwargs, device=device_type).model
+        model.to(dtype=self.dtype)
+        return model
+
     def configure_model(self) -> None:
         # Lightning also calls this hook during checkpoint loading without a
         # Trainer. Keep the CPU model until a Trainer supplies the execution device.
@@ -117,26 +126,16 @@ class _TiRex2Module(PLForecastingModule):
             return
 
         # TiRex-2 chooses its recurrent kernels at construction; moving its
-        # tensors later does not switch backends. Lightning knows the actual
-        # execution device here, before moving the model or restoring weights.
+        # tensors later does not switch backends. Reload when the execution device
+        # differs (e.g. weights restored on CPU, predict on GPU).
         device = self.trainer.strategy.root_device
         if device.type != self.tirex2.device:
-            # The loader accepts "cuda", not "cuda:N". Select the correct GPU for
-            # its allocations, including when running one process per GPU.
-            context = (
-                torch.cuda.device(device) if device.type == "cuda" else nullcontext()
-            )
-            with context:
-                model: TiRex2 = load_model(
-                    **self._tirex2_kwargs, device=device.type
-                ).model
-            model.to(dtype=self.dtype)
-            # restore the weights and training mode from the original model, which was loaded on CPU
-            model.load_state_dict(self.tirex2.state_dict())
-            model.train(self.tirex2.training)
-            for name, parameter in model.named_parameters():
-                parameter.requires_grad_(self.tirex2.get_parameter(name).requires_grad)
-            self.tirex2 = model
+            previous = self.tirex2
+            self.tirex2 = self._load_tirex2(device)
+            self.tirex2.load_state_dict(previous.state_dict())
+            self.tirex2.train(previous.training)
+            for name, parameter in self.tirex2.named_parameters():
+                parameter.requires_grad_(previous.get_parameter(name).requires_grad)
 
         if self._enable_finetuning:
             self.tirex2.train(self.training)
@@ -212,6 +211,19 @@ class _TiRex2Module(PLForecastingModule):
 
 
 class TiRex2Model(FoundationModel):
+    _DEFAULT_QUANTILES: tuple[float, ...] = (
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+    )
+    _MAX_PREDICTION_LENGTH = 320
+
     def __init__(
         self,
         input_chunk_length: InputChunkLength,
@@ -501,6 +513,22 @@ class TiRex2Model(FoundationModel):
                         f"Got {type(likelihood)}."
                     )
                 )
+            user_quantiles: list[float] = likelihood.quantiles
+            if not set(user_quantiles).issubset(self._DEFAULT_QUANTILES):
+                raise_log(
+                    ValueError(
+                        f"The quantiles for QuantileRegression likelihood {user_quantiles} "
+                        f"must be a subset of TiRex-2 quantiles {self._DEFAULT_QUANTILES}."
+                    ),
+                )
+
+        if output_chunk_length + output_chunk_shift > self._MAX_PREDICTION_LENGTH:
+            raise_log(
+                ValueError(
+                    f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
+                    f"cannot be greater than model's maximum prediction length {self._MAX_PREDICTION_LENGTH}"
+                ),
+            )
 
         # Validate tirex2_kwargs argument
         load_kwargs = dict(tirex2_kwargs or {})
@@ -532,9 +560,14 @@ class TiRex2Model(FoundationModel):
 
         super().__init__(**kwargs)
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
+    def _create_model(
+        self,
+        train_sample: TorchTrainingSample,
+        trainer: pl.Trainer,
+    ) -> PLForecastingModule:
         return _TiRex2Module(
             tirex2_kwargs=self._tirex2_kwargs,
             predict_kwargs=self._predict_kwargs,
+            load_device=trainer.strategy.root_device,
             **self.pl_module_params,
         )
