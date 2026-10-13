@@ -20,6 +20,7 @@ from darts.dataprocessing.transformers import (
     FittableDataTransformer,
 )
 from darts.logging import raise_log
+from darts.utils.utils import _maybe_cast_array_dtype
 
 
 def _get_summation_matrix(series: TimeSeries):
@@ -77,7 +78,7 @@ def _reconcile_from_S_and_G(
     reconciled_values = S @ G @ y_hat  # (n, m) * (m, n) * (time, n, samples)
     return TimeSeries(
         times=series.time_index,
-        values=reconciled_values,
+        values=_maybe_cast_array_dtype(reconciled_values, series.dtype),
         components=series.components,
         copy=False,
         **series._attrs,
@@ -251,7 +252,8 @@ class MinTReconciliator(FittableDataTransformer):
         elif method == "mint_cov":
             MinTReconciliator._assert_deterministic(series)
             Wh = np.cov(
-                series.values(copy=False).T
+                series.values(copy=False).T,
+                dtype=series.dtype,
             )  # + 1e-3 * np.eye(len(series.components))
         else:
             raise_log(ValueError(f"Unknown method: {method}."))

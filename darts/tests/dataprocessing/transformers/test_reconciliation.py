@@ -231,6 +231,38 @@ class TestReconciliation:
         transformed = transformer.transform(series)
         assert transformed.dtype == dt_source
 
+    @pytest.mark.parametrize(
+        "dt_source, method",
+        param_product(
+            ["float32", "float64"],
+            ["ols", "wls_struct", "wls_var", "wls_val", "mint_cov"],
+        ),
+    )
+    def test_mint_dtype_conversion(self, dt_source, method):
+        series = self.series.astype(dt_source)
+        residuals = self.residuals.astype(dt_source)
+        fit_series = residuals if method in ["wls_var", "mint_cov"] else series
+        transformer = MinTReconciliator(method=method).fit(fit_series)
+        transformed = transformer.transform(series)
+        assert transformed.dtype == dt_source
+
+    @pytest.mark.parametrize(
+        "dt_fit, dt_transform",
+        [("float64", "float32"), ("float32", "float64")],
+    )
+    def test_reconciliation_cross_dtype_conversion(self, dt_fit, dt_transform):
+        series_fit = self.series.astype(dt_fit)
+        residuals_fit = self.residuals.astype(dt_fit)
+        series_transform = self.series.astype(dt_transform)
+
+        for recon in [
+            TopDownReconciliator().fit(series_fit),
+            MinTReconciliator("ols").fit(series_fit),
+            MinTReconciliator("mint_cov").fit(residuals_fit),
+        ]:
+            transformed = recon.transform(series_transform)
+            assert transformed.dtype == dt_transform
+
 
 class TestReconciliationInputValidation:
     def test_get_summation_matrix_no_hierarchy(self):
