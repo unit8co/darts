@@ -737,8 +737,8 @@ class TestProbabilisticModels:
             (
                 ZeroInflatedLikelihood(NegativeBinomialLikelihood()),
                 zero_inflated_series,
-                0.5,
-                0.5,
+                1.0,
+                1.0,
             ),
         ]
 
