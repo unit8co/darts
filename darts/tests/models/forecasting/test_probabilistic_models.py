@@ -708,7 +708,7 @@ class TestProbabilisticModels:
         lkl_series = [
             (GaussianLikelihood(), real_series, 0.17, 3),
             (PoissonLikelihood(), discrete_pos_series, 2, 2),
-            (NegativeBinomialLikelihood(), discrete_pos_series, 0.5, 0.5),
+            (NegativeBinomialLikelihood(), discrete_pos_series, 2, 2),
             (BernoulliLikelihood(), binary_series, 0.15, 0.15),
             (GammaLikelihood(), real_pos_series, 0.3, 0.3),
             (GumbelLikelihood(), real_series, 0.2, 3),

@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed `NegativeBinomialLikelihood` returning the distribution parameters in the wrong order with `predict_likelihood_parameters=True` on multivariate series; parameters are now grouped by component, matching the component names. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
+- 🔴 Fixed `NegativeBinomialLikelihood` mapping the network outputs to a distribution whose mean was not the predicted mean `mu`. The model now outputs the mean `mu` and dispersion `alpha` (variance `mu + alpha * mu**2`) as intended. Models trained with this likelihood in earlier versions will produce different forecasts and should be retrained. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
 
 **Dependencies**
 
