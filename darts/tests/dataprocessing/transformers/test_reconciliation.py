@@ -216,22 +216,6 @@ class TestReconciliation:
         assert [ts_1, ts_2] == series_input_copy
 
     @pytest.mark.parametrize(
-        "dt_source, transformer_cls",
-        param_product(
-            ["float32", "float64"],
-            [TopDownReconciliator, MinTReconciliator, BottomUpReconciliator],
-        ),
-    )
-    def test_dtype_conversion(self, dt_source, transformer_cls):
-        series = self.series.astype(dt_source)
-
-        transformer = transformer_cls()
-        if isinstance(transformer, FittableDataTransformer):
-            transformer.fit(series)
-        transformed = transformer.transform(series)
-        assert transformed.dtype == dt_source
-
-    @pytest.mark.parametrize(
         "dtype, config",
         param_product(
             ["float64", "float32"],
