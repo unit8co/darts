@@ -22,6 +22,7 @@ Some models have additional dependencies that are not included in the `all` inst
 |-----------------------|-----------------------|
 | `NeuralForecastModel` | neuralforecast>=3.0.0 |
 | `TiRexModel`          | tirex-ts>=1.4.0       |
+| `TiRex2Model`         | tirex-2>=0.3.1        |
 | `T0Model`             | tfc-t0[torch]>=0.6.0  |
 
 Some optional integrations also require additional dependencies:
@@ -57,10 +58,12 @@ Some models have additional dependencies that are not included in the `all` inst
 | `Prophet`             | prophet>=1.1.1        |
 
 Some models have dependencies not available on conda-forge. To use them, you need to install the following dependencies separately from PyPI:
-| Model                 | Dependencies          |
-|-----------------------|-----------------------|
-| `TiRexModel`          | tirex-ts>=1.4.0       |
-| `T0Model`             | tfc-t0[torch]>=0.6.0  |
+
+| Model         | Dependencies         |
+|---------------|----------------------|
+| `TiRexModel`  | tirex-ts>=1.4.0      |
+| `TiRex2Model` | tirex-2>=0.3.1       |
+| `T0Model`     | tfc-t0[torch]>=0.6.0 |
 
 
 ## Other Information

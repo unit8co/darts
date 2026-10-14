@@ -29,10 +29,15 @@ from darts.tests.conftest import (
     PROPHET_AVAILABLE,
     SF_AVAILABLE,
     T0_AVAILABLE,
+    TIREX2_AVAILABLE,
     TIREX_AVAILABLE,
     TORCH_AVAILABLE,
     XGB_AVAILABLE,
     tfm_kwargs,
+)
+from darts.tests.models.forecasting.foundation_test_utils import (
+    TIREX2_LOAD_MODEL_PATCH_TARGET,
+    TiRex2Stub,
 )
 from darts.utils.serialization.base import is_allowed_global
 from darts.utils.serialization.registry import _get_user_safe_globals, safe_globals
@@ -627,6 +632,13 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
             "TiRexModel",
             {"accept_license": True},
             lambda: patch(TIREX_LOAD_MODEL_PATCH_TARGET, return_value=TiRexStub()),
+        ))
+    if TIREX2_AVAILABLE:
+        foundation_entries.append((
+            "tirex2",
+            "TiRex2Model",
+            {},
+            lambda: patch(TIREX2_LOAD_MODEL_PATCH_TARGET, return_value=TiRex2Stub()),
         ))
     if T0_AVAILABLE:
         foundation_entries.append((
