@@ -216,20 +216,33 @@ class TestReconciliation:
         assert [ts_1, ts_2] == series_input_copy
 
     @pytest.mark.parametrize(
-        "dt_source, transformer_cls",
+        "dtype, config",
         param_product(
-            ["float32", "float64"],
-            [TopDownReconciliator, MinTReconciliator, BottomUpReconciliator],
+            ["float64", "float32"],
+            [
+                (BottomUpReconciliator(), "series"),
+                (TopDownReconciliator(), "series"),
+                (MinTReconciliator("ols"), "series"),
+                (MinTReconciliator("wls_struct"), "series"),
+                (MinTReconciliator("wls_val"), "series"),
+                (MinTReconciliator("wls_var"), "residuals"),
+                (MinTReconciliator("mint_cov"), "residuals"),
+            ],
         ),
     )
-    def test_dtype_conversion(self, dt_source, transformer_cls):
-        series = self.series.astype(dt_source)
+    def test_reconciliation_dtype_preservation(self, dtype, config):
+        recon, series = config
+        series_fit = getattr(self, series).astype(dtype)
+        if isinstance(recon, FittableDataTransformer):
+            recon.fit(series_fit)
 
-        transformer = transformer_cls()
-        if isinstance(transformer, FittableDataTransformer):
-            transformer.fit(series)
-        transformed = transformer.transform(series)
-        assert transformed.dtype == dt_source
+        transformed = recon.transform(series_fit)
+        assert transformed.dtype == dtype
+
+        dtype_other = "float32" if dtype == "float64" else "float64"
+        series_transform = self.series.astype(dtype_other)
+        transformed = recon.transform(series_transform)
+        assert transformed.dtype == dtype_other
 
 
 class TestReconciliationInputValidation:
