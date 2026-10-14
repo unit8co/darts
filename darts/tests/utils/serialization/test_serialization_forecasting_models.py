@@ -35,10 +35,6 @@ from darts.tests.conftest import (
     XGB_AVAILABLE,
     tfm_kwargs,
 )
-from darts.tests.models.forecasting.foundation_test_utils import (
-    TIREX2_LOAD_MODEL_PATCH_TARGET,
-    TiRex2Stub,
-)
 from darts.utils.serialization.base import is_allowed_global
 from darts.utils.serialization.registry import _get_user_safe_globals, safe_globals
 from darts.utils.utils import NotImportedModule
@@ -596,7 +592,9 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
         HF_HUB_DOWNLOAD_PATCH_TARGET,
         PATCHTST_FM_TINY_DIR,
         TIMESFM3_TINY_DIR,
+        TIREX2_LOAD_MODEL_PATCH_TARGET,
         TIREX_LOAD_MODEL_PATCH_TARGET,
+        TiRex2Stub,
         TiRexStub,
         mock_hf_hub_download,
         timesfm2p5_tiny_context,
