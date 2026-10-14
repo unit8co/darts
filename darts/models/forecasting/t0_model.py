@@ -22,7 +22,6 @@ For detailed examples and tutorials, see:
 import dataclasses
 import os
 
-import pytorch_lightning as pl
 import torch
 from t0 import T0Config, T0Forecaster
 from t0 import TimeSeries as T0TimeSeries
@@ -496,11 +495,7 @@ class T0Model(FoundationModel):
         self._hub_model_revision = hub_model_revision
         self._local_dir = local_dir
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # enable_finetuning is injected into pl_module_params by the base class;
         # _T0Module accepts it as an explicit parameter and converts dict form to bool
         return _T0Module(

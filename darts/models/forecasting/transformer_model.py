@@ -5,7 +5,6 @@ Transformer Model
 
 import math
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -631,11 +630,7 @@ class TransformerModel(PastCovariatesTorchModel):
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _TransformerModule:
         past_target = train_sample.past_target
         past_covariates = train_sample.past_covariates
         input_dim = past_target.shape[1] + (

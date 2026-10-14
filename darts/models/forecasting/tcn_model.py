@@ -6,7 +6,7 @@ Temporal Convolutional Network
 import math
 from collections.abc import Sequence
 
-import pytorch_lightning as pl
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -522,11 +522,7 @@ class TCNModel(PastCovariatesTorchModel):
         self.dropout = dropout
         self.weight_norm = weight_norm
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         past_target = train_sample.past_target
         past_covariates = train_sample.past_covariates
         input_dim = past_target.shape[1] + (

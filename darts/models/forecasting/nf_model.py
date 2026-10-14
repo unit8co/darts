@@ -41,7 +41,6 @@ We thus define the expected keys and their types below:
 import inspect
 from typing import TypedDict
 
-import pytorch_lightning as pl
 import torch
 from neuralforecast.common._base_model import BaseModel
 from neuralforecast.losses.pytorch import BasePointLoss
@@ -751,11 +750,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         self.nf_model_params["h"] = output_chunk_length
         self.nf_model_params["random_seed"] = random_state
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # unpack train sample
         # `past_target`: (L, C)
         # `past_covariates`: (L, X)

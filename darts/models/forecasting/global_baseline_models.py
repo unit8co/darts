@@ -12,7 +12,6 @@ A collection of simple benchmark models working with univariate, multivariate, s
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 
-import pytorch_lightning as pl
 import torch
 
 from darts import TimeSeries
@@ -408,11 +407,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
             )
         self.agg_fn = agg_fn
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveAggregateModule(agg_fn=self.agg_fn, **self.pl_module_params)
 
 
@@ -510,11 +505,7 @@ class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveSeasonalModule(**self.pl_module_params)
 
 
@@ -625,9 +616,5 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveDrift(**self.pl_module_params)

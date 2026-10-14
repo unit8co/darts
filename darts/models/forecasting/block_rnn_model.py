@@ -11,7 +11,6 @@ Block Recurrent Neural Networks
 import inspect
 from abc import ABC, abstractmethod
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 
@@ -538,11 +537,7 @@ class BlockRNNModel(MixedCovariatesTorchModel):
 
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         past_target = train_sample.past_target
         past_covariates = train_sample.past_covariates
         future_covariates = train_sample.future_covariates

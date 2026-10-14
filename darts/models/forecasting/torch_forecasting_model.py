@@ -423,12 +423,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model = None
         self.train_sample = None
 
-    def _init_model(
-        self,
-        trainer: pl.Trainer | None = None,
-        verbose: bool | None = None,
-        epochs: int = 0,
-    ) -> tuple[PLForecastingModule, pl.Trainer]:
+    def _init_model(self, trainer: pl.Trainer | None = None) -> PLForecastingModule:
         """Initializes model and trainer based on examples of input/output tensors (to get the sizes right):"""
         if self.pl_module_params is None:  # pragma: no cover
             raise_log(
@@ -441,34 +436,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
         self.pl_module_params["train_sample_shape"] = self.train_sample.sample_shapes()
-        self.trainer_params["precision"] = self._infer_trainer_precision(trainer)
-
-        trainer = self._setup_trainer(
-            trainer=trainer,
-            model=None,
-            verbose=verbose,
-            epochs=epochs,
-        )
-        model = self._create_model(self.train_sample, trainer=trainer)
-
+        # the tensors have shape (chunk_length, nr_dimensions)
+        model = self._create_model(self.train_sample)
         # The forecasting subclass may live in the user's module while the
         # Lightning module class lives next to the base model. Store the class
         # that `_create_model` actually returned.
         self._module_name = model.__class__.__name__
         self._module_path = model.__class__.__module__
 
-        # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
-        if self.save_checkpoints:
-            self.save(
-                os.path.join(
-                    _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
-                )
-            )
-        self._setup_finetuning(model)
-        return model, trainer
-
-    def _infer_trainer_precision(self, trainer: pl.Trainer | None = None) -> str | int:
-        """Infer PyTorch Lightning trainer precision from data dtype and user settings."""
+        # we should determine the precision based on time series data type
+        # however if user has defined a precision, we should follow that
+        precision = None
         precision_user = (
             self.trainer_params.get("precision", None)
             if trainer is None
@@ -488,27 +466,39 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     "Detected user-defined float16-like precision. For mixed precision training, recommended "
                     "options are 'bf16-mixed' and '16-mixed'."
                 )
-            return precision_user
-        if np.issubdtype(dtype, np.float32):
+            precision = precision_user
+        elif np.issubdtype(dtype, np.float32):
             logger.info("Time series values are 32-bits; casting model to float32.")
-            return "32-true"
-        if np.issubdtype(dtype, np.float64):
+            precision = "32-true"
+        elif np.issubdtype(dtype, np.float64):
             logger.info("Time series values are 64-bits; casting model to float64.")
-            return "64-true"
-        if np.issubdtype(dtype, np.float16):
+            precision = "64-true"
+        elif np.issubdtype(dtype, np.float16):
             logger.warning(
                 "Time series values are 16-bits; casting model to bfloat16 and model output will have dtype float32. "
                 "Training with 16-bit time series may lead to numerical instability "
                 "in some models. If you encounter issues, consider casting your data "
                 "to 32-bit, e.g. with `TimeSeries.astype(np.float32)`."
             )
-            return "bf16-true"
-        raise_log(
-            ValueError(
-                f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
-                f"or `np.float64` or `np.float16`, e.g. with `TimeSeries.astype(np.float32)`."
-            ),
-        )
+            precision = "bf16-true"
+        else:
+            raise_log(
+                ValueError(
+                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
+                    f"or `np.float64` or `np.float16`, e.g. with `TimeSeries.astype(np.float32)`."
+                ),
+            )
+        self.trainer_params["precision"] = precision
+
+        # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
+        if self.save_checkpoints:
+            self.save(
+                os.path.join(
+                    _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
+                )
+            )
+        self._setup_finetuning(model)
+        return model
 
     def _setup_finetuning(self, model: PLForecastingModule):
         """
@@ -589,7 +579,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _setup_trainer(
         self,
         trainer: pl.Trainer | None,
-        model: PLForecastingModule | None,
+        model: PLForecastingModule,
         verbose: bool | None = None,
         epochs: int = 0,
     ) -> pl.Trainer:
@@ -604,7 +594,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # we ignore `verbose` if `trainer` has a progress bar, to avoid errors from lightning
         if verbose is not None and not has_progress_bar:
             trainer_params["enable_model_summary"] = (
-                verbose if (model is None or model.epochs_trained == 0) else False
+                verbose if model.epochs_trained == 0 else False
             )
             trainer_params["enable_progress_bar"] = verbose
 
@@ -636,22 +626,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @abstractmethod
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         """
         This method has to be implemented by all children. It is in charge of instantiating the actual torch model,
         based on examples input/output tensors (i.e. implement a model with the right input/output sizes).
-
-        Parameters
-        ----------
-        train_sample
-            A sample from the training dataset, used to infer input/output sizes.
-        trainer
-            The Lightning Trainer which later performs model training. Can be used to retrieve information
-            relevant for model setup (e.g. strategy, device, ...). Do not pass `trainer` to the Module constructor.
         """
 
     def _build_train_dataset(
@@ -1326,18 +1304,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # Test dtypes of sample
         self._verify_dtypes(train_sample)
 
-        # if user wants to train the model for more epochs, ignore the n_epochs parameter
-        train_num_epochs = epochs if epochs > 0 else self.n_epochs
-
         if self.model is None:
-            # build model and trainer based on the dimensions of the first series in the train set.
+            # build model based on the dimensions of the first series in the train set.
             self.train_sample = train_sample
             self.output_dim = train_sample.future_target.shape[1]
-            model, trainer = self._init_model(
-                trainer=trainer,
-                verbose=verbose,
-                epochs=train_num_epochs,
-            )
+            model = self._init_model(trainer)
         else:
             model = self.model
             component_dims_last = self.train_sample.component_dims()
@@ -1351,14 +1322,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         f" provided input/output dimensions = {component_dims}."
                     ),
                 )
-
-            # setup trainer
-            trainer = self._setup_trainer(
-                trainer=trainer,
-                model=model,
-                verbose=verbose,
-                epochs=train_num_epochs,
-            )
 
         # update the covariates usage based on the training sample (required if model training was called
         # with `fit_from_dataset()`)
@@ -1415,6 +1378,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             collate_fn=_batch_collate_fn_train,
             dataloader_kwargs=dataloader_kwargs,
         )
+
+        # if user wants to train the model for more epochs, ignore the n_epochs parameter
+        train_num_epochs = epochs if epochs > 0 else self.n_epochs
+
+        # setup trainer
+        trainer = self._setup_trainer(trainer, model, verbose, train_num_epochs)
 
         if model.epochs_trained > 0 and not self.load_ckpt_path:
             logger.warning(
@@ -2676,7 +2645,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self._check_ckpt_parameters(tfm_save)
 
         # instantiate the model without having to call `fit_from_dataset`
-        self.model, _ = self._init_model()
+        self.model = self._init_model()
         # cast model precision to correct type
         self.model.to_dtype(ckpt["model_dtype"])
         # load only the weights from the state dict

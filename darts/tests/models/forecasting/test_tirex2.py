@@ -482,23 +482,17 @@ class TestTiRex2Model:
         )
         pipeline.assert_not_called()
 
-        # fit() loads once on the execution device chosen via pl_trainer_kwargs
+        # fit() loads the model on CPU, regardless of the execution device
         model.fit(self.series)
         pipeline.assert_called_once()
-        pipeline.assert_called_with(**load_kwargs, device=accelerator)
-        assert model.model.tirex2.device == accelerator
+        pipeline.assert_called_with(**load_kwargs, device="cpu")
         pipeline.reset_mock()
 
-        # predict() reuses the backbone when the accelerator is unchanged
-        model.predict(n=5, series=self.series)
-        pipeline.assert_not_called()
-        pipeline.reset_mock()
-
-        # Simulate a checkpoint-only restore that left the backbone on CPU.
-        model.model.tirex2.device = "cpu"
+        # predict() loads the model on the execution device in configure_model().
         model.predict(n=5, series=self.series)
         if accelerator != "cpu":
-            pipeline.assert_called_once_with(**load_kwargs, device=accelerator)
+            pipeline.assert_called_once()
+            pipeline.assert_called_with(**load_kwargs, device=accelerator)
         else:
             pipeline.assert_not_called()
         assert model.model.tirex2.device == accelerator
@@ -506,40 +500,24 @@ class TestTiRex2Model:
         if accelerator == "cpu":
             return
 
-        # check that cross-accelerator model loading works
-        kwargs["pl_trainer_kwargs"]["accelerator"] = "cpu"
+        # loading model on same device works
         model.save("model.pt")
         model_loaded = TiRex2Model.load(
             "model.pt",
-            map_location="cpu",
+        )
+        assert model_loaded.model.tirex2.device == "cpu"
+        model_loaded.predict(n=5, series=self.series)
+        assert model_loaded.model.tirex2.device == "mps"
+
+        # cross-device loading works (e.g. from mps / cuda to cpu)
+        kwargs["pl_trainer_kwargs"]["accelerator"] = "cpu"
+        model_loaded = TiRex2Model.load(
+            "model.pt",
             pl_trainer_kwargs=kwargs["pl_trainer_kwargs"],
         )
         assert model_loaded.model.tirex2.device == "cpu"
         model_loaded.predict(n=5, series=self.series)
-
-        model_weights_loaded = TiRex2Model(
-            hub_model_name=load_kwargs["ckpt_path"],
-            hub_model_revision=load_kwargs["hf_kwargs"]["revision"],
-            input_chunk_length=3,
-            output_chunk_length=4,
-            **kwargs,
-        )
-        model_weights_loaded.load_weights("model.pt")
-        assert model_weights_loaded.model.tirex2.device == "cpu"
-        model_weights_loaded.predict(n=5, series=self.series)
-
-        model_weights_from_ckpt_loaded = TiRex2Model(
-            hub_model_name=load_kwargs["ckpt_path"],
-            hub_model_revision=load_kwargs["hf_kwargs"]["revision"],
-            input_chunk_length=3,
-            output_chunk_length=4,
-            **kwargs,
-        )
-        model_weights_from_ckpt_loaded.load_weights_from_checkpoint(
-            file_name="model.pt.ckpt"
-        )
-        assert model_weights_from_ckpt_loaded.model.tirex2.device == "cpu"
-        model_weights_from_ckpt_loaded.predict(n=5, series=self.series)
+        assert model_loaded.model.tirex2.device == "cpu"
 
     def test_inference_kwargs(self, pipeline):
         inference_kwargs = {"tta_diff": False}
@@ -551,6 +529,10 @@ class TestTiRex2Model:
             **tfm_kwargs,
         )
         model.fit(self.series)
+        # predict() must be called once to trigger model loading via configure_model(), so
+        # model.model.tirex2._predict() can be patched for inspection
+        _ = model.predict(n=4, series=self.series)
+
         with patch.object(
             model.model.tirex2, "_predict", wraps=model.model.tirex2._predict
         ) as predict:

@@ -12,28 +12,10 @@ For detailed examples and tutorials, see:
   <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
 """
 
-"""
-Throughout this file, we use the following notation for tensor shapes:
-
-    SYMBOL: Description
-    ------------------------------------------------
-    B: batch size
-    L: input chunk length
-    H: output chunk length
-    S: output chunk shift
-    C: target components
-    X: past covariate components
-    F: future covariate components
-    N: likelihood parameters
-    Q: number of pretrained quantiles (9 for TiRex-2)
-
-"""
-
 import os
 from contextlib import nullcontext
 from typing import TYPE_CHECKING, Any
 
-import pytorch_lightning as pl
 import torch
 from tirex2 import TimeseriesType, load_model
 
@@ -73,13 +55,15 @@ class _TiRex2Module(PLForecastingModule):
         """
         # for fine-tuning, model should be trained on pre-trained quantiles
         self._enable_finetuning = kwargs.pop("enable_finetuning", False)
-        load_device: torch.device | None = kwargs.pop("load_device", None)
         super().__init__(**kwargs)
 
         self._setup_kwargs = setup_kwargs
         self._inference_kwargs = inference_kwargs
 
-        self.tirex2: TiRex2 = self._load_tirex2(load_device)
+        # Always load the model on CPU first, then move to the execution device during
+        # configure_model(). This is because Trainer is not yet set up during __init__(),
+        # so we cannot know the execution device.
+        self.tirex2: TiRex2 = self._load_tirex2(load_device=torch.device("cpu"))
 
         # Validate against the checkpoint's maximum prediction length
         self._future_len = (self.output_chunk_length or 0) + self.output_chunk_shift
@@ -93,11 +77,6 @@ class _TiRex2Module(PLForecastingModule):
             "_user_quantile_indices",
             torch.tensor([all_quantiles.index(q) for q in user_quantiles]),
         )
-        # TODO: is this needed? should not have to select anything
-        self.register_buffer(
-            "_finetuning_quantile_indices",
-            torch.tensor(list(range(len(all_quantiles)))),
-        )
 
         # during fine-tuning, train on ALL pre-trained quantiles to preserve the
         # full distribution; prediction uses only user-specified quantiles
@@ -106,17 +85,14 @@ class _TiRex2Module(PLForecastingModule):
         else:
             self._finetuning_likelihood = None
 
-    def _load_tirex2(self, load_device: torch.device | None) -> "TiRex2":
-        """Load TiRex-2 on ``load_device``, or CPU when the device is unknown."""
-        device_type = load_device.type if load_device is not None else "cpu"
+    def _load_tirex2(self, load_device: torch.device) -> "TiRex2":
+        """Load TiRex-2 on ``load_device``."""
+        device_type = load_device.type
         context = (
-            torch.cuda.device(load_device)
-            if load_device is not None and load_device.type == "cuda"
-            else nullcontext()
+            torch.cuda.device(load_device) if device_type == "cuda" else nullcontext()
         )
         with context:
             model: TiRex2 = load_model(**self._setup_kwargs, device=device_type).model
-        model.to(dtype=self.dtype)
         return model
 
     def configure_model(self) -> None:
@@ -140,62 +116,73 @@ class _TiRex2Module(PLForecastingModule):
         if self._enable_finetuning:
             self.tirex2.train(self.training)
 
-    def forward(self, x_in: PLModuleInput, *args, **kwargs) -> PLModuleOutput:
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        # Dimension notation in comments below:
+        #   B: batch size
+        #   L: input chunk length
+        #   T: output chunk length
+        #   S: output chunk shift
+        #   C: target components
+        #   X: past covariate components
+        #   F: future covariate components
+        #   Q: likelihood quantiles returned by TiRex-2 (9 pre-trained)
+        #   N: likelihood quantiles (user-specified, 1 if deterministic)
+
         # target: (B, L, C); past_covariates: (B, L, X);
-        # historic_future_covariates: (B, L, F); future_covariates: (B, H, F)
+        # historic_future_covariates: (B, L, F); future_covariates: (B, T, F)
         target = x_in.past_target
         past_covariates = x_in.past_covariates
         historic_future_covariates = x_in.historic_future_covariates
         future_covariates = x_in.future_covariates
-        B = target.shape[0]
-        S = self.output_chunk_shift
-        F = future_covariates.shape[-1] if future_covariates is not None else 0
+        batch_size = target.shape[0]
+        output_chunk_shift = self.output_chunk_shift
 
-        # Prepare future covariates (if any)
-        future = None
-        if F:
+        if historic_future_covariates is not None and future_covariates is not None:
+            n_future_covs = future_covariates.shape[-1]
             # Darts does not supply future covariates inside the output shift.
             # Mark that gap as missing, preserving alignment with target history.
-            # gap: (B, S, F) filled with NaN
-            gap = target.new_full((B, S, F), float("nan"))
-            # future: (B, L + S + H, F)
-            future = torch.cat(
+            gap = torch.full(
+                (batch_size, output_chunk_shift, n_future_covs),
+                float("nan"),
+                device=target.device,
+                dtype=target.dtype,
+            )
+            # (B, L + S + T, F)
+            future_covariates = torch.cat(
                 (historic_future_covariates, gap, future_covariates), dim=1
             )
 
-        # Prepare TiRex-2's native multivariate inputs: a list of TimeseriesType objects.
-        # Each object contains a single multivariate sample with optional past and future covariates:
-        # target: (C, L), past_covariates: (X, L), future_covariates: (F, L + S + H)
+        # TiRex-2 expects a list of multivariate samples:
+        # target: (C, L), past_covariates: (X, L), future_covariates: (F, L + S + T)
         timeseries = [
             TimeseriesType(
-                target=past.T,
+                target=target[i].T,
                 past_covariates=past_covariates[i].T
                 if past_covariates is not None
                 else None,
-                future_covariates=future[i].T if future is not None else None,
+                future_covariates=future_covariates[i].T
+                if future_covariates is not None
+                else None,
             )
-            for i, past in enumerate(target)
+            for i in range(batch_size)
         ]
 
-        # Each sample remains a joint multivariate task, independent of other
-        # samples in the batch. Native output: B tensors of shape
-        # (C, Q, H + S), with all pretrained quantiles.
+        # Each sample is an independent joint multivariate task. Native output:
+        # B tensors of shape (C, Q, S + T), with all pre-trained quantiles.
         inference_kwargs = self._inference_kwargs
         if x_in.stage is ModuleStage.TRAIN:
             inference_kwargs = {**inference_kwargs, "preserve_grad": True}
         forecasts = self.tirex2._predict(
             timeseries, prediction_length=self._future_len, **inference_kwargs
         )
-        # Stack and permute the forecasts: (B, S + H, C, Q)
+        # Stack and permute the forecasts: (B, S + T, C, Q)
         output = torch.stack(forecasts).permute(0, 3, 1, 2)
-        # Select the requested horizon: (B, H, C, Q).
-        prediction = output[:, S:]
+        # Select the requested horizon: (B, T, C, Q).
+        prediction = output[:, output_chunk_shift:]
 
         # during training (fine-tuning), output all pre-trained quantiles for loss;
         # during prediction, output only user-specified quantiles
-        if x_in.stage is ModuleStage.TRAIN:
-            prediction = prediction.index_select(-1, self._finetuning_quantile_indices)
-        else:
+        if not (x_in.stage is ModuleStage.TRAIN and self._enable_finetuning):
             prediction = prediction.index_select(-1, self._user_quantile_indices)
 
         return PLModuleOutput(prediction=prediction)
@@ -560,14 +547,9 @@ class TiRex2Model(FoundationModel):
 
         super().__init__(**kwargs)
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         return _TiRex2Module(
             setup_kwargs=self._setup_kwargs,
             inference_kwargs=self._inference_kwargs,
-            load_device=trainer.strategy.root_device,
             **self.pl_module_params,
         )

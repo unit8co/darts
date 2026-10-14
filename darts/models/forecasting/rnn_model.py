@@ -12,7 +12,6 @@ import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 
@@ -507,11 +506,7 @@ class RNNModel(DualCovariatesTorchModel):
         self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         past_target = train_sample.past_target
         future_covariates = train_sample.future_covariates
         input_dim = past_target.shape[1] + (

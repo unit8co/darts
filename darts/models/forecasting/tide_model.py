@@ -3,7 +3,6 @@ Time-series Dense Encoder (TiDE)
 --------------------------------
 """
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 
@@ -633,11 +632,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.use_layer_norm = use_layer_norm
         self.dropout = dropout
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         past_target = train_sample.past_target
         past_covariates = train_sample.past_covariates
         historic_future_covariates = train_sample.historic_future_covariates

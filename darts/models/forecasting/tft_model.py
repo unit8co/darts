@@ -5,7 +5,6 @@ Temporal Fusion Transformer (TFT)
 
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
 import torch
 from torch import nn
 from torch.nn import LSTM as _LSTM
@@ -976,11 +975,7 @@ class TFTModel(MixedCovariatesTorchModel):
         self.norm_type = norm_type
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         """
         `train_sample` contains the following tensors:
             (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,

@@ -15,7 +15,6 @@ For detailed examples and tutorials, see:
 
 import os
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -678,11 +677,7 @@ class PatchTSTFMModel(FoundationModel):
 
         super().__init__(**kwargs)
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
         return self.hf_connector.load_model(
             module_class=_PatchTSTFMModule,

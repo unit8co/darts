@@ -3,7 +3,6 @@ N-Linear
 --------
 """
 
-import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 
@@ -450,11 +449,7 @@ class NLinearModel(MixedCovariatesTorchModel):
                 ),
             )
 
-    def _create_model(
-        self,
-        train_sample: TorchTrainingSample,
-        trainer: pl.Trainer,
-    ) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         past_target = train_sample.past_target
         past_covariates = train_sample.past_covariates
         future_covariates = train_sample.future_covariates
