@@ -5,9 +5,13 @@ T0: Zero-Shot Forecasting
 T0 can be used the same way as other foundation models (e.g. Chronos2). In addition to univariate and
 multivariate series, it supports past and future covariates.
 
-The weights are published on the Hugging Face Hub at `theforecastingcompany/t0-alpha
-<https://huggingface.co/theforecastingcompany/t0-alpha>`__ and `theforecastingcompany/t0-beta
-<https://huggingface.co/theforecastingcompany/t0-beta>`__ (more checkpoints might be available in the future).
+The weights are published on the Hugging Face Hub at
+
+- `theforecastingcompany/t0-alpha <https://huggingface.co/theforecastingcompany/t0-alpha>`__
+- `theforecastingcompany/t0-beta <https://huggingface.co/theforecastingcompany/t0-beta>`__
+- `theforecastingcompany/t0-gamma <https://huggingface.co/theforecastingcompany/t0-gamma>`__
+- more checkpoints might be available in the future
+
 The repository is gated: request access on the model page and authenticate (``hf auth login`` via CLI or set
 ``HF_TOKEN``) before first use.
 
@@ -216,7 +220,7 @@ class T0Model(FoundationModel):
         output_chunk_length: int,
         output_chunk_shift: int = 0,
         likelihood: QuantileRegression | None = None,
-        hub_model_name: str = "theforecastingcompany/t0-beta",
+        hub_model_name: str = "theforecastingcompany/t0-gamma",
         hub_model_revision: str | None = None,
         local_dir: str | os.PathLike | None = None,
         **kwargs,
@@ -233,14 +237,16 @@ class T0Model(FoundationModel):
 
         - `theforecastingcompany/t0-alpha <https://huggingface.co/theforecastingcompany/t0-alpha>`_: The original
           ~100M-parameter T0 model.
-        - `theforecastingcompany/t0-beta <https://huggingface.co/theforecastingcompany/t0-beta>`_ (default): The second
+        - `theforecastingcompany/t0-beta <https://huggingface.co/theforecastingcompany/t0-beta>`_: The second
+          256M-parameter model iteration
+        - `theforecastingcompany/t0-gamma <https://huggingface.co/theforecastingcompany/t0-gamma>`_ (default): The third
           256M-parameter model iteration
 
         This model supports univariate and multivariate time series, as well as past and future covariates.
         Because T0 is variate-agnostic, past covariates are forecast jointly with the target series (and dropped
         from the output); future covariates are conditioned on but not forecast.
 
-        Using this model will automatically download and cache the pre-trained ``t0-beta`` model from HuggingFace Hub.
+        Using this model will automatically download and cache the pre-trained ``t0-gamma`` model from HuggingFace Hub.
         Alternatively, you can specify a local directory containing the model config and weights using the ``local_dir``
         parameter.
 
@@ -248,9 +254,9 @@ class T0Model(FoundationModel):
         :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
         For probabilistic forecasts, it is recommended to call :func:`predict()` with
         ``predict_likelihood_parameters=True`` or ``num_samples >> 1`` to get meaningful results. ``t0-alpha`` was
-        trained on quantile levels [0.1, 0.25, 0.5, 0.75, 0.9], ``t0-beta`` was trained on
-        [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95,
-        0.99]; other levels are interpolated, so any quantiles in the open interval (0, 1) may be requested.
+        trained on quantile levels [0.1, 0.25, 0.5, 0.75, 0.9], ``t0-beta`` and ``t0-gamma`` were trained on [0.01,
+        0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99];
+        other levels are interpolated, so any quantiles in the open interval (0, 1) may be requested.
 
         .. tip::
             You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
@@ -293,7 +299,7 @@ class T0Model(FoundationModel):
             preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
             only affects prediction output.
         hub_model_name
-            The model ID on HuggingFace Hub. Default: ``"theforecastingcompany/t0-beta"``.
+            The model ID on HuggingFace Hub. Default: ``"theforecastingcompany/t0-gamma"``.
         hub_model_revision
             The model version to use. This can be a branch name, tag name, or commit hash. Default is ``None``, which
             will use the default branch from ``hub_model_name``.
