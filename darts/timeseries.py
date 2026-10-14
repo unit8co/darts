@@ -382,7 +382,9 @@ class TimeSeries:
             if copy:
                 static_covariates = static_covariates.copy()
         elif isinstance(static_covariates, pd.Series):
-            static_covariates = static_covariates.to_frame().T
+            # a Series with mixed types (e.g. numerical and categorical covariates) has `object` dtype, and
+            # transposing it gives `object` columns; infer the actual dtype of each covariate
+            static_covariates = static_covariates.to_frame().T.infer_objects()
         else:  # None
             pass
 
