@@ -34,7 +34,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed `MinTReconciliator` and hierarchical reconciliation casting `float32` series to `float64` when using `method="mint_cov"` or transforming cross-dtype series. [#785](https://github.com/unit8co/darts/issues/785) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
+- Fixed input-output dtype preservation for all hierarchical reconciliators. [#3254](https://github.com/unit8co/darts/pull/3254) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 - Fixed `QuantileDetector` and `IQRDetector` computing NaN thresholds when the series passed to `fit()` contains missing (NaN) values. This either raised a misleading error about `low_threshold` being larger than `high_threshold`, or (with a single bound) silently flagged no anomalies at all. Missing values are now ignored when computing the quantiles. [#3251](https://github.com/unit8co/darts/pull/3251) by [Joey Tan](https://github.com/JoeyTan21).
 - Fixed classification metrics (`accuracy`, `precision`, `recall`, `f1`, `confusion_matrix`) misreading single-class probability forecasts as class labels. [#3253](https://github.com/unit8co/darts/pull/3253) by [Manas Choksi](https://github.com/choksi2212).
 - Fixed metric `ic()` (interval coverage) reporting missing (NaN) actual values as interval misses instead of NaN, which biased `mic()` low for series with missing values. [#3232](https://github.com/unit8co/darts/pull/3232) by [mayuriphad](https://github.com/mayuriphad).

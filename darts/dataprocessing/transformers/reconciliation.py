@@ -47,7 +47,7 @@ def _get_summation_matrix(series: TimeSeries):
     leaves_seq = series.bottom_level_components
     m = len(leaves_seq)
     n = len(components_seq)
-    S = np.zeros((n, m))
+    S = np.zeros((n, m), dtype=series.dtype)
 
     components_indexes = {comp: i for i, comp in enumerate(components_seq)}
     leaves_indexes = {leaf: i for i, leaf in enumerate(leaves_seq)}
@@ -65,7 +65,7 @@ def _get_summation_matrix(series: TimeSeries):
         leaf_idx = leaves_indexes[leaf]
         increment(leaf, leaf_idx)
 
-    return S.astype(series.dtype)
+    return S
 
 
 def _reconcile_from_S_and_G(

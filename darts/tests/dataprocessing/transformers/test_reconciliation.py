@@ -232,36 +232,33 @@ class TestReconciliation:
         assert transformed.dtype == dt_source
 
     @pytest.mark.parametrize(
-        "dt_source, method",
+        "dtype, config",
         param_product(
-            ["float32", "float64"],
-            ["ols", "wls_struct", "wls_var", "wls_val", "mint_cov"],
+            ["float64", "float32"],
+            [
+                (BottomUpReconciliator(), "series"),
+                (TopDownReconciliator(), "series"),
+                (MinTReconciliator("ols"), "series"),
+                (MinTReconciliator("wls_struct"), "series"),
+                (MinTReconciliator("wls_val"), "series"),
+                (MinTReconciliator("wls_var"), "residuals"),
+                (MinTReconciliator("mint_cov"), "residuals"),
+            ],
         ),
     )
-    def test_mint_dtype_conversion(self, dt_source, method):
-        series = self.series.astype(dt_source)
-        residuals = self.residuals.astype(dt_source)
-        fit_series = residuals if method in ["wls_var", "mint_cov"] else series
-        transformer = MinTReconciliator(method=method).fit(fit_series)
-        transformed = transformer.transform(series)
-        assert transformed.dtype == dt_source
+    def test_reconciliation_dtype_preservation(self, dtype, config):
+        recon, series = config
+        series_fit = getattr(self, series).astype(dtype)
+        if isinstance(recon, FittableDataTransformer):
+            recon.fit(series_fit)
 
-    @pytest.mark.parametrize(
-        "dt_fit, dt_transform",
-        [("float64", "float32"), ("float32", "float64")],
-    )
-    def test_reconciliation_cross_dtype_conversion(self, dt_fit, dt_transform):
-        series_fit = self.series.astype(dt_fit)
-        residuals_fit = self.residuals.astype(dt_fit)
-        series_transform = self.series.astype(dt_transform)
+        transformed = recon.transform(series_fit)
+        assert transformed.dtype == dtype
 
-        for recon in [
-            TopDownReconciliator().fit(series_fit),
-            MinTReconciliator("ols").fit(series_fit),
-            MinTReconciliator("mint_cov").fit(residuals_fit),
-        ]:
-            transformed = recon.transform(series_transform)
-            assert transformed.dtype == dt_transform
+        dtype_other = "float32" if dtype == "float64" else "float64"
+        series_transform = self.series.astype(dtype_other)
+        transformed = recon.transform(series_transform)
+        assert transformed.dtype == dtype_other
 
 
 class TestReconciliationInputValidation:
