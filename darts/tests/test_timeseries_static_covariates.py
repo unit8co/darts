@@ -1067,17 +1067,20 @@ class TestTimeSeriesStaticCovariate:
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
         assert isinstance(ts.static_covariates.dtypes["cat"], object)
 
-    def test_non_numerical_static_covariates_from_series(self):
+    @pytest.mark.parametrize("dtype", ["float16", "float32", "float64"])
+    def test_non_numerical_static_covariates_from_series(self, dtype):
         # a Series with mixed types has `object` dtype
         static_covs = pd.Series({"cat": "a", "num": 1.0})
         assert static_covs.dtype == object
 
-        ts = linear_timeseries(length=10).with_static_covariates(static_covs)
+        ts = linear_timeseries(length=10, dtype=dtype).with_static_covariates(
+            static_covs
+        )
         # each covariate gets its own dtype; numerical ones are cast to the series dtype
-        assert ts.static_covariates.dtypes["num"] == ts.dtype == "float64"
+        assert ts.static_covariates.dtypes["num"] == ts.dtype == dtype
         assert not pd.api.types.is_numeric_dtype(ts.static_covariates.dtypes["cat"])
 
-        ts = ts.astype(np.float32)
+        ts = ts.astype("float32")
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
 
         # the numerical covariate is scaled, not encoded as a category
