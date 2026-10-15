@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `ForecastingModel.backtest()` ignoring `val_length` when generating historical forecasts.
+
 **Dependencies**
 
 ### For developers of the library:
