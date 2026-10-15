@@ -25,6 +25,9 @@ from darts.utils._lazy import setup_lazy_imports
 
 if TYPE_CHECKING:
     from darts.explainability.explainability_result import (
+        NBEATSExplainabilityResult as NBEATSExplainabilityResult,
+    )
+    from darts.explainability.explainability_result import (
         ShapExplainabilityResult as ShapExplainabilityResult,
     )
     from darts.explainability.explainability_result import (
@@ -32,9 +35,6 @@ if TYPE_CHECKING:
     )
     from darts.explainability.explainability_result import (
         TFTExplainabilityResult as TFTExplainabilityResult,
-    )
-    from darts.explainability.explainability_result import (
-        NBEATSExplainabilityResult as NBEATSExplainabilityResult,
     )
     from darts.explainability.nbeats_explainer import (
         NBEATSExplainer as NBEATSExplainer,
