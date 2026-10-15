@@ -14,6 +14,8 @@ Model-Specific Explainers
 -------------------------
 - :class:`~darts.explainability.tft_explainer.TFTExplainer`: Explainer for
   :class:`TFTModel <darts.models.forecasting.tft_model.TFTModel>`.
+- :class:`~darts.explainability.nbeats_explainer.NBEATSExplainer`: Explainer for the interpretable
+  :class:`NBEATSModel <darts.models.forecasting.nbeats.NBEATSModel>` (``generic_architecture=False``).
 
 """
 
@@ -31,6 +33,12 @@ if TYPE_CHECKING:
     from darts.explainability.explainability_result import (
         TFTExplainabilityResult as TFTExplainabilityResult,
     )
+    from darts.explainability.explainability_result import (
+        NBEATSExplainabilityResult as NBEATSExplainabilityResult,
+    )
+    from darts.explainability.nbeats_explainer import (
+        NBEATSExplainer as NBEATSExplainer,
+    )
     from darts.explainability.shap_explainer import ShapExplainer as ShapExplainer
     from darts.explainability.tft_explainer import TFTExplainer as TFTExplainer
 
@@ -41,6 +49,11 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
         None,
     ),
     "TFTExplainabilityResult": ("darts.explainability.explainability_result", None),
+    "NBEATSExplainabilityResult": (
+        "darts.explainability.explainability_result",
+        None,
+    ),
+    "NBEATSExplainer": ("darts.explainability.nbeats_explainer", "(Py)Torch"),
     "ShapExplainer": ("darts.explainability.shap_explainer", None),
     "TFTExplainer": ("darts.explainability.tft_explainer", "(Py)Torch"),
 }

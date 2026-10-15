@@ -514,9 +514,11 @@ class _NBEATSModule(PLForecastingModule):
             dtype=x.dtype,
         )
 
+        stack_forecasts = []
         for stack in self.stacks_list:
             # compute stack output
             stack_residual, stack_forecast = stack(x)
+            stack_forecasts.append(stack_forecast)
 
             # add stack forecast to final output
             y = y + stack_forecast
@@ -531,6 +533,18 @@ class _NBEATSModule(PLForecastingModule):
         y = y.view(
             y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
         )[:, :, : self.output_dim, :]
+
+        # keep the per-stack contributions of the last inference batch for the `NBEATSExplainer`
+        if not self.training:
+            self._stack_forecasts = [
+                sf.detach().view(
+                    sf.shape[0],
+                    self.output_chunk_length,
+                    self.input_dim,
+                    self.nr_params,
+                )[:, :, : self.output_dim, :]
+                for sf in stack_forecasts
+            ]
 
         return PLModuleOutput(prediction=y)
 
