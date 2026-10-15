@@ -399,7 +399,7 @@ Now forecast using Darts' `run_onnx_prediction()` which mirrors `TorchForecastin
 
 ```python
 import onnxruntime as ort
-from darts.utils.onnx.inference import OnnxModelSpec, run_onnx_prediction
+from darts.utils.onnx import run_onnx_prediction
 
 session = ort.InferenceSession(onnx_filename)
 
@@ -426,8 +426,7 @@ onnx_inputs = prepare_onnx_inputs(
     past_covariates=ts_past,
     future_covariates=ts_future,
 )
-ort_out = session.run(spec.output_names, onnx_inputs)
-point_forecast = extract_point_forecast(ort_out)  # shape (time, components)
+forecast = session.run(spec.output_names, onnx_inputs)
 ```
 
 Raw ONNX output tensors (NumPy arrays) have shape `(batch, output_chunk_length, n_components, n_likelihood_params)`. Models trained with a `likelihood` export those raw parameters (sampling is not in the graph).
