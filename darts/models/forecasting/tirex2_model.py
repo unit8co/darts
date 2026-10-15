@@ -1,6 +1,6 @@
 """
 TiRex-2: Zero-Shot Multivariate Forecasting
------------------------------------------
+-------------------------------------------
 
 TiRex-2 supports joint multivariate forecasting with past and future covariates.
 
