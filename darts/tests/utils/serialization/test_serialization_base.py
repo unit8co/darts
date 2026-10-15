@@ -115,6 +115,41 @@ class TestSafeGlobals:
         pytest.importorskip("torch")
         assert is_allowed_global("torch.Size")
 
+    @pytest.mark.parametrize("name", ["MultiOutputRegressor", "MultiOutputClassifier"])
+    def test_allows_darts_multioutput_wrappers(self, name):
+        """The wrappers subclass their sklearn counterparts, not a Darts base.
+
+        A fitted `CatBoostModel`, `LightGBMModel` or `XGBModel` on a
+        multivariate series stores one of them, so refusing them made such a
+        model impossible to load.
+        """
+        pytest.importorskip("sklearn")
+
+        assert is_allowed_global(f"darts.utils.multioutput.{name}")
+
+    def test_rejects_non_estimator_under_multioutput_prefix(self):
+        """The fence still requires the sklearn base, not just the prefix."""
+        from darts.utils.serialization.base import _is_fenced_allowed_subclass
+
+        class _NotAnEstimator:
+            pass
+
+        assert not _is_fenced_allowed_subclass(
+            "darts.utils.multioutput._NotAnEstimator", _NotAnEstimator
+        )
+
+    def test_rejects_estimator_under_sibling_module_prefix(self):
+        """The prefix is a module path, so a name-sharing sibling does not pass."""
+        sklearn = pytest.importorskip("sklearn")
+        from darts.utils.serialization.base import _is_fenced_allowed_subclass
+
+        class _Estimator(sklearn.base.BaseEstimator):
+            pass
+
+        assert not _is_fenced_allowed_subclass(
+            "darts.utils.multioutput_other._Estimator", _Estimator
+        )
+
 
 class TestRestrictedUnpickler:
     def test_find_class_skips_import_for_unknown_qualname(self, monkeypatch):

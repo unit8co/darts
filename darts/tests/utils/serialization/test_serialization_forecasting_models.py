@@ -457,6 +457,14 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
             "cls": "CatBoostModel",
             "kwargs": CB_KW,
         })
+        # a multivariate target wraps the estimator in Darts'
+        # `MultiOutputRegressor`, which the univariate case never stores
+        specs.append({
+            "id": "catboost_multivariate",
+            "cls": "CatBoostModel",
+            "kwargs": CB_KW,
+            "series_key": "mv",
+        })
 
     if not TORCH_AVAILABLE:
         return specs
