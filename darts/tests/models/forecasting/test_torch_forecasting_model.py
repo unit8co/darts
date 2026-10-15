@@ -1195,7 +1195,7 @@ class TestTorchForecastingModel:
 
         model_summary_kwargs = {
             "pl_trainer_kwargs": dict(
-                {"enable_model_sumamry": False}, **tfm_kwargs["pl_trainer_kwargs"]
+                {"enable_model_summary": False}, **tfm_kwargs["pl_trainer_kwargs"]
             )
         }
         # different pl_trainer_kwargs

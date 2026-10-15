@@ -29,6 +29,7 @@ from darts.tests.conftest import (
     PROPHET_AVAILABLE,
     SF_AVAILABLE,
     T0_AVAILABLE,
+    TIREX2_AVAILABLE,
     TIREX_AVAILABLE,
     TORCH_AVAILABLE,
     XGB_AVAILABLE,
@@ -591,7 +592,9 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
         HF_HUB_DOWNLOAD_PATCH_TARGET,
         PATCHTST_FM_TINY_DIR,
         TIMESFM3_TINY_DIR,
+        TIREX2_LOAD_MODEL_PATCH_TARGET,
         TIREX_LOAD_MODEL_PATCH_TARGET,
+        TiRex2Stub,
         TiRexStub,
         mock_hf_hub_download,
         timesfm2p5_tiny_context,
@@ -627,6 +630,13 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
             "TiRexModel",
             {"accept_license": True},
             lambda: patch(TIREX_LOAD_MODEL_PATCH_TARGET, return_value=TiRexStub()),
+        ))
+    if TIREX2_AVAILABLE:
+        foundation_entries.append((
+            "tirex2",
+            "TiRex2Model",
+            {},
+            lambda: patch(TIREX2_LOAD_MODEL_PATCH_TARGET, return_value=TiRex2Stub()),
         ))
     if T0_AVAILABLE:
         foundation_entries.append((

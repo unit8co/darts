@@ -41,6 +41,9 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         ``model_params``) to load the model configuration inside :func:`__init__()` and to load the model
         weights inside :func:`_create_model()`.
 
+        Wrappers around optional third-party foundation packages may expose ``setup_kwargs`` and
+        ``inference_kwargs`` to forward extra arguments to backend initialization and internal
+        inference, respectively. These are not passed to Darts :func:`predict`.
 
         .. tip::
             You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
