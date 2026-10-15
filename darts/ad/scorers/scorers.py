@@ -948,8 +948,6 @@ class NLLScorer(AnomalyScorer):
             The values of a deterministic time series (number of samples per timestamp must be equal to 1)
         pred_vals
             The values of a probabilistic time series (number of samples per timestamp must be higher than 1)
-        time_index
-            The time index intersection between `series` and `pred_series`.
 
         Returns
         -------
