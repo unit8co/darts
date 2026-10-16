@@ -301,6 +301,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.n_epochs = n_epochs
         self.batch_size: int = batch_size
 
+        # whether the last `fit()` call got a `val_series` reaching beyond `training_series`;
+        # used to warn when `predict()` falls back to that training series
+        self._fit_used_val_series: bool = False
+
         # get model name and work dir
         if model_name is None:
             current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
@@ -1077,7 +1081,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates=seq2series(future_covariates),
             verbose=verbose,
         )
-        return self.fit_from_dataset(**params)
+        self.fit_from_dataset(**params)
+        # `predict()` without `series` falls back to `training_series`. Only warn about it
+        # if a `val_series` reaches beyond the training series, because only then does the
+        # fallback skip part of the history that the user has already seen
+        self._fit_used_val_series = False
+        if self.training_series is not None and val_series is not None:
+            val_series_seq = (
+                val_series if isinstance(val_series, list | tuple) else [val_series]
+            )
+            try:
+                self._fit_used_val_series = any(
+                    isinstance(val, TimeSeries)
+                    and val.end_time() > self.training_series.end_time()
+                    for val in val_series_seq
+                )
+            except TypeError:
+                # non-comparable time indexes -> keep the previous behaviour (no warning)
+                self._fit_used_val_series = False
+        return self
 
     def _setup_for_fit_from_dataset(
         self,
@@ -1802,7 +1824,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         -------
         TimeSeriesLike
             One or several time series containing the forecasts of ``series``, or the forecast of the training series
-            if ``series`` is not specified and the model has been trained on a single series.
+            if ``series`` is not specified and the model has been trained on a single series. If the last ``fit()``
+            call was given a ``val_series`` that reaches beyond the training series, a warning is emitted in that
+            case: the training series does not include the validation part, so the forecast starts before the end
+            of ``val_series``.
         """
         called_with_single_series = (
             get_series_seq_type(series if series is not None else self.training_series)
@@ -1860,6 +1885,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                         "from not having fit the model yet, or from loading a model saved with "
                         "`clean=True`."
                     ),
+                )
+            if getattr(self, "_fit_used_val_series", False):
+                logger.warning(
+                    "`predict()` was called without `series`, so the forecast is generated from the "
+                    "training series that was passed to the last `fit()` call. That training series "
+                    f"ends at {self.training_series.end_time()} and does not include the `val_series` "
+                    "used for fitting, so the forecast starts at "
+                    f"{self.training_series.end_time() + self.training_series.freq} and overlaps the "
+                    "validation period. Pass `series=<series that includes the validation part>` to "
+                    "`predict()` to start the forecast after `val_series` instead."
                 )
             series = self.training_series
 

@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed a silent fallback of `predict()` to `training_series` when the last `fit()` was called with a `val_series`. Calling `predict()` without `series` still forecasts from the training series (behaviour unchanged), but now emits a warning explaining that the validation part is not included in the forecast. [#3278](https://github.com/unit8co/darts/issues/3278) by [XXXXXQ.](https://github.com/XXXXXQ-0206).
+
 **Dependencies**
 
 ### For developers of the library:
