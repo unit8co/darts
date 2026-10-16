@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed safe-loading for multi-output `SKLearnModel` where Darts' `MultiOutputMixin` was not recognized as a safe-global. [#3261](https://github.com/unit8co/darts/pull/3261) by [Miral Amin](https://github.com/aminmiral).
+
 **Dependencies**
 
 ### For developers of the library:
