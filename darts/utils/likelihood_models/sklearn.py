@@ -148,7 +148,7 @@ class GaussianLikelihood(SKLearnLikelihood):
         # get samples (n_components * output_chunk_length, n_series * n_samples)
         samples = np.random.normal(
             model_output[:, :, 0],  # mean
-            model_output[:, :, 1],  # variance
+            np.sqrt(model_output[:, :, 1]),  # variance -> standard deviation
         )
         # reshape to (n_series * n_samples, n_components * output_chunk_length)
         samples = samples.transpose()

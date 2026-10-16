@@ -5,7 +5,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.48.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.48.1...master)
 
 ### For users of the library:
 
@@ -15,14 +15,23 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed safe-loading for multi-output `SKLearnModel` where Darts' `MultiOutputMixin` was not recognized as a safe-global. [#3261](https://github.com/unit8co/darts/pull/3261) by [Miral Amin](https://github.com/aminmiral).
-- Fixed `ForecastingModel.backtest()` ignoring `val_length` when no `historical_forecasts` are passed. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader) and [#3264](https://github.com/unit8co/darts/pull/3264) by [Nathan Chandrasekar](https://github.com/vera-rubin).
-- Fixed `NegativeBinomialLikelihood` returning the distribution parameters in the wrong order with `predict_likelihood_parameters=True` on multivariate series; parameters are now grouped by component, as with all other likelihood models. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
-- 🔴 Fixed `NegativeBinomialLikelihood` mapping the network outputs to a distribution whose mean was not the predicted mean `mu`. The model now outputs the mean `mu` and dispersion `alpha` (variance `mu + alpha * mu**2`) as intended. Models trained with this likelihood in earlier versions will produce different forecasts and should be retrained. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
-
 **Dependencies**
 
 ### For developers of the library:
+
+## [0.48.1](https://github.com/unit8co/darts/tree/0.48.1) (2026-10-16)
+
+### For users of the library:
+
+**Fixed**
+
+- Fixed `NegativeBinomialLikelihood` returning the distribution parameters in the wrong order with `predict_likelihood_parameters=True` on multivariate series; parameters are now grouped by component, as with all other likelihood models. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
+- 🔴 Fixed `NegativeBinomialLikelihood` mapping the network outputs to a distribution whose mean was not the predicted mean `mu`. The model now outputs the mean `mu` and dispersion `alpha` (variance `mu + alpha * mu**2`) as intended. Models trained with this likelihood in earlier versions will produce different forecasts and should be retrained. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
+- Fixed a bug when generating probabilistic forecasting (num_samples > 1) with `CatBoostModel` that uses a "gaussian" likelihood. The samples where drawn from `numpy.random.normal` using the variance as scale instead of the standard deviation. Prediction intervals should now be narrower. [#3272](https://github.com/unit8co/darts/pull/3272) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed `ForecastingModel.backtest()` ignoring `val_length` when no `historical_forecasts` are passed. [#3264](https://github.com/unit8co/darts/pull/3264) by [Nathan Chandrasekar](https://github.com/vera-rubin).
+- Fixed a bug in `TimesFM3Model` which prevented running the model on float64 precision. [#3272](https://github.com/unit8co/darts/pull/3272) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed safe-loading for multi-output `SKLearnModel` where Darts' `MultiOutputMixin` was not recognized as a safe-global. [#3261](https://github.com/unit8co/darts/pull/3261) by [Miral Amin](https://github.com/aminmiral).
+- Fixed safe-loading for `pandas<3.0.0` where `pandas.DataFrame` and `Series` were not recognized as safe-globals. [#3272](https://github.com/unit8co/darts/pull/3272) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.48.0](https://github.com/unit8co/darts/tree/0.48.0) (2026-10-15)
 
