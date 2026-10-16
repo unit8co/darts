@@ -2163,7 +2163,7 @@ class _ClassifierMixin:
             num_components = len(classes) // self._output_chunk_length
 
             # classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ..]
-            for i in range(self._output_chunk_length):
+            for i in range(num_components):
                 if any(
                     not np.array_equal(classes[i], estimator_classes)
                     for estimator_classes in classes[i::num_components]
