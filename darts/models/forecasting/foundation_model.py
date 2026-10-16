@@ -11,6 +11,7 @@ This file contains several abstract classes:
 from abc import ABC
 
 from darts.logging import get_logger
+from darts.models.components.huggingface_connector import HuggingFaceConnector
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import _parse_input_chunk_length
 
@@ -35,10 +36,14 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         When subclassing this class, please make sure to perform necessary parameter validation and then call
         super().__init__(**kwargs). Also, please implement the abstract method :func:`_create_model()`.
 
-        If the model requires downloading configuration files and model weights from HuggingFace, please
-        instantiate a :class:`HuggingFaceConnector` and use its methods to load the model configuration
-        inside :func:`__init__()` and to load the model weights inside :func:`_create_model()`.
+        If the model requires downloading configuration files and model weights from HuggingFace, use
+        :attr:`hf_connector` (built from ``hub_model_name``, ``hub_model_revision``, and ``local_dir`` in
+        ``model_params``) to load the model configuration inside :func:`__init__()` and to load the model
+        weights inside :func:`_create_model()`.
 
+        Wrappers around optional third-party foundation packages may expose ``setup_kwargs`` and
+        ``inference_kwargs`` to forward extra arguments to backend initialization and internal
+        inference, respectively. These are not passed to Darts :func:`predict`.
 
         .. tip::
             You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
@@ -206,6 +211,16 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             self.pl_module_params["use_reversible_instance_norm"] = (
                 use_reversible_instance_norm
             )
+
+    @property
+    def hf_connector(self) -> HuggingFaceConnector:
+        """Hub loader reconstructed from ``model_params`` (not pickled on save)."""
+        params = self.model_params
+        return HuggingFaceConnector(
+            model_name=params["hub_model_name"],
+            model_revision=params.get("hub_model_revision"),
+            local_dir=params.get("local_dir"),
+        )
 
     @property
     def _ckpt_skipped_params(self) -> list[str]:

@@ -110,7 +110,9 @@ class TestOptuna:
 
             # reload best model over course of training
             model = TCNModel.load_from_checkpoint(
-                model_name="tcn_model", work_dir=os.getcwd()
+                model_name="tcn_model",
+                work_dir=os.getcwd(),
+                trusted=True,
             )
 
             # Evaluate how good it is on the validation set, using sMAPE

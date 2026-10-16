@@ -611,8 +611,8 @@ class Chronos2Model(FoundationModel):
         By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
         forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
         ``likelihood`` parameter. The quantiles used must be a subset of those used during Chronos-2 pre-training, see
-        below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
-        or ``num_samples >> 1`` to get meaningful results.
+        below for details. For probabilistic forecasts, it is recommended to call :func:`predict()` with
+        ``predict_likelihood_parameters=True`` or ``num_samples >> 1`` to get meaningful results.
 
         .. tip::
             You can perform full or partial fine-tuning of the model by setting the ``enable_finetuning`` parameter.
@@ -914,7 +914,6 @@ class Chronos2Model(FoundationModel):
                     ),
                 )
 
-        self.hf_connector = hf_connector
         super().__init__(**kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:

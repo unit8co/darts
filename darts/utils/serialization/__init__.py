@@ -2,7 +2,19 @@
 Model Serialization Utilities
 -----------------------------
 
-Persistence helpers for Darts models. Torch-specific safe checkpoint loading lives in
-:mod:`darts.utils.serialization.torch`; shared torch-free helpers in
-:mod:`darts.utils.serialization.base`.
+Helpers for Darts model loading.
 """
+
+from darts.utils.serialization.registry import (
+    add_safe_globals,
+    clear_safe_globals,
+    get_safe_globals,
+    safe_globals,
+)
+
+__all__ = [
+    "add_safe_globals",
+    "clear_safe_globals",
+    "get_safe_globals",
+    "safe_globals",
+]

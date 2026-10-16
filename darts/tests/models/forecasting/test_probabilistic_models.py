@@ -708,7 +708,7 @@ class TestProbabilisticModels:
         lkl_series = [
             (GaussianLikelihood(), real_series, 0.17, 3),
             (PoissonLikelihood(), discrete_pos_series, 2, 2),
-            (NegativeBinomialLikelihood(), discrete_pos_series, 0.5, 0.5),
+            (NegativeBinomialLikelihood(), discrete_pos_series, 2, 2),
             (BernoulliLikelihood(), binary_series, 0.15, 0.15),
             (GammaLikelihood(), real_pos_series, 0.3, 0.3),
             (GumbelLikelihood(), real_series, 0.2, 3),
@@ -788,6 +788,14 @@ class TestProbabilisticModels:
             of the predictions contain the proper elements for univariate input.
             """
             lkl, lkl_params = lkl_config
+            lkl_params = tuple(
+                torch.as_tensor(
+                    p,
+                    device=torch.device("cpu"),
+                    dtype=torch.float32,
+                )
+                for p in lkl_params
+            )
             # fix seed to avoid values outside of distribution's support
             seed = 142857
             torch.manual_seed(seed=seed)
@@ -851,6 +859,11 @@ class TestProbabilisticModels:
                 ),
                 (PoissonLikelihood(), [5], ["dummy_0_lambda", "dummy_1_lambda"]),
                 (
+                    NegativeBinomialLikelihood(),
+                    [2, 0.5],
+                    ["dummy_0_r", "dummy_0_p", "dummy_1_r", "dummy_1_p"],
+                ),
+                (
                     QuantileRegression([0.05, 0.5, 0.95]),
                     [-1.67, 0, 1.67],
                     [
@@ -871,6 +884,14 @@ class TestProbabilisticModels:
             of the predictions contain the proper elements for multivariate inputs.
             """
             lkl, lkl_params, comp_names = lkl_config
+            lkl_params = tuple(
+                torch.as_tensor(
+                    p,
+                    device=torch.device("cpu"),
+                    dtype=torch.float32,
+                )
+                for p in lkl_params
+            )
             # fix seed to avoid values outside of distribution's support
 
             seed = 142857

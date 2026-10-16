@@ -50,15 +50,15 @@ class _TiRexModule(PLForecastingModule):
 
     def __init__(
         self,
-        tirex_kwargs: dict[str, Any],
+        setup_kwargs: dict[str, Any],
         all_quantiles: tuple[float, ...],
         enable_finetuning: bool | dict = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
 
-        tirex_kwargs["device"] = str(self.device)
-        self.tirex: TiRexZero = load_model(**tirex_kwargs)
+        setup_kwargs["device"] = str(self.device)
+        self.tirex: TiRexZero = load_model(**setup_kwargs)
 
         self.future_len = (self.output_chunk_length or 0) + self.output_chunk_shift
         # bool(dict) is True for a non-empty dict; _setup_finetuning() handles the actual
@@ -161,11 +161,16 @@ class TiRexModel(FoundationModel):
         hub_model_name: str = "NX-AI/TiRex",
         hub_model_revision: str | None = None,
         local_dir: str | os.PathLike | None = None,
-        tirex_kwargs: dict[str, Any] | None = None,
+        setup_kwargs: dict[str, Any] | None = None,
         **kwargs,
     ):
         """
         TiRex foundation model for zero-shot time series forecasting.
+
+        .. tip::
+            TiRex-2 extends TiRex with joint multivariate and covariate capabilities and achieves better performance
+            on public benchmarks. It is available in Darts as
+            :class:`~darts.models.forecasting.tirex2_model.TiRex2Model`. We recommend using TiRex-2 over TiRex.
 
         This is a Darts wrapper around the TiRex model introduced in Auer et al. (2025) [1]_. The implementation
         delegates all forecasting logic and weight loading to the optional `tirex-ts
@@ -175,12 +180,14 @@ class TiRexModel(FoundationModel):
         TiRex is a pre-trained foundation model designed for zero-shot forecasting across both short and long horizons.
 
         This model supports either univariate or multivariate time series, but does not support covariates.
-        For multivariate time series, the model is applied independently to each component.
+        For multivariate time series, the model is applied independently to each component. For joint multivariate
+        forecasting with past and future covariates, use :class:`~darts.models.forecasting.tirex2_model.TiRex2Model`
+        (TiRex-2).
 
         By default, the model is deterministic (median forecast only). To enable probabilistic forecasts, pass a
         :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood`` parameter.
-        It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True`` or ``num_samples >> 1``
-        to get meaningful results.
+        For probabilistic forecasts, it is recommended to call :func:`predict()` with
+        ``predict_likelihood_parameters=True`` or ``num_samples >> 1`` to get meaningful results.
 
         For more details on the TiRex model, see the original paper [1]_, the `TiRex base repo
         <https://github.com/NX-AI/tirex>`_, `model card <https://huggingface.co/NX-AI/TiRex>`_, and `docs
@@ -189,12 +196,16 @@ class TiRexModel(FoundationModel):
         .. note::
             TiRex is distributed under the `NXAI Community License <https://github.com/NX-AI/tirex/blob/main/LICENSE>`_.
             You must explicitly acknowledge this license by passing ``accept_license=True`` when constructing the model.
+
         .. note::
-            Partial fine-tuning is supported via
-            ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``. Fine-tuning requires
-            ``tirex_kwargs={"backend": "torch"}``; only the last sLSTM blocks and the output head are gradient-safe
-            (see notebook for recommended configurations). Full fine-tuning (``enable_finetuning=True``) is
-            **not supported** — backpropagation through the early sLSTM blocks produces NaN gradients.
+            TiRex supports partial fine-tuning of the last sLSTM blocks and the output head. To enable it, set
+            ``setup_kwargs={"backend": "torch"}`` and select the layers to unfreeze with
+            ``enable_finetuning={"unfreeze": ["tirex.output_patch_embedding*", ...]}``.
+
+            Full fine-tuning (``enable_finetuning=True``) is **not supported** because backpropagation through
+            the early sLSTM blocks produces NaN gradients. See the `Fine-Tuning Examples
+            <https://unit8co.github.io/darts/examples/27-Torch-and-Foundation-Model-Fine-Tuning-examples.html>`__
+            notebook for more details.
 
         Parameters
         ----------
@@ -239,8 +250,9 @@ class TiRexModel(FoundationModel):
             model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
             use a cache directory managed by ``huggingface_hub`` instead. Note that this is different from the
             ``work_dir`` parameter used for saving model checkpoints during fine-tuning.
-        tirex_kwargs
-            Additional keyword arguments forwarded to ``tirex.load_model()``.
+        setup_kwargs
+            Additional keyword arguments forwarded to ``tirex.load_model()`` when the backend is
+            initialized. Not passed to Darts :func:`predict`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -464,12 +476,12 @@ class TiRexModel(FoundationModel):
                 ),
             )
 
-        tirex_kwargs = tirex_kwargs or {}
-        if "path" in tirex_kwargs:
+        setup_kwargs = setup_kwargs or {}
+        if "path" in setup_kwargs:
             raise_log(
                 ValueError(
                     "The `path` argument for loading the TiRex model should be passed via `hub_model_name`,"
-                    "not `tirex_kwargs`."
+                    "not `setup_kwargs`."
                 ),
             )
 
@@ -489,12 +501,12 @@ class TiRexModel(FoundationModel):
                 else {}
             ),
             **({"local_dir": local_dir} if local_dir is not None else {}),
-            **(tirex_kwargs.get("hf_kwargs", {})),
+            **(setup_kwargs.get("hf_kwargs", {})),
         }
-        self.tirex_kwargs = {
+        self._setup_kwargs = {
             "path": hub_model_name,
             **({"hf_kwargs": hf_kwargs} if hf_kwargs else {}),
-            **tirex_kwargs,
+            **setup_kwargs,
         }
 
     @property
@@ -510,7 +522,7 @@ class TiRexModel(FoundationModel):
         # enable_finetuning is injected into pl_module_params by the base class;
         # _TiRexModule accepts it as an explicit parameter and converts dict form to bool
         return _TiRexModule(
-            tirex_kwargs=self.tirex_kwargs,
+            setup_kwargs=self._setup_kwargs,
             all_quantiles=self._DEFAULT_QUANTILES,
             **pl_module_params,
         )

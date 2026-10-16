@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -110,43 +110,50 @@ class TestProphet:
                 )
 
     def test_prophet_model_without_stdout_suppression(self):
-        model = Prophet(suppress_stdout_stderror=False)
-        model._execute_and_suppress_output = Mock(return_value=True)
-        model._model_builder = Mock(return_value=Mock(fit=Mock(return_value=True)))
+        prophet_instance = Mock(fit=Mock(return_value=True))
         df = pd.DataFrame({
             "ds": pd.date_range(start="2022-01-01", periods=30, freq="D"),
             "y": np.linspace(0, 10, 30),
         })
         ts = TimeSeries.from_dataframe(df, time_col="ds", value_cols="y")
-        model.fit(ts)
 
-        (
-            model._execute_and_suppress_output.assert_not_called(),
-            "Suppression should not be called",
-        )
-        model.model.fit.assert_called_once(), "Model should still be fitted"
+        with (
+            patch(
+                "darts.models.forecasting.prophet_model.prophet.Prophet",
+                return_value=prophet_instance,
+            ),
+            patch(
+                "darts.models.forecasting.prophet_model.execute_and_suppress_output",
+            ) as mock_suppress,
+        ):
+            model = Prophet(suppress_stdout_stderror=False)
+            model.fit(ts)
+
+        mock_suppress.assert_not_called()
+        prophet_instance.fit.assert_called_once()
 
     def test_prophet_model_with_stdout_suppression(self):
-        model = Prophet(suppress_stdout_stderror=True)
-        model._execute_and_suppress_output = Mock(return_value=True)
-        model._model_builder = Mock(return_value=Mock(fit=Mock(return_value=True)))
+        prophet_instance = Mock(fit=Mock(return_value=True))
         df = pd.DataFrame({
             "ds": pd.date_range(start="2022-01-01", periods=30, freq="D"),
             "y": np.linspace(0, 10, 30),
         })
         ts = TimeSeries.from_dataframe(df, time_col="ds", value_cols="y")
-        model.fit(ts)
 
-        (
-            model._execute_and_suppress_output.assert_called_once(),
-            "Suppression should be called once",
-        )
+        with (
+            patch(
+                "darts.models.forecasting.prophet_model.prophet.Prophet",
+                return_value=prophet_instance,
+            ),
+            patch(
+                "darts.models.forecasting.prophet_model.execute_and_suppress_output",
+            ) as mock_suppress,
+        ):
+            model = Prophet(suppress_stdout_stderror=True)
+            model.fit(ts)
 
-    def test_prophet_model_default_with_prophet_constructor(self):
-        from prophet import Prophet as FBProphet
-
-        model = Prophet()
-        assert model._model_builder == FBProphet, "model should use Facebook Prophet"
+        mock_suppress.assert_called_once()
+        assert mock_suppress.call_args[0][0] is prophet_instance.fit
 
     def test_prophet_model_with_logistic_growth(self):
         model = Prophet(growth="logistic", cap=1)

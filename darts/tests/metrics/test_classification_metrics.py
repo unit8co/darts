@@ -333,6 +333,67 @@ class TestClassificationMetrics:
             ])
         )
 
+    @pytest.mark.parametrize(
+        "metric,score_expected",
+        [
+            (metrics.accuracy, 1.0),
+            (metrics.recall, 1.0),
+            (metrics.precision, 1.0),
+            (metrics.f1, 1.0),
+            (metrics.confusion_matrix, 2.0),
+        ],
+    )
+    def test_single_class_probability_forecasts_are_decoded(
+        self, metric, score_expected
+    ):
+        """A probability forecast where every component only has a single class has the same
+        number of components as the actual series, so the classification metrics must
+        distinguish it from a label forecast by the component naming convention."""
+        # actual class labels: class 0 observed throughout
+        y_true = TimeSeries.from_values(
+            values=np.array([[0.0], [0.0]]),
+            columns=["state"],
+        )
+        # single-class probability forecast: the width matches the actual series
+        y_pred_proba = TimeSeries.from_values(
+            values=np.array([[1.0], [1.0]]),
+            columns=["state_p0"],
+        )
+        # the same forecast as labels
+        y_pred_label = TimeSeries.from_values(
+            values=np.array([[0.0], [0.0]]),
+            columns=["state"],
+        )
+
+        # the probability forecast must decode to the class label it represents:
+        # state_p0 = 1.0 predicts class 0 with certainty, not class 1
+        # the label forecast of the same prediction is unaffected
+        score_proba = metric(y_true, y_pred_proba)
+        np.testing.assert_array_equal(score_proba, score_expected)
+        np.testing.assert_array_equal(score_proba, metric(y_true, y_pred_label))
+
+        # control: an extra class in the forecast makes the width check give the
+        # same answer as the naming-convention check
+        y_pred_proba_2c = TimeSeries.from_values(
+            values=np.array([[1.0, 0.0], [1.0, 0.0]]),
+            columns=["state_p0", "state_p1"],
+        )
+        np.testing.assert_array_equal(metric(y_true, y_pred_proba_2c), score_proba)
+
+        # multivariate: every component with a single class of its own
+        y_true_mv = TimeSeries.from_values(
+            values=np.array([[0.0, 1.0], [0.0, 1.0]]),
+            columns=["comp_a", "comp_b"],
+        )
+        y_pred_proba_mv = TimeSeries.from_values(
+            values=np.array([[1.0, 1.0], [1.0, 1.0]]),
+            columns=["comp_a_p0", "comp_b_p1"],
+        )
+        np.testing.assert_array_equal(
+            metric(y_true_mv, y_pred_proba_mv),
+            metric(y_true_mv, y_true_mv),
+        )
+
     def test_wrong_label_reduction(self):
         y = TimeSeries.from_values(np.array([[4]]))
 
