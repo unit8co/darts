@@ -13,6 +13,7 @@ from darts.logging import execute_and_suppress_output
 from darts.utils.serialization.base import (
     RestrictedUnpickler,
     UnpicklingError,
+    _is_fenced_allowed_subclass,
     is_allowed_global,
     is_blocked_global,
     restricted_pickle_load,
@@ -123,14 +124,11 @@ class TestSafeGlobals:
         multivariate series stores one of them, so refusing them made such a
         model impossible to load.
         """
-        pytest.importorskip("sklearn")
+        import sklearn
 
         assert is_allowed_global(f"darts.utils.multioutput.{name}")
 
-    def test_rejects_non_estimator_under_multioutput_prefix(self):
-        """The fence still requires the sklearn base, not just the prefix."""
-        from darts.utils.serialization.base import _is_fenced_allowed_subclass
-
+        # non-sklearn estimators are not allowed
         class _NotAnEstimator:
             pass
 
@@ -138,11 +136,7 @@ class TestSafeGlobals:
             "darts.utils.multioutput._NotAnEstimator", _NotAnEstimator
         )
 
-    def test_rejects_estimator_under_sibling_module_prefix(self):
-        """The prefix is a module path, so a name-sharing sibling does not pass."""
-        sklearn = pytest.importorskip("sklearn")
-        from darts.utils.serialization.base import _is_fenced_allowed_subclass
-
+        # sklearn estimators are allowed
         class _Estimator(sklearn.base.BaseEstimator):
             pass
 

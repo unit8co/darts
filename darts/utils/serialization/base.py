@@ -403,10 +403,6 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
     )):
         base = _darts_torch_allowed_bases()
     elif qualname.startswith("darts.utils.multioutput."):
-        # The multi-output wrappers subclass their sklearn counterparts, so they
-        # are audited against the sklearn base rather than the Darts ones. A
-        # fitted `CatBoostModel`, `LightGBMModel` or `XGBModel` on a
-        # multivariate series stores one of them.
         base = _sklearn_allowed_bases()
     elif qualname.startswith("darts."):
         base = _darts_core_allowed_bases()
