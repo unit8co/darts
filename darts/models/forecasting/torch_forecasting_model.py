@@ -1081,10 +1081,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates=seq2series(future_covariates),
             verbose=verbose,
         )
-        self.fit_from_dataset(**params)
-        # `predict()` without `series` falls back to `training_series`. Only warn about it
-        # if a `val_series` reaches beyond the training series, because only then does the
-        # fallback skip part of the history that the user has already seen
+        # `predict()` without `series` falls back to `training_series`. Record whether a
+        # `val_series` reaches beyond the training series, so that `predict()` can warn about
+        # a fallback that skips part of the history the user has already seen. This is done
+        # before `fit_from_dataset()`, which saves the model (see `_create_model()`), so that
+        # the information is also available after `load_from_checkpoint()`.
         self._fit_used_val_series = False
         if self.training_series is not None and val_series is not None:
             val_series_seq = (
@@ -1099,6 +1100,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             except TypeError:
                 # non-comparable time indexes -> keep the previous behaviour (no warning)
                 self._fit_used_val_series = False
+        self.fit_from_dataset(**params)
         return self
 
     def _setup_for_fit_from_dataset(
