@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed safe-loading for multi-output `SKLearnModel` where Darts' `MultiOutputMixin` was not recognized as a safe-global. [#3261](https://github.com/unit8co/darts/pull/3261) by [Miral Amin](https://github.com/aminmiral).
+- Fixed `ForecastingModel.backtest()` ignoring `val_length` when no `historical_forecasts` are passed. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader) and [#3264](https://github.com/unit8co/darts/pull/3264) by [Nathan Chandrasekar](https://github.com/vera-rubin).
 - Fixed `NegativeBinomialLikelihood` returning the distribution parameters in the wrong order with `predict_likelihood_parameters=True` on multivariate series; parameters are now grouped by component, matching the component names. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
 - 🔴 Fixed `NegativeBinomialLikelihood` mapping the network outputs to a distribution whose mean was not the predicted mean `mu`. The model now outputs the mean `mu` and dispersion `alpha` (variance `mu + alpha * mu**2`) as intended. Models trained with this likelihood in earlier versions will produce different forecasts and should be retrained. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
 
