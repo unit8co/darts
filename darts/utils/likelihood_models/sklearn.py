@@ -332,8 +332,8 @@ class QuantileRegression(SKLearnLikelihood):
 
         # repeat the model output on the edges
         repeat_count = [1] * n_quantiles
-        repeat_count[0] = 2
-        repeat_count[-1] = 2
+        repeat_count[0] += 1
+        repeat_count[-1] += 1
         repeat_count = np.array(repeat_count)
         shifted_output = np.repeat(model_output, repeat_count, axis=-1)
 

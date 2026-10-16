@@ -13,6 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed quantile regression sampling with `quantiles=[0.5]` raising an index error for both scikit-learn and Torch models.
 - Fixed safe-loading for multi-output `SKLearnModel` where Darts' `MultiOutputMixin` was not recognized as a safe-global. [#3261](https://github.com/unit8co/darts/pull/3261) by [Miral Amin](https://github.com/aminmiral).
 - Fixed `ForecastingModel.backtest()` ignoring `val_length` when no `historical_forecasts` are passed. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader) and [#3264](https://github.com/unit8co/darts/pull/3264) by [Nathan Chandrasekar](https://github.com/vera-rubin).
 - Fixed `NegativeBinomialLikelihood` returning the distribution parameters in the wrong order with `predict_likelihood_parameters=True` on multivariate series; parameters are now grouped by component, as with all other likelihood models. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
