@@ -123,6 +123,67 @@ class TestTorchLikelihoodModel:
         ])
         assert torch.allclose(loss, loss_per_sample.mean())
 
+    @pytest.mark.parametrize(
+        "likelihood",
+        [
+            BernoulliLikelihood(),
+            BetaLikelihood(),
+            CauchyLikelihood(),
+            ContinuousBernoulliLikelihood(),
+            ExponentialLikelihood(),
+            GammaLikelihood(),
+            GaussianLikelihood(),
+            GeometricLikelihood(),
+            GumbelLikelihood(),
+            HalfNormalLikelihood(),
+            LaplaceLikelihood(),
+            LogNormalLikelihood(),
+            NegativeBinomialLikelihood(),
+            PoissonLikelihood(),
+            QuantileRegression([0.1, 0.5, 0.9]),
+            WeibullLikelihood(),
+        ],
+    )
+    def test_predict_likelihood_parameters_component_order(self, likelihood):
+        # parameters must be grouped by component, in the same order as `component_names()`
+        # (<comp_0>_<param_0>, <comp_0>_<param_1>, ..., <comp_1>_<param_0>, ...)
+        torch.manual_seed(42)
+        n_components = 3
+        model_output = torch.randn(2, 4, n_components, likelihood.num_parameters)
+
+        params = likelihood.predict_likelihood_parameters(model_output)
+        params_per_component = torch.cat(
+            [
+                likelihood.predict_likelihood_parameters(model_output[:, :, i : i + 1])
+                for i in range(n_components)
+            ],
+            dim=-1,
+        )
+        assert params.shape == (2, 4, n_components * likelihood.num_parameters)
+        assert torch.allclose(params, params_per_component)
+
+    def test_negative_binomial_mean_and_variance(self):
+        # the network outputs `mu` (mean) and `alpha` (dispersion): mean = mu, var = mu + alpha * mu**2
+        likelihood = NegativeBinomialLikelihood()
+        mu = torch.tensor([0.5, 3.0, 50.0, 1e4], dtype=torch.float64)
+        alpha = torch.tensor([0.1, 0.2, 0.5, 2.0], dtype=torch.float64)
+        distr = likelihood._distr_from_params((mu, alpha))
+        assert torch.allclose(distr.mean, mu)
+        assert torch.allclose(distr.variance, mu + alpha * mu**2)
+
+        # the returned parameters `r` and `p` describe the same distribution
+        model_output = torch.stack([mu, alpha], dim=-1).reshape(1, 1, 4, 2)
+        # inverse of softplus
+        model_output = model_output + torch.log(-torch.expm1(-model_output))
+        params = likelihood.predict_likelihood_parameters(model_output).reshape(4, 2)
+        r, p = params[:, 0], params[:, 1]
+        assert torch.allclose(r, 1 / alpha)
+        assert torch.allclose(r * p / (1 - p), mu)
+
+        # loss stays finite for large means and small dispersion
+        target = torch.tensor([0.0, 3.0, 60.0, 2e4], dtype=torch.float64)
+        assert torch.isfinite(distr.log_prob(target)).all()
+
 
 class TestTorchLikelihoodInputValidation:
     def test_gaussian_negative_prior_mu(self):

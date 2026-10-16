@@ -708,7 +708,7 @@ class TestProbabilisticModels:
         lkl_series = [
             (GaussianLikelihood(), real_series, 0.17, 3),
             (PoissonLikelihood(), discrete_pos_series, 2, 2),
-            (NegativeBinomialLikelihood(), discrete_pos_series, 0.5, 0.5),
+            (NegativeBinomialLikelihood(), discrete_pos_series, 2, 2),
             (BernoulliLikelihood(), binary_series, 0.15, 0.15),
             (GammaLikelihood(), real_pos_series, 0.3, 0.3),
             (GumbelLikelihood(), real_series, 0.2, 3),
@@ -850,6 +850,11 @@ class TestProbabilisticModels:
                     ["dummy_0_mu", "dummy_0_sigma", "dummy_1_mu", "dummy_1_sigma"],
                 ),
                 (PoissonLikelihood(), [5], ["dummy_0_lambda", "dummy_1_lambda"]),
+                (
+                    NegativeBinomialLikelihood(),
+                    [2, 0.5],
+                    ["dummy_0_r", "dummy_0_p", "dummy_1_r", "dummy_1_p"],
+                ),
                 (
                     QuantileRegression([0.05, 0.5, 0.95]),
                     [-1.67, 0, 1.67],

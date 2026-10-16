@@ -398,8 +398,10 @@ class NegativeBinomialLikelihood(TorchLikelihood):
         - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).
         - Parameters: number of failures :math:`r > 0`, success probability :math:`p \\in (0, 1)`.
 
-        Behind the scenes the distribution is reparameterized so that the actual outputs of the
-        network are in terms of the mean :math:`\\mu` and shape :math:`\\alpha`.
+        Behind the scenes the network outputs the mean :math:`\\mu > 0` and the dispersion :math:`\\alpha > 0`
+        (variance :math:`\\mu + \\alpha \\mu^2`), which are mapped to :math:`r = 1 / \\alpha` and
+        :math:`p = \\mu / (\\mu + r)`. The returned :math:`p` follows PyTorch's convention (mean
+        :math:`r p / (1 - p)`).
         """
         self.softplus = nn.Softplus()
         super().__init__(
@@ -413,30 +415,39 @@ class NegativeBinomialLikelihood(TorchLikelihood):
         return None
 
     @staticmethod
-    def _get_r_and_p_from_mu_and_alpha(mu, alpha):
-        # See https://en.wikipedia.org/wiki/Negative_binomial_distribution for the different parametrizations
+    def _get_r_and_logits_from_mu_and_alpha(
+        mu: torch.Tensor, alpha: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        # See https://en.wikipedia.org/wiki/Negative_binomial_distribution for the different parametrizations.
+        # With r = 1 / alpha, the mean r * p / (1 - p) equals mu for p = mu / (mu + r), i.e.
+        # logits = log(p / (1 - p)) = log(mu * alpha). Using logits keeps the log-likelihood stable when p -> 1.
         r = 1.0 / alpha
-        p = r / (mu + r)
-        return r, p
+        logits = torch.log(mu) + torch.log(alpha)
+        return r, logits
 
     def _distr_from_params(
         self, params: tuple[torch.Tensor, ...]
     ) -> torch.distributions.Distribution:
         mu, alpha = params
-        r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
-        return _NegativeBinomial(r, p)
+        r, logits = self._get_r_and_logits_from_mu_and_alpha(mu, alpha)
+        return _NegativeBinomial(total_count=r, logits=logits)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        mu, alpha = self._params_from_output(model_output)
-        r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
-        distr = _NegativeBinomial(r, p)
+        distr = self._distr_from_params(self._params_from_output(model_output))
         return distr.sample()
 
     def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
         """Overwrite the parent since the parameters are extracted in two steps."""
         mu, alpha = self._params_from_output(model_output)
-        r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
-        return torch.cat([r, p], dim=-1)
+        r, logits = self._get_r_and_logits_from_mu_and_alpha(mu, alpha)
+        p = torch.sigmoid(logits)
+        # interleave the parameters to group them by input series component
+        num_samples, n_times, n_components, n_params = model_output.shape
+        return torch.stack([r, p], dim=3).reshape((
+            num_samples,
+            n_times,
+            n_components * n_params,
+        ))
 
     def _params_from_output(
         self, model_output: torch.Tensor
