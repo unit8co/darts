@@ -402,6 +402,8 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
         "darts.utils.torch",
     )):
         base = _darts_torch_allowed_bases()
+    elif qualname.startswith("darts.utils.multioutput."):
+        base = _sklearn_allowed_bases()
     elif qualname.startswith("darts."):
         base = _darts_core_allowed_bases()
     elif qualname.startswith("pandas."):

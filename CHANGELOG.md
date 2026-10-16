@@ -13,6 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed safe-loading for multi-output `SKLearnModel` where Darts' `MultiOutputMixin` was not recognized as a safe-global. [#3261](https://github.com/unit8co/darts/pull/3261) by [Miral Amin](https://github.com/aminmiral).
 - Fixed `ForecastingModel.backtest()` ignoring `val_length` when no `historical_forecasts` are passed. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader) and [#3264](https://github.com/unit8co/darts/pull/3264) by [Nathan Chandrasekar](https://github.com/vera-rubin).
 
 **Dependencies**

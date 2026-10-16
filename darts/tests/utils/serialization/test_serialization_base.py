@@ -13,6 +13,7 @@ from darts.logging import execute_and_suppress_output
 from darts.utils.serialization.base import (
     RestrictedUnpickler,
     UnpicklingError,
+    _is_fenced_allowed_subclass,
     is_allowed_global,
     is_blocked_global,
     restricted_pickle_load,
@@ -114,6 +115,34 @@ class TestSafeGlobals:
     def test_allows_torch_size(self):
         pytest.importorskip("torch")
         assert is_allowed_global("torch.Size")
+
+    @pytest.mark.parametrize("name", ["MultiOutputRegressor", "MultiOutputClassifier"])
+    def test_allows_darts_multioutput_wrappers(self, name):
+        """The wrappers subclass their sklearn counterparts, not a Darts base.
+
+        A fitted `CatBoostModel`, `LightGBMModel` or `XGBModel` on a
+        multivariate series stores one of them, so refusing them made such a
+        model impossible to load.
+        """
+        import sklearn
+
+        assert is_allowed_global(f"darts.utils.multioutput.{name}")
+
+        # non-sklearn estimators are not allowed
+        class _NotAnEstimator:
+            pass
+
+        assert not _is_fenced_allowed_subclass(
+            "darts.utils.multioutput._NotAnEstimator", _NotAnEstimator
+        )
+
+        # sklearn estimators are allowed
+        class _Estimator(sklearn.base.BaseEstimator):
+            pass
+
+        assert not _is_fenced_allowed_subclass(
+            "darts.utils.multioutput_other._Estimator", _Estimator
+        )
 
 
 class TestRestrictedUnpickler:
