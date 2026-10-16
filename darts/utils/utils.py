@@ -765,8 +765,6 @@ def dataframe_col_to_time_index(
         The dataframe containing the time column.
     time_col
         The name of the time column.
-    skip_uniqueness_check
-        Whether to skip uniqueness checks in case of an integer index.
     """
     if time_col not in df.columns:
         raise_log(AttributeError(f"time_col='{time_col}' is not present."))
