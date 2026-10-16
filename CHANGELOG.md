@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `TimestralModel` for zero-shot joint multivariate forecasting with numeric and categorical past/future covariates, quantile forecasts, and all four Timestral checkpoint sizes. Addresses [#3268](https://github.com/unit8co/darts/issues/3268).
+
 **Fixed**
 
 **Dependencies**
