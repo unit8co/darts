@@ -3950,3 +3950,56 @@ class TestBatchSizeScaler:
         preds_after = model.predict(n=3, series=series, **pred_kwargs)
         assert isinstance(preds, TimeSeries) and isinstance(preds_after, TimeSeries)
         assert np.isclose(preds.values(), preds_after.values()).all()
+
+
+@pytest.mark.parametrize(
+    "val_kind, expect_warning",
+    [
+        ("none", False),
+        ("extends_training", True),
+        ("equals_training", False),
+    ],
+)
+def test_predict_without_series_warns_when_fitted_with_val_series(
+    tmpdir_fn, caplog, val_kind, expect_warning
+):
+    """`predict()` without `series` must warn only if the last `fit()` got a `val_series` that
+    reaches beyond the training series.
+
+    The forecast must still start after `training_series` (behaviour unchanged).
+    """
+    series = tg.sine_timeseries(length=100).astype(np.float32)
+    train = series[:70]
+    val_series = {
+        "none": None,
+        "extends_training": series[70:],
+        "equals_training": train,
+    }[val_kind]
+
+    model = RNNModel(
+        input_chunk_length=8,
+        n_epochs=1,
+        work_dir=tmpdir_fn,
+        random_state=42,
+        **tfm_kwargs,
+    )
+    model.fit(train, val_series=val_series)
+
+    # no `series` passed -> falls back to `training_series`
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        pred_fallback = model.predict(n=3)
+    assert ("`predict()` was called without `series`" in caplog.text) is expect_warning
+    if expect_warning:
+        # the warning points at the training series and at the resulting start
+        assert str(train.end_time()) in caplog.text
+        assert str(train.end_time() + train.freq) in caplog.text
+    # behaviour unchanged: the forecast still starts right after the training series
+    assert pred_fallback.start_time() == train.end_time() + train.freq
+
+    # explicit `series` -> never warns, forecast starts after that series
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        pred_explicit = model.predict(n=3, series=series)
+    assert "`predict()` was called without `series`" not in caplog.text
+    assert pred_explicit.start_time() == series.end_time() + series.freq

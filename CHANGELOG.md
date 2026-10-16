@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
+- Fixed a silent fallback of `predict()` to `training_series` when the last `fit()` was called with a `val_series`. Calling `predict()` without `series` still forecasts from the training series (behaviour unchanged), but now emits a warning explaining that the validation part is not included in the forecast. [#3278](https://github.com/unit8co/darts/issues/3278) by [XXXXXQ.](https://github.com/XXXXXQ-0206).
 
 **Dependencies**
 
