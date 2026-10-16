@@ -17,6 +17,7 @@ from darts.models import (
     ExponentialSmoothing,
     LinearRegressionModel,
     NaiveDrift,
+    NaiveMean,
     NaiveSeasonal,
     RandomForestModel,
     SKLearnClassifierModel,
@@ -577,6 +578,27 @@ class TestBacktesting:
                 bt[0], np.array([score_hi_expected] * 2)
             )
             assert isinstance(bt[1], np.ndarray)
+
+    @pytest.mark.parametrize("config", param_product([0, 2], [False, True]))
+    def test_backtest_val_length(self, config):
+        val_length, last_points_only = config
+        series = TimeSeries.from_values([1.0, 4.0, 2.0, 9.0, 6.0, 3.0, 10.0, 7.0])
+        model = NaiveMean()
+        kwargs = {
+            "train_length": 4,
+            "val_length": val_length,
+            "last_points_only": last_points_only,
+            "show_warnings": False,
+        }
+        forecasts = model.historical_forecasts(series, **kwargs)
+        expected = model.backtest(
+            series,
+            historical_forecasts=forecasts,
+            metric=metrics.mae,
+            last_points_only=last_points_only,
+        )
+        assert expected == (2.5 if val_length else 2.3125)
+        assert model.backtest(series, metric=metrics.mae, **kwargs) == expected
 
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)

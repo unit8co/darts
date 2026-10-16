@@ -1523,6 +1523,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             future_covariates=future_covariates,
             num_samples=num_samples,
             train_length=train_length,
+            val_length=val_length,
             start=start,
             start_format=start_format,
             forecast_horizon=forecast_horizon,
