@@ -47,6 +47,13 @@ class TestNBEATSExplainer:
         np.testing.assert_allclose(
             trend.values() + seasonality.values(), pred.values(), rtol=1e-4, atol=1e-5
         )
+        # Preserve the base explainer's argument order, including future covariates.
+        positional = NBEATSExplainer(model).explain(
+            None, None, None, None, [self.series.components[0]]
+        )
+        np.testing.assert_allclose(positional.get_trend().values(), trend.values())
+        with pytest.raises(ValueError, match="does not support future covariates"):
+            NBEATSExplainer(model).explain(foreground_future_covariates=self.series)
 
     def test_explain_multivariate_target_components(self):
         model = self.helper_fit(self.series_mv)

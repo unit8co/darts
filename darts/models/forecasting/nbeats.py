@@ -358,6 +358,8 @@ class _Stack(nn.Module):
 
 
 class _NBEATSModule(PLForecastingModule):
+    _stack_forecasts: list[torch.Tensor]
+
     def __init__(
         self,
         input_dim: int,

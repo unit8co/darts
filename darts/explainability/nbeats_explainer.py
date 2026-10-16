@@ -12,6 +12,7 @@ The contributions can be extracted using the :class:`NBEATSExplainabilityResult
 """
 
 from collections.abc import Sequence
+from typing import cast
 
 import numpy as np
 
@@ -20,6 +21,7 @@ from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.explainability.explainability_result import NBEATSExplainabilityResult
 from darts.logging import get_logger, raise_log
 from darts.models import NBEATSModel
+from darts.models.forecasting.nbeats import _NBEATSModule
 from darts.typing import TimeSeriesLike
 from darts.utils.ts_utils import SeriesType, get_series_seq_type
 
@@ -105,7 +107,7 @@ class NBEATSExplainer(_ForecastingModelExplainer):
                     "`NBEATSExplainer` does not support probabilistic models (models with a `likelihood`)."
                 ),
             )
-        if model.model.use_reversible_instance_norm:
+        if cast(_NBEATSModule, model.model).use_reversible_instance_norm:
             raise_log(
                 ValueError(
                     "`NBEATSExplainer` does not support models with `use_reversible_instance_norm=True`."
@@ -116,6 +118,7 @@ class NBEATSExplainer(_ForecastingModelExplainer):
         self,
         foreground_series: TimeSeriesLike | None = None,
         foreground_past_covariates: TimeSeriesLike | None = None,
+        foreground_future_covariates: TimeSeriesLike | None = None,
         horizons: Sequence[int] | None = None,
         target_components: Sequence[str] | None = None,
     ) -> NBEATSExplainabilityResult:
@@ -135,6 +138,8 @@ class NBEATSExplainer(_ForecastingModelExplainer):
             If not provided, the background `TimeSeries` will be explained instead.
         foreground_past_covariates
             Optionally, one or a sequence of past covariates `TimeSeries` if required by the forecasting model.
+        foreground_future_covariates
+            Must be `None`; `NBEATSModel` does not support future covariates.
         horizons
             This parameter is not used by the `NBEATSExplainer`; the contributions are always returned for the full
             output chunk.
@@ -153,6 +158,8 @@ class NBEATSExplainer(_ForecastingModelExplainer):
         >>> trend = results.get_trend()
         >>> seasonality = results.get_seasonality()
         """
+        if foreground_future_covariates is not None:
+            raise_log(ValueError("`NBEATSModel` does not support future covariates."))
         if horizons is not None:
             logger.warning(
                 "`horizons` is not supported by `NBEATSExplainer` and will be ignored."
@@ -182,7 +189,10 @@ class NBEATSExplainer(_ForecastingModelExplainer):
         if isinstance(preds, TimeSeries):
             preds = [preds]
         # shape (n series, output_chunk_length, n target components, 1) per stack
-        stack_forecasts = [sf.cpu().numpy() for sf in self.model.model._stack_forecasts]
+        stack_forecasts = [
+            sf.cpu().numpy()
+            for sf in cast(_NBEATSModule, self.model.model)._stack_forecasts
+        ]
         all_components = list(preds[0].components)
 
         results = []
