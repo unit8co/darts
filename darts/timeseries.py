@@ -194,11 +194,6 @@ class TimeSeries:
             original data. Additionally, if `times` lack a frequency or step size, it will be assigned to the original
             object.
 
-        Returns
-        -------
-        TimeSeries
-            The resulting series.
-
         Examples
         --------
         >>> import numpy as np
