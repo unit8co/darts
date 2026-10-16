@@ -11,6 +11,7 @@ import pytest
 from darts import TimeSeries, concatenate
 from darts.tests.conftest import (
     T0_AVAILABLE,
+    TIMESTRAL_AVAILABLE,
     TIREX2_AVAILABLE,
     TIREX_AVAILABLE,
     TORCH_AVAILABLE,
@@ -31,6 +32,7 @@ from darts.models import (
     T0Model,
     TimesFM2p5Model,
     TimesFM3Model,
+    TimestralModel,
     TiRex2Model,
     TiRexModel,
 )
@@ -46,6 +48,7 @@ from darts.tests.models.forecasting.foundation_test_utils import (
     mock_hf_hub_download,
     timesfm2p5_tiny_context,
     tiny_t0_dir,
+    tiny_timestral_dir,
 )
 
 
@@ -660,6 +663,18 @@ class TestVariableInputChunkLength:
             ]
             if TIREX2_AVAILABLE
             else []
+        )
+        + (
+            [
+                pytest.param(
+                    TimestralModel,
+                    {"local_dir": tiny_timestral_dir()},
+                    contextlib.nullcontext,
+                    id="Timestral",
+                ),
+            ]
+            if TIMESTRAL_AVAILABLE
+            else []
         ),
     )
     @pytest.mark.parametrize("series_length", [16, 14, 8, 1])
@@ -926,6 +941,18 @@ class TestVariableInputChunkLength:
             ]
             if TIREX2_AVAILABLE
             else []
+        )
+        + (
+            [
+                pytest.param(
+                    TimestralModel,
+                    {"local_dir": tiny_timestral_dir()},
+                    contextlib.nullcontext,
+                    id="Timestral",
+                ),
+            ]
+            if TIMESTRAL_AVAILABLE
+            else []
         ),
     )
     def test_min_train_series_length_variable(
@@ -1003,6 +1030,18 @@ class TestVariableInputChunkLength:
                 ),
             ]
             if TIREX2_AVAILABLE
+            else []
+        )
+        + (
+            [
+                pytest.param(
+                    TimestralModel,
+                    {"local_dir": tiny_timestral_dir()},
+                    contextlib.nullcontext,
+                    id="Timestral",
+                ),
+            ]
+            if TIMESTRAL_AVAILABLE
             else []
         ),
     )
@@ -1087,6 +1126,19 @@ class TestVariableInputChunkLength:
                 ),
             ]
             if TIREX2_AVAILABLE
+            else []
+        )
+        + (
+            [
+                pytest.param(
+                    TimestralModel,
+                    {"local_dir": tiny_timestral_dir()},
+                    contextlib.nullcontext,
+                    False,
+                    id="Timestral",
+                ),
+            ]
+            if TIMESTRAL_AVAILABLE
             else []
         ),
     )
@@ -1235,6 +1287,18 @@ class TestVariableInputChunkLength:
             ]
             if TIREX2_AVAILABLE
             else []
+        )
+        + (
+            [
+                pytest.param(
+                    TimestralModel,
+                    {"local_dir": tiny_timestral_dir()},
+                    contextlib.nullcontext,
+                    id="Timestral",
+                ),
+            ]
+            if TIMESTRAL_AVAILABLE
+            else []
         ),
     )
     def test_variable_icl_matches_fixed_icl(
@@ -1357,6 +1421,18 @@ class TestVariableInputChunkLength:
                 )
             ]
             if TIREX2_AVAILABLE
+            else []
+        )
+        + (
+            [
+                pytest.param(
+                    TimestralModel,
+                    {"local_dir": tiny_timestral_dir()},
+                    contextlib.nullcontext,
+                    id="Timestral",
+                ),
+            ]
+            if TIMESTRAL_AVAILABLE
             else []
         ),
     )

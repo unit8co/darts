@@ -701,6 +701,12 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - ✅
      - `TiRex-2 paper <https://arxiv.org/abs/2607.01204>`_, `TiRex-2 GitHub <https://github.com/NX-AI/tirex-2>`_
+   * - `TimestralModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timestral_model.html#darts.models.forecasting.timestral_model.TimestralModel>`_
+     - ✅ ✅
+     - ✅ ✅ 🔴
+     - ✅ ✅
+     - ✅
+     - `Timestral announcement <https://mistral.ai/news/timestral/>`_, `Timestral GitHub <https://github.com/mistralai/timestral>`_
    * - `PatchTSTFMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.patchtst_fm_model.html#darts.models.forecasting.patchtst_fm_model.PatchTSTFMModel>`_
      - ✅ ✅
      - 🔴 🔴 🔴

@@ -58,6 +58,32 @@ def tiny_t0_dir() -> str:
     return directory
 
 
+# ── Timestral tiny model ─────────────────────────────────────────────────
+@functools.lru_cache(maxsize=1)
+def tiny_timestral_dir() -> str:
+    """Local, deterministic checkpoint using the real Timestral architecture."""
+    from safetensors.torch import save_file
+    from timestral import TimestralConfig, TimestralModel
+
+    directory = Path(tempfile.mkdtemp(prefix="darts_tiny_timestral_"))
+    config = TimestralConfig(
+        patch_size=4,
+        d_model=16,
+        num_heads=2,
+        mlp_hidden_dim=32,
+        block_schedule=("time", "time_variate", "time", "time_variate"),
+        quantile_knots=(0.1, 0.5, 0.9),
+        block_size=2,
+        context_length=64,
+    )
+    with torch.random.fork_rng():
+        torch.manual_seed(42)
+        model = TimestralModel(config)
+    config.save(directory / "config.json")
+    save_file(model.state_dict(), directory / "model.safetensors")
+    return str(directory)
+
+
 # ── HuggingFace mock download (Chronos-2 tiny artefact) ────────────────────
 HF_HUB_DOWNLOAD_PATCH_TARGET = (
     "darts.models.components.huggingface_connector.hf_hub_download"
