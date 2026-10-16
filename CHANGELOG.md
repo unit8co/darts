@@ -31,8 +31,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed safe-loading for multi-output `SKLearnModel` where Darts' `MultiOutputMixin` was not recognized as a safe-global. [#3261](https://github.com/unit8co/darts/pull/3261) by [Miral Amin](https://github.com/aminmiral).
 - Fixed safe-loading for `pandas<3.0.0` where `pandas.DataFrame` and `Series` were not recognized as safe-globals. [#3272](https://github.com/unit8co/darts/pull/3272) by [Dennis Bader](https://github.com/dennisbader).
 
-### For developers of the library:
-
 ## [0.48.0](https://github.com/unit8co/darts/tree/0.48.0) (2026-10-15)
 
 ### For users of the library:
