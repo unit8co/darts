@@ -6,10 +6,12 @@ from here instead of duplicating them.
 """
 
 import contextlib
+import copy
 import functools
 import shutil
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import torch
@@ -59,6 +61,18 @@ def tiny_t0_dir() -> str:
 
 
 # ── Timestral tiny model ─────────────────────────────────────────────────
+TIMESTRAL_TINY_CONFIG = dict(
+    patch_size=4,
+    d_model=16,
+    num_heads=2,
+    mlp_hidden_dim=32,
+    block_schedule=["time", "time_variate", "time", "time_variate"],
+    quantile_knots=[0.1, 0.5, 0.9],
+    block_size=2,
+    context_length=64,
+)
+
+
 @functools.lru_cache(maxsize=1)
 def tiny_timestral_dir() -> str:
     """Local, deterministic checkpoint using the real Timestral architecture."""
@@ -66,22 +80,77 @@ def tiny_timestral_dir() -> str:
     from timestral import TimestralConfig, TimestralModel
 
     directory = Path(tempfile.mkdtemp(prefix="darts_tiny_timestral_"))
-    config = TimestralConfig(
-        patch_size=4,
-        d_model=16,
-        num_heads=2,
-        mlp_hidden_dim=32,
-        block_schedule=("time", "time_variate", "time", "time_variate"),
-        quantile_knots=(0.1, 0.5, 0.9),
-        block_size=2,
-        context_length=64,
-    )
+    config = TimestralConfig.from_dict(TIMESTRAL_TINY_CONFIG)
     with torch.random.fork_rng():
         torch.manual_seed(42)
         model = TimestralModel(config)
     config.save(directory / "config.json")
     save_file(model.state_dict(), directory / "model.safetensors")
     return str(directory)
+
+
+class _TimestralRopeStub(torch.nn.Module):
+    def rebuild_inv_freq(self):
+        pass
+
+
+class TimestralNetworkStub(torch.nn.Module):
+    """Minimal registered network for device, precision and serialization tests."""
+
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.weight = torch.nn.Parameter(torch.ones(1))
+        self.transformer = torch.nn.Module()
+        self.transformer.rope = _TimestralRopeStub()
+
+
+class TimestralForecasterStub:
+    """Return distinguishable predictions for each batch, component, time and quantile.
+
+    Forecasts equal the last target value plus the step number and quantile offset.
+    This deliberately does not implement Timestral's forecasting or encoding logic;
+    tests of those behaviors use the real backend.
+    """
+
+    def __init__(self, model, **kwargs):
+        self.model = model
+        self.quantile_levels = tuple(model.config.quantile_knots)
+        self.per_shot_horizon_patches = kwargs.get("per_shot_horizon_patches", 32)
+
+    @property
+    def device(self):
+        return self.model.weight.device
+
+    def forecast(self, context, prediction_length, **kwargs):
+        steps = torch.arange(1, prediction_length + 1, device=context.device)
+        quantiles = context.new_tensor(self.quantile_levels)
+        prediction = (
+            torch.nan_to_num(context[..., -1, None, None])
+            + self.model.weight * steps[:, None]
+            + quantiles
+            - 0.5
+        )
+        return SimpleNamespace(
+            quantiles=prediction, quantile_levels=self.quantile_levels
+        )
+
+
+@contextlib.contextmanager
+def timestral_stub_context():
+    """Exercise the real Darts adapter without constructing a Timestral network or downloading files."""
+    module = "darts.models.forecasting.timestral_model"
+    connector = "darts.models.components.huggingface_connector.HuggingFaceConnector"
+    with (
+        patch(f"{module}.TimestralNetwork", TimestralNetworkStub),
+        patch(f"{module}.TimestralForecaster", TimestralForecasterStub),
+        patch(
+            f"{connector}.load_config",
+            return_value=copy.deepcopy(TIMESTRAL_TINY_CONFIG),
+        ),
+        patch(f"{connector}.load_model_weights"),
+    ):
+        yield
 
 
 # ── HuggingFace mock download (Chronos-2 tiny artefact) ────────────────────

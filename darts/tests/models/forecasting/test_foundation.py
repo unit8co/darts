@@ -47,8 +47,8 @@ from darts.tests.models.forecasting.foundation_test_utils import (
     TiRexStub,
     mock_hf_hub_download,
     timesfm2p5_tiny_context,
+    timestral_stub_context,
     tiny_t0_dir,
-    tiny_timestral_dir,
 )
 
 
@@ -668,8 +668,8 @@ class TestVariableInputChunkLength:
             [
                 pytest.param(
                     TimestralModel,
-                    {"local_dir": tiny_timestral_dir()},
-                    contextlib.nullcontext,
+                    {},
+                    timestral_stub_context,
                     id="Timestral",
                 ),
             ]
@@ -946,8 +946,8 @@ class TestVariableInputChunkLength:
             [
                 pytest.param(
                     TimestralModel,
-                    {"local_dir": tiny_timestral_dir()},
-                    contextlib.nullcontext,
+                    {},
+                    timestral_stub_context,
                     id="Timestral",
                 ),
             ]
@@ -1036,8 +1036,8 @@ class TestVariableInputChunkLength:
             [
                 pytest.param(
                     TimestralModel,
-                    {"local_dir": tiny_timestral_dir()},
-                    contextlib.nullcontext,
+                    {},
+                    timestral_stub_context,
                     id="Timestral",
                 ),
             ]
@@ -1132,8 +1132,8 @@ class TestVariableInputChunkLength:
             [
                 pytest.param(
                     TimestralModel,
-                    {"local_dir": tiny_timestral_dir()},
-                    contextlib.nullcontext,
+                    {},
+                    timestral_stub_context,
                     False,
                     id="Timestral",
                 ),
@@ -1292,8 +1292,8 @@ class TestVariableInputChunkLength:
             [
                 pytest.param(
                     TimestralModel,
-                    {"local_dir": tiny_timestral_dir()},
-                    contextlib.nullcontext,
+                    {},
+                    timestral_stub_context,
                     id="Timestral",
                 ),
             ]
@@ -1427,8 +1427,8 @@ class TestVariableInputChunkLength:
             [
                 pytest.param(
                     TimestralModel,
-                    {"local_dir": tiny_timestral_dir()},
-                    contextlib.nullcontext,
+                    {},
+                    timestral_stub_context,
                     id="Timestral",
                 ),
             ]

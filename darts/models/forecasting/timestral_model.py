@@ -15,6 +15,7 @@ from typing import Any
 
 import numpy as np
 import torch
+from pytorch_lightning import Trainer
 from timestral import TimestralConfig, TimestralForecaster
 from timestral import TimestralModel as TimestralNetwork
 
@@ -34,6 +35,15 @@ from darts.utils.likelihood_models.torch import QuantileRegression
 
 
 class _TimestralModule(PLForecastingModule):
+    """Adapt the upstream forecaster to Darts' mixed-covariate Lightning interface.
+
+    Each batch member is an independent forecasting task; its target components
+    are forecast jointly. The registered network owns the parameters, while the
+    forecaster handles preprocessing and block decoding without gradient updates.
+    """
+
+    _quantile_indices: torch.Tensor
+
     def __init__(
         self,
         config: dict[str, Any],
@@ -42,6 +52,21 @@ class _TimestralModule(PLForecastingModule):
         categorical_indices: dict[str, list[int]],
         **kwargs,
     ):
+        """Create the network from configuration without downloading weights.
+
+        Parameters
+        ----------
+        config
+            Serialized Timestral checkpoint configuration.
+        setup_kwargs
+            Additional arguments to ``TimestralForecaster``.
+        inference_kwargs
+            Additional arguments to ``TimestralForecaster.forecast()``.
+        categorical_indices
+            Indices of categorical components in the past and future covariates.
+        **kwargs
+            Additional arguments to ``PLForecastingModule``.
+        """
         super().__init__(**kwargs)
         # Register the network, not the plain Python forecaster, so Lightning owns
         # its device and state dict. Reconstruct from config without Hub access on load.
@@ -82,17 +107,23 @@ class _TimestralModule(PLForecastingModule):
         )
 
     def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        # Dimension notation:
+        # B: batch size; L: context length; T: output chunk length; S: output shift;
+        # C: target components; P/F: past/future covariate components;
+        # Q: checkpoint quantiles; N: selected quantiles (1 for median predictions).
         if next(self.timestral.parameters()).dtype != torch.float32:
             raise_log(ValueError("Timestral requires float32 / precision='32-true'."))
-        target = x_in.past_target
+        target = x_in.past_target  # (B, L, C)
+        # Split numeric and categorical rows, transposing (B, L, P) -> (B, P, L).
         past, categorical_past = self._split_covariates(x_in.past_covariates, "past")
-        known = x_in.future_covariates
+        known = x_in.future_covariates  # (B, T, F)
         if known is not None:
             # Darts omits future covariates inside the output shift. Keep that
             # gap missing rather than moving known future values into the past.
             gap = known.new_full(
                 (target.shape[0], self.output_chunk_shift, known.shape[-1]), torch.nan
             )
+            # History + missing shift + forecast window: (B, L + S + T, F).
             known = torch.cat((x_in.historic_future_covariates, gap, known), dim=1)
         known, categorical_known = self._split_covariates(known, "future")
         forecast = self.forecaster.forecast(
@@ -104,7 +135,7 @@ class _TimestralModule(PLForecastingModule):
             categorical_known_covariates=categorical_known,
             **self._inference_kwargs,
         )
-        # (batch, components, horizon, quantiles) -> Darts' (batch, time, components, parameters).
+        # (B, C, S + T, Q) -> (B, S + T, C, Q) -> (B, T, C, N).
         prediction = forecast.quantiles.permute(0, 2, 1, 3)
         prediction = prediction[:, self.output_chunk_shift :].index_select(
             -1, self._quantile_indices
@@ -356,7 +387,7 @@ class TimestralModel(FoundationModel):
             )
 
     @staticmethod
-    def _init_trainer(trainer_params: dict, max_epochs: int | None = None):
+    def _init_trainer(trainer_params: dict, max_epochs: int | None = None) -> Trainer:
         # Apply this at trainer construction so it also covers clean checkpoints,
         # which intentionally discard trainer_params, and cross-device loading.
         trainer_params = dict(trainer_params)
@@ -373,8 +404,8 @@ class TimestralModel(FoundationModel):
             )
         return FoundationModel._init_trainer(trainer_params, max_epochs)
 
-    def _check_ckpt_parameters(self, tfm_save: "TimestralModel") -> None:
-        super()._check_ckpt_parameters(tfm_save)
+    def _restore_checkpoint_metadata(self, tfm_save: "TimestralModel") -> None:
+        super()._restore_checkpoint_metadata(tfm_save)
         # load_weights() recreates the module before seeing any TimeSeries. Restore
         # the categorical column mapping from the validated wrapper checkpoint.
         self._covariate_components = deepcopy(tfm_save._covariate_components)
