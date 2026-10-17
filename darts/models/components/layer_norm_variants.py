@@ -135,3 +135,18 @@ class RINorm(nn.Module):
         x = x * self.stdev.view(self.stdev.shape + (1,))
         x = x + self.mean.view(self.mean.shape + (1,))
         return x
+
+    def inverse_scale(self, x: torch.Tensor) -> torch.Tensor:
+        """Undo normalization of a softplus scale parameter in raw output space.
+
+        ``x`` has shape ``(batch_size, output_chunk_length, n_targets, 1)``.
+        Scales use the absolute inverse affine weight and are not shifted.
+        """
+        scale = nn.functional.softplus(x) * self.stdev.unsqueeze(-1)
+        if self.affine:
+            scale = scale / (self.affine_weight + self.eps * self.eps).abs().view(
+                self.affine_weight.shape + (1,)
+            )
+        scale = scale.clamp_min(torch.finfo(scale.dtype).tiny)
+        # Stable inverse softplus, including for very small and very large scales.
+        return scale + torch.log(-torch.expm1(-scale))

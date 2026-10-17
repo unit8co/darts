@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
+- 🔴 Fixed the scale parameter of `GaussianLikelihood`, `LaplaceLikelihood`, `CauchyLikelihood` and `GumbelLikelihood` with `use_reversible_instance_norm`: the inverse normalization was applied before the softplus, so the predicted scale followed the level of the series instead of its spread. Models trained this way in earlier versions should be retrained. Combining `use_reversible_instance_norm` with any other likelihood except `QuantileRegression` now raises a `ValueError` at model creation. [#3306](https://github.com/unit8co/darts/pull/3306) by [Cassian433](https://github.com/Cassian433).
 
 **Dependencies**
 

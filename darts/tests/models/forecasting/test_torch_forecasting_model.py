@@ -13,6 +13,7 @@ import logging
 import math
 import os
 from dataclasses import fields
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import patch
 
@@ -58,6 +59,7 @@ from darts.models import (
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
+from darts.models.forecasting.pl_forecasting_module import io_processor
 from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
 from darts.tests.parametrize_helpers import param_product
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
@@ -70,6 +72,8 @@ from darts.utils.data.torch_datasets.training_dataset import (
     TorchTrainingDataset,
 )
 from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
     TorchInferenceSample,
     TorchTrainingSample,
     _batch_collate_fn_predict,
@@ -78,7 +82,9 @@ from darts.utils.data.torch_datasets.utils import (
 from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     GaussianLikelihood,
+    GumbelLikelihood,
     LaplaceLikelihood,
+    PoissonLikelihood,
     QuantileRegression,
     TorchLikelihood,
 )
@@ -2316,6 +2322,124 @@ class TestTorchForecastingModel:
         assert model_rin_mv.model.use_reversible_instance_norm
         assert isinstance(model_rin_mv.model.rin, RINorm)
         assert model_rin_mv.model.rin.input_dim == self.multivariate_series.n_components
+
+    @pytest.mark.parametrize(
+        "likelihood",
+        [
+            GaussianLikelihood(),
+            LaplaceLikelihood(),
+            CauchyLikelihood(),
+            GumbelLikelihood(),
+            QuantileRegression([0.1, 0.5, 0.9]),
+        ],
+    )
+    def test_rin_likelihood_equivariance(self, likelihood):
+        rng = np.random.default_rng(42)
+        series = TimeSeries.from_values(rng.normal(size=(48, 2)))
+        model = DLinearModel(
+            input_chunk_length=12,
+            output_chunk_length=3,
+            likelihood=likelihood,
+            use_reversible_instance_norm=True,
+            n_epochs=2,
+            random_state=42,
+            **tfm_kwargs,
+        )
+        model.fit(series)
+        reference = model.predict(3, predict_likelihood_parameters=True).values()
+        for factor, shift in [(1.0, 1000.0), (100.0, 0.0)]:
+            prediction = model.predict(
+                3,
+                series=series * factor + shift,
+                predict_likelihood_parameters=True,
+            ).values()
+            expected = reference * factor
+            if isinstance(likelihood, QuantileRegression):
+                expected += shift
+            else:
+                expected[:, ::2] += shift
+            np.testing.assert_allclose(prediction, expected, rtol=1e-3, atol=1e-4)
+
+    @pytest.mark.parametrize(
+        "likelihood",
+        [
+            None,
+            PoissonLikelihood(),
+            GaussianLikelihood(),
+            LaplaceLikelihood(),
+            CauchyLikelihood(),
+            GumbelLikelihood(),
+            QuantileRegression([0.1, 0.5, 0.9]),
+        ],
+    )
+    @pytest.mark.parametrize("affine_weight", [None, 2.5, -0.5])
+    def test_rin_likelihood_raw_output(self, likelihood, affine_weight):
+        # Exercise the shared forward wrapper without training, with two batches/targets.
+        rin = RINorm(input_dim=2, affine=affine_weight is not None).double()
+        if rin.affine:
+            with torch.no_grad():
+                rin.affine_weight.copy_(torch.tensor([affine_weight, 1.5]))
+                rin.affine_bias.copy_(torch.tensor([3.0, -4.0]))
+        past_target = torch.arange(24, dtype=torch.float64).reshape(2, 6, 2)
+        n_params = 1 if likelihood is None else likelihood.num_parameters
+        raw = (
+            torch.linspace(-3, 3, 2 * 3 * 2 * n_params, dtype=torch.float64)
+            .reshape(2, 3, 2, n_params)
+            .requires_grad_()
+        )
+        module = SimpleNamespace(
+            use_reversible_instance_norm=True, rin=rin, likelihood=likelihood
+        )
+
+        @io_processor
+        def forward(self, x_in):
+            return PLModuleOutput(prediction=raw)
+
+        output = forward(module, PLModuleInput(past_target=past_target)).prediction
+        if likelihood is None or isinstance(
+            likelihood, QuantileRegression | PoissonLikelihood
+        ):
+            torch.testing.assert_close(output, rin.inverse(raw))
+        else:
+            location, scale = likelihood._params_from_output(output)
+            expected_location = rin.inverse(raw[..., :1]).squeeze(-1)
+            factor = rin.stdev
+            if rin.affine:
+                factor = factor / (rin.affine_weight + rin.eps**2).abs()
+            expected_scale = torch.nn.functional.softplus(raw[..., 1]) * factor
+            torch.testing.assert_close(location, expected_location)
+            torch.testing.assert_close(scale, expected_scale)
+        output.sum().backward()
+        assert torch.isfinite(raw.grad).all()
+        if rin.affine:
+            assert torch.isfinite(rin.affine_weight.grad).all()
+            assert torch.isfinite(rin.affine_bias.grad).all()
+
+    @pytest.mark.parametrize("rin", [True, {"affine": False}])
+    def test_rin_unsupported_likelihood(self, rin):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "`use_reversible_instance_norm` only supports `QuantileRegression`, "
+                "`GaussianLikelihood`, `LaplaceLikelihood`, `CauchyLikelihood` and "
+                r"`GumbelLikelihood` as `likelihood`, received `PoissonLikelihood`\."
+            ),
+        ):
+            DLinearModel(
+                input_chunk_length=12,
+                output_chunk_length=3,
+                likelihood=PoissonLikelihood(),
+                use_reversible_instance_norm=rin,
+                **tfm_kwargs,
+            )
+        # The likelihood remains available when RIN is disabled.
+        DLinearModel(
+            input_chunk_length=12,
+            output_chunk_length=3,
+            likelihood=PoissonLikelihood(),
+            use_reversible_instance_norm=False,
+            **tfm_kwargs,
+        )
 
     @pytest.mark.parametrize("use_mc_dropout", [False, True])
     def test_mc_dropout_active(self, use_mc_dropout):
