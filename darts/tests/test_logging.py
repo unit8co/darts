@@ -1,5 +1,7 @@
 import logging
+import os
 import re
+import threading
 
 import numpy as np
 import pandas as pd
@@ -7,7 +9,7 @@ import pytest
 from testfixtures import LogCapture
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log, time_log
+from darts.logging import SuppressStdoutStderr, get_logger, raise_log, time_log
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -87,3 +89,67 @@ def test_time_log():
         )
         is not None
     )
+
+
+def test_suppress_stdout_stderr(capfd):
+    with SuppressStdoutStderr():
+        os.write(1, b"hidden out")
+        os.write(2, b"hidden err")
+    os.write(1, b"shown out")
+    os.write(2, b"shown err")
+
+    captured = capfd.readouterr()
+    assert captured.out == "shown out"
+    assert captured.err == "shown err"
+
+
+def test_suppress_stdout_stderr_overlapping_threads(capfd):
+    # the second context enters while the first one has redirected stdout and stderr,
+    # and exits after it: the real ones must be restored at the end
+    first_entered, second_entered, first_exited = (threading.Event() for _ in range(3))
+
+    def first():
+        with SuppressStdoutStderr():
+            first_entered.set()
+            second_entered.wait()
+        first_exited.set()
+
+    def second():
+        first_entered.wait()
+        with SuppressStdoutStderr():
+            second_entered.set()
+            first_exited.wait()
+            os.write(1, b"hidden out")
+
+    threads = [threading.Thread(target=first), threading.Thread(target=second)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    os.write(1, b"shown out")
+    os.write(2, b"shown err")
+    captured = capfd.readouterr()
+    assert captured.out == "shown out"
+    assert captured.err == "shown err"
+
+
+def test_suppress_stdout_stderr_without_valid_fd(capfd, monkeypatch):
+    # an invalid stderr file descriptor must not raise or leak the duplicated stdout
+    real_dup, dup_fds = os.dup, []
+
+    def dup(fd):
+        if fd == 2:
+            raise OSError(9, "Bad file descriptor")
+        dup_fds.append(real_dup(fd))
+        return dup_fds[-1]
+
+    with monkeypatch.context() as m:
+        m.setattr(os, "dup", dup)
+        with SuppressStdoutStderr():
+            os.write(1, b"shown out")
+
+    assert len(dup_fds) == 1
+    with pytest.raises(OSError):
+        os.fstat(dup_fds[0])
+    assert capfd.readouterr().out == "shown out"

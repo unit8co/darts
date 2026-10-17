@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import threading
 import time
 import warnings
 from typing import NoReturn
@@ -116,28 +117,52 @@ class SuppressStdoutStderr:
     to stderr just before a script exits, and after the context manager has
     exited (at least, I think that is why it lets exceptions through).
 
+    The redirection applies to the whole process, so nested and concurrent
+    (multi-threaded) uses share it: the first context to enter saves the real
+    stdout and stderr, and the last one to exit restores them. If stdout or
+    stderr has no valid file descriptor, nothing is redirected.
+
     source:
     https://stackoverflow.com/questions/11130156/suppress-stdout-stderr-print-from-python-functions
     """
 
-    def __init__(self):
-        # Open a pair of null files
-        self.null_fds = [os.open(os.devnull, os.O_RDWR) for x in range(2)]
-        # Save the actual stdout (1) and stderr (2) file descriptors.
-        self.save_fds = [os.dup(1), os.dup(2)]
+    _lock = threading.Lock()
+    _depth = 0
+    _save_fds: list[int] = []
 
     def __enter__(self):
-        # Assign the null pointers to stdout and stderr.
-        os.dup2(self.null_fds[0], 1)
-        os.dup2(self.null_fds[1], 2)
+        with SuppressStdoutStderr._lock:
+            if SuppressStdoutStderr._depth == 0:
+                SuppressStdoutStderr._save_fds = self._redirect_to_devnull()
+            SuppressStdoutStderr._depth += 1
 
     def __exit__(self, *_):
-        # Re-assign the real stdout/stderr back to (1) and (2)
-        os.dup2(self.save_fds[0], 1)
-        os.dup2(self.save_fds[1], 2)
-        # Close all file descriptors
-        for fd in self.null_fds + self.save_fds:
-            os.close(fd)
+        with SuppressStdoutStderr._lock:
+            SuppressStdoutStderr._depth -= 1
+            if SuppressStdoutStderr._depth == 0:
+                # Re-assign the real stdout/stderr back to (1) and (2)
+                for target_fd, save_fd in zip((1, 2), SuppressStdoutStderr._save_fds):
+                    os.dup2(save_fd, target_fd)
+                    os.close(save_fd)
+                SuppressStdoutStderr._save_fds = []
+
+    @staticmethod
+    def _redirect_to_devnull() -> list[int]:
+        # Save the actual stdout (1) and stderr (2) file descriptors.
+        save_fds = []
+        try:
+            for fd in (1, 2):
+                save_fds.append(os.dup(fd))
+        except OSError:
+            for fd in save_fds:
+                os.close(fd)
+            return []
+        # Assign a null file to stdout and stderr.
+        null_fd = os.open(os.devnull, os.O_RDWR)
+        os.dup2(null_fd, 1)
+        os.dup2(null_fd, 2)
+        os.close(null_fd)
+        return save_fds
 
 
 def execute_and_suppress_output(function, logger, suppression_threshold_level, *args):

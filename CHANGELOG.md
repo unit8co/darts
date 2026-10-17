@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `Prophet` (with the default `suppress_stdout_stderror=True`) permanently silencing stdout and stderr of the whole process when two models were fitted at the same time in different threads. `SuppressStdoutStderr` now shares one redirection between nested and concurrent uses, and no longer raises when stdout or stderr has no valid file descriptor. [#3279](https://github.com/unit8co/darts/pull/3279) by [Aditya Sridhar](https://github.com/Aditya17-bot).
+
 **Dependencies**
 
 ### For developers of the library:
