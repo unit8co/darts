@@ -3185,6 +3185,29 @@ class TestTimeSeriesHierarchy:
         assert (series1 / series2).hierarchy == self.hierarchy
         assert (series1.slice_intersect(series2[10:20])).hierarchy == self.hierarchy
 
+    def test_quantile(self):
+        series = self.base_series.with_hierarchy(self.hierarchy)
+
+        # a single quantile keeps the hierarchy with the quantile component names
+        q_series = series.quantile(0.5)
+        assert q_series.components.tolist() == [
+            f"{comp}_q0.500" for comp in self.components
+        ]
+        assert q_series.hierarchy == {
+            f"{key}_q0.500": [f"{parent}_q0.500" for parent in parents]
+            for key, parents in self.hierarchy.items()
+        }
+        assert q_series.top_level_component == "total_q0.500"
+        assert q_series.bottom_level_components == [
+            "ax_q0.500",
+            "ay_q0.500",
+            "bx_q0.500",
+            "by_q0.500",
+        ]
+
+        # multiple quantiles drop the hierarchy
+        assert not series.quantile([0.1, 0.9]).has_hierarchy
+
     def test_with_string_items(self):
         # Single parents may be specified as string rather than [string]
         dates = pd.date_range("2020-01-01", "2020-12-31", freq="D")

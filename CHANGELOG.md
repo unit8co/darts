@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `TimeSeries.quantile()` renaming the static covariates of the original series to the quantile component names (the same happened with `TimeSeries.window_transform(keep_names=False)` and to the static covariates DataFrame given to `TimeSeries.from_csv()`), and raising an error on hierarchical series when computing a single quantile. [#3280](https://github.com/unit8co/darts/pull/3280) by [Mohammad Hijjawi](https://github.com/MohammadHijjawi97).
+
 **Dependencies**
 
 ### For developers of the library:

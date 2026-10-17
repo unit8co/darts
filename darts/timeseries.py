@@ -374,8 +374,8 @@ class TimeSeries:
                         "must map to each TimeSeries component)."
                     ),
                 )
-            if copy:
-                static_covariates = static_covariates.copy()
+            # a shallow copy is enough with `copy=False` to avoid modifying the axes of the input DataFrame below
+            static_covariates = static_covariates.copy(deep=copy)
         elif isinstance(static_covariates, pd.Series):
             # a Series with mixed types (e.g. numerical and categorical covariates) has `object` dtype, and
             # transposing it gives `object` columns; infer the actual dtype of each covariate
@@ -389,7 +389,7 @@ class TimeSeries:
                 if len(static_covariates) == self.n_components
                 else [DEFAULT_GLOBAL_STATIC_COV_NAME]
             )
-            static_covariates.columns.name = STATIC_COV_TAG
+            static_covariates.columns = static_covariates.columns.rename(STATIC_COV_TAG)
             # convert numerical columns to same dtype as series
             # we get all numerical columns, except those that have right dtype already
             cols_to_cast = static_covariates.select_dtypes(
@@ -4867,12 +4867,23 @@ class TimeSeries:
         new_data = new_data.transpose((1, 2, 0)).reshape(len(self), len(cnames), 1)
 
         # only add static covariates and hierarchy if the number of output components matches the input components
+        static_covariates, hierarchy = None, None
+        if len(q_arr) == 1:
+            static_covariates = self.static_covariates
+            if self.hierarchy is not None:
+                # rename the hierarchy components with the quantile names
+                old2new = dict(zip(self.components, cnames))
+                hierarchy = {
+                    old2new[key]: [old2new[parent] for parent in parents]
+                    for key, parents in self.hierarchy.items()
+                }
+
         return self.__class__(
             times=self._time_index,
             values=new_data,
             components=cnames,
-            static_covariates=self.static_covariates if len(q_arr) == 1 else None,
-            hierarchy=self.hierarchy if len(q_arr) == 1 else None,
+            static_covariates=static_covariates,
+            hierarchy=hierarchy,
             metadata=self.metadata,
             copy=False,
         )

@@ -1096,6 +1096,40 @@ class TestTimeSeriesStaticCovariate:
             np.array([[0.0, 0.0], [1.0, 0.25], [2.0, 1.0]]),
         )
 
+    def test_static_covariates_input_not_modified(self, tmpdir_module):
+        components = ["a", "b"]
+        static_covs = pd.DataFrame({"st1": [0.0, 1.0]}, index=components)
+        series = TimeSeries.from_times_and_values(
+            times=pd.date_range("2000-01-01", periods=10, freq="D", name="time"),
+            values=np.random.random((10, 2, 3)),
+            columns=components,
+            static_covariates=static_covs,
+        )
+
+        # methods that rename the components must not modify the static covariates of the original series
+        q_series = series.quantile(0.5)
+        assert q_series.static_covariates.index.tolist() == ["a_q0.500", "b_q0.500"]
+        assert series.static_covariates.index.tolist() == components
+        assert series["a"].static_covariates.equals(static_covs.loc[["a"]])
+
+        series_det = series.median()
+        series_det.window_transform(
+            transforms={"function": "mean", "mode": "rolling", "window": 2},
+            keep_names=False,
+        )
+        assert series_det.static_covariates.index.tolist() == components
+
+        # creating a series from a csv must not modify the user's static covariates
+        static_covs_input = pd.DataFrame({"st1": [0.0, 1.0]})
+        path = os.path.join(tmpdir_module, "static_covs_input.csv")
+        series_det.to_csv(path)
+        series_csv = TimeSeries.from_csv(
+            path, time_col="time", static_covariates=static_covs_input
+        )
+        assert series_csv.static_covariates.index.tolist() == components
+        assert static_covs_input.index.tolist() == [0, 1]
+        assert static_covs_input.columns.name is None
+
     def test_non_numerical_metadata(self):
         metadata = {"a": 0, "b": "foo"}
         ts = linear_timeseries(length=10)
