@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `ConformalNaiveModel` and `ConformalQRModel` accepting classification models (e.g. `SKLearnClassifierModel`), which resulted in meaningless intervals around the predicted class labels. A `ValueError` is now raised, since conformal models only support regression models. [#3282](https://github.com/unit8co/darts/pull/3282) by [Shiven Aggarwal](https://github.com/shivenaggarwal).
+
 **Dependencies**
 
 ### For developers of the library:
