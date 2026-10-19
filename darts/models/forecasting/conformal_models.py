@@ -18,7 +18,7 @@ import pandas as pd
 from darts import TimeSeries, metrics
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.logging import raise_log
+from darts.logging import get_logger, raise_log
 from darts.metrics.utils import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike
@@ -52,6 +52,8 @@ if TORCH_AVAILABLE:
 else:
     TorchForecastingModel = None
 
+logger = get_logger(__name__)
+
 
 class ConformalModel(GlobalForecastingModel, ABC):
     @random_method
@@ -63,6 +65,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         cal_length: int | None = None,
         cal_stride: int = 1,
         cal_num_samples: int = 500,
+        global_fit: bool = False,
         random_state: int | None = None,
     ):
         """Base Conformal Prediction Model.
@@ -98,6 +101,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
         - When computing `historical_forecasts()`, `backtest()`, `residuals()`, ... the above is applied for each
           forecast (the forecasting model's historical forecasts are only generated once for efficiency).
         - For multi-horizon forecasts, the above is applied for each step in the horizon separately.
+        - Optionally, the model can be calibrated once on a calibration set with :meth:`calibrate()`. All forecasting
+          methods then apply this stored calibration instead of re-calibrating each forecast on the past of the input
+          series, and do not require the calibration history as input anymore.
 
         Parameters
         ----------
@@ -123,6 +129,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
             model). The non-conformity scores are computed on the quantile values of these forecasts (using quantiles
             `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number
             of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).
+        global_fit
+            Only effective when calling :meth:`calibrate()` with multiple series. If `True`, the non-conformity scores
+            of all series are pooled into a *single* calibration, which is applied to any series in the forecasting
+            methods. If `False`, a separate calibration is computed for each series, and the `i`-th calibration is
+            applied to the `i`-th series in the forecasting methods.
         random_state
             Controls the randomness for reproducible forecasting.
         """
@@ -171,6 +182,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         self.cal_num_samples = (
             cal_num_samples if model.supports_probabilistic_prediction else 1
         )
+        self.global_fit = global_fit
+        # calibrated intervals stored by `calibrate()`; one `(q_hat_lower, q_hat_upper)` pair per calibration series
+        # (or a single pair with `global_fit=True`), each with shape (forecast horizon, n components, n intervals)
+        self._cal_q_hats: list[tuple[np.ndarray, np.ndarray]] | None = None
         self._likelihood = Likelihood(
             likelihood_type=LikelihoodType.Quantile,
             parameter_names=quantile_names(quantiles),
@@ -195,6 +210,10 @@ class ConformalModel(GlobalForecastingModel, ABC):
         Conformal Models do not require calling `fit()`, since they use pre-trained global forecasting models.
         You can call `predict()` directly. Also, make sure that the input series used in `predict()` corresponds to
         a calibration set, and not the same as used during training with `fit()`.
+
+        To calibrate the model once on a calibration set (without training the forecasting model), use
+        :meth:`calibrate()`. Calling `fit()` discards any previous calibration, since it was computed with the previous
+        forecasting model.
 
         Parameters
         ----------
@@ -230,6 +249,112 @@ class ConformalModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             **kwargs,
         )
+        # a stored calibration belongs to the previous forecasting model
+        self._cal_q_hats = None
+        return self
+
+    def calibrate(
+        self,
+        series: TimeSeriesLike,
+        past_covariates: TimeSeriesLike | None = None,
+        future_covariates: TimeSeriesLike | None = None,
+        forecast_horizon: int | None = None,
+        verbose: bool | None = None,
+        **kwargs,
+    ) -> Self:
+        """Calibrates the conformal model once on (potentially multiple) calibration series, without training the
+        underlying forecasting model.
+
+        Computes the non-conformity scores of the forecasting model's historical forecasts on `series`, and stores the
+        resulting calibrated intervals for each step in the horizon (up to `forecast_horizon`) and each component. The
+        stored calibration is identical to the one that :meth:`predict()` computes on an uncalibrated model for a
+        forecast with horizon `forecast_horizon` starting right after the end of `series`.
+
+        After calling `calibrate()`, :meth:`predict()`, :meth:`historical_forecasts()`, :meth:`backtest()`, and
+        :meth:`residuals()` apply the stored calibration to the forecasting model's forecasts instead of re-calibrating
+        each forecast on the past of the input series. The input series then only have to cover the input required by
+        the forecasting model, and not the calibration history. Call `calibrate()` again to update the calibration
+        (e.g. on more recent data). Calling :meth:`fit()` discards the calibration.
+
+        If `series` is a sequence of series, the model creation parameter `global_fit` controls whether a separate
+        calibration is computed for each series (`global_fit=False`; the `i`-th calibration is then applied to the
+        `i`-th series in the forecasting methods), or whether the non-conformity scores of all series are pooled into a
+        single calibration that is applied to any series (`global_fit=True`).
+
+        Parameters
+        ----------
+        series
+            One or several target time series to calibrate on. The series should not have any overlap with the series
+            used to train the forecasting model.
+        past_covariates
+            Optionally, a (sequence of) past-observed covariate time series for every input time series in `series`.
+            Their dimension must match that of the past covariates used for training.
+        future_covariates
+            Optionally, a (sequence of) future-known covariate time series for every input time series in `series`.
+            Their dimension must match that of the future covariates used for training.
+        forecast_horizon
+            The maximum forecast horizon to calibrate for. The calibrated forecasting methods support any horizon up to
+            `forecast_horizon`. The covariates must cover the same time span as for an uncalibrated
+            `predict(n=forecast_horizon, series=series, ...)`. If `None`, uses the forecasting model's
+            `output_chunk_length`.
+        verbose
+            Optionally, set the verbosity.
+        **kwargs
+            Optional keyword arguments that will be passed to the underlying forecasting model's `predict()` method.
+
+        Returns
+        -------
+        self
+            Calibrated model.
+        """
+        if forecast_horizon is None:
+            forecast_horizon = self.model.output_chunk_length
+        if forecast_horizon is None or forecast_horizon < 1:
+            raise_log(
+                ValueError(
+                    "`forecast_horizon` must be a positive integer (it is required if the forecasting `model` "
+                    f"has no `output_chunk_length`). Received `{forecast_horizon}`."
+                ),
+            )
+
+        # call predict to verify that all series have required input times
+        _ = self.model.predict(
+            n=forecast_horizon,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=self.cal_num_samples,
+            verbose=verbose,
+            predict_likelihood_parameters=False,
+            **kwargs,
+        )
+
+        series = series2seq(series)
+        cal_hfcs = self._calibration_historical_forecasts(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+            verbose=verbose,
+            random_state=None,
+            predict_kwargs=kwargs,
+        )
+        # the scores that `predict()` would use to calibrate the forecast after the end of each series
+        cal_scores = self._calibrate_forecasts(
+            series=series,
+            forecasts=cal_hfcs,
+            start="end",
+            start_format="position",
+            forecast_horizon=forecast_horizon,
+            stride=self.cal_stride,
+            overlap_end=True,
+            last_points_only=False,
+            verbose=verbose,
+            return_scores=True,
+        )
+        if self.global_fit:
+            cal_scores = [np.concatenate(cal_scores, axis=2)]
+        self._cal_q_hats = [self._calibrate_interval(scores) for scores in cal_scores]
         return self
 
     def predict(
@@ -273,6 +398,11 @@ class ConformalModel(GlobalForecastingModel, ABC):
         - Compute the conformal prediction: Using these quantile values, add calibrated intervals to (or adjust the
           existing intervals of) the forecasting model's predictions.
 
+        If the model was calibrated with :meth:`calibrate()`, the calibration steps above are skipped: the stored
+        calibration is applied directly to the forecasting model's prediction, and the input series (and covariates)
+        only have to cover the input required by the forecasting model. In this case, `n` must not be larger than
+        the `forecast_horizon` used for the calibration.
+
         Parameters
         ----------
         n
@@ -315,6 +445,38 @@ class ConformalModel(GlobalForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
+        if self._cal_q_hats is not None:
+            # calibrated with `calibrate()`: apply the stored calibration to the forecasting model's prediction
+            self._check_calibration_input(
+                forecast_horizon=n, series=series, show_warnings=show_warnings
+            )
+            preds = self.model.predict(
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=self.cal_num_samples,
+                verbose=verbose,
+                predict_likelihood_parameters=False,
+                show_warnings=show_warnings,
+                random_state=random_state,
+                **kwargs,
+            )
+            series = series if series is not None else self.model.training_series
+            cal_preds = self._calibrate_forecasts(
+                series=series2seq(series),
+                forecasts=[[pred] for pred in series2seq(preds)],
+                num_samples=num_samples,
+                forecast_horizon=n,
+                last_points_only=False,
+                show_warnings=show_warnings,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
+            )
+            return series2seq(
+                [cp[0] for cp in cal_preds], seq_type_out=get_series_seq_type(preds)
+            )
+
         # call predict to verify that all series have required input times
         _ = self.model.predict(
             n=n,
@@ -334,31 +496,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
         # generate only the required forecasts for calibration (including the last forecast which is the output of
         # `predict()`)
-        cal_start, cal_start_format = _get_calibration_hfc_start(
-            series=series,
-            horizon=n,
-            output_chunk_shift=self.output_chunk_shift,
-            cal_length=self.cal_length,
-            cal_stride=self.cal_stride,
-            start="end",
-            start_format="position",
-        )
-
-        cal_hfcs = self.model.historical_forecasts(
+        cal_hfcs = self._calibration_historical_forecasts(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=n,
-            num_samples=self.cal_num_samples,
-            start=cal_start,
-            start_format=cal_start_format,
-            stride=self.cal_stride,
-            retrain=False,
-            overlap_end=True,
-            last_points_only=False,
             verbose=verbose,
-            show_warnings=False,
-            predict_likelihood_parameters=False,
             random_state=random_state,
             predict_kwargs=kwargs,
         )
@@ -418,6 +561,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
         Currently, conformal models only support the pre-trained historical forecasts mode (`retrain=False`).
         Parameters `retrain` and `train_length` are ignored.
+
+        **Calibrated Mode:** If the model was calibrated with :meth:`calibrate()`, all historical forecasts are
+        generated using the underlying pre-trained global forecasting model (with the given `start` and `stride`), and
+        the stored calibration is applied to each of them. No calibration set is extracted from `series`, so the first
+        forecast can start at the first predictable point. To avoid look-ahead bias, only evaluate forecasts after the
+        end of the calibration set. `forecast_horizon` must not be larger than the `forecast_horizon` used for the
+        calibration.
 
         **Pre-trained Mode:** First, all historical forecasts are generated using the underlying pre-trained global
         forecasting model (see :meth:`ForecastingModel.historical_forecasts()
@@ -489,7 +639,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             an error if the value is not in `series`' index. Default: ``'value'``.
         stride
             The number of time steps between two consecutive predictions. Must be a round-multiple of `cal_stride`
-            (set at model creation) and `>=cal_stride`.
+            (set at model creation) and `>=cal_stride`, unless the model was calibrated with :meth:`calibrate()`.
         retrain
             Currently ignored by conformal models.
         apply_globally
@@ -566,26 +716,32 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 sample_weight=None,
             )
 
-        # generate only the required forecasts (if `start` is given, we have to start earlier to satisfy the
-        # calibration set requirements)
-        cal_start, cal_start_format = _get_calibration_hfc_start(
-            series=series,
-            horizon=forecast_horizon,
-            output_chunk_shift=self.output_chunk_shift,
-            cal_length=self.cal_length,
-            cal_stride=self.cal_stride,
-            start=start,
-            start_format=start_format,
-        )
+        if self._cal_q_hats is None:
+            # generate only the required forecasts (if `start` is given, we have to start earlier to satisfy the
+            # calibration set requirements)
+            hfc_start, hfc_start_format = _get_calibration_hfc_start(
+                series=series,
+                horizon=forecast_horizon,
+                output_chunk_shift=self.output_chunk_shift,
+                cal_length=self.cal_length,
+                cal_stride=self.cal_stride,
+                start=start,
+                start_format=start_format,
+            )
+            hfc_stride = self.cal_stride
+        else:
+            # calibrated with `calibrate()`: the stored calibration is applied to each forecast, so no calibration set
+            # is required
+            hfc_start, hfc_start_format, hfc_stride = start, start_format, stride
         hfcs = self.model.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
             num_samples=self.cal_num_samples,
-            start=cal_start,
-            start_format=cal_start_format,
-            stride=self.cal_stride,
+            start=hfc_start,
+            start_format=hfc_start_format,
+            stride=hfc_stride,
             retrain=False,
             apply_globally=apply_globally,
             overlap_end=overlap_end,
@@ -1094,11 +1250,14 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
-    ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
+        return_scores: bool = False,
+    ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]] | list[np.ndarray]:
         """Generate calibrated historical forecasts.
 
-        In general the workflow of the models to produce one calibrated forecast/prediction per step in the horizon
-        is as follows:
+        If the model was calibrated with :meth:`calibrate()`, the stored calibration is applied to all `forecasts`.
+
+        Otherwise, in general the workflow of the models to produce one calibrated forecast/prediction per step in the
+        horizon is as follows:
 
         - Generate historical forecasts for `series` with stride `cal_stride` (using the forecasting model)
         - Extract a calibration set: The forecasts from the most recent past to use as calibration for one conformal
@@ -1110,7 +1269,20 @@ class ConformalModel(GlobalForecastingModel, ABC):
           creation with parameter `quantiles`).
         - Compute the conformal prediction: Using these quantile values, add calibrated intervals to (or adjust the
           existing intervals of) the forecasting model's predictions.
+
+        With `return_scores=True`, returns instead the non-conformity scores that the first conformal forecast of each
+        series is calibrated on, each with shape (forecast horizon, n components, n scores).
         """
+        if self._cal_q_hats is not None and not return_scores:
+            return self._apply_calibration(
+                series=series,
+                forecasts=forecasts,
+                num_samples=num_samples,
+                forecast_horizon=forecast_horizon,
+                last_points_only=last_points_only,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+            )
+
         cal_stride = self.cal_stride
         cal_length = self.cal_length
         metric, metric_kwargs = self._residuals_metric
@@ -1279,7 +1451,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             # forecasts are stridden, so stride must be relative
             rel_stride = math.ceil(stride / cal_stride)
 
-            def conformal_predict(idx_, pred_vals_):
+            def calibration_scores(idx_):
                 # get the last residual index for calibration, `cal_end` is exclusive
                 # to avoid look-ahead bias, use only residuals from before the conformal forecast start point;
                 # for `last_points_only=True`, the last residual historically available at the forecasting
@@ -1292,9 +1464,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
                 )
                 # optionally, use only `cal_length` residuals
                 cal_start = cal_end - cal_length if cal_length is not None else None
+                return res[:, :, cal_start:cal_end]
 
+            if return_scores:
+                # called from `calibrate()`: only the scores of the first conformal forecast are required
+                cp_hfcs.append(calibration_scores(0))
+                continue
+
+            def conformal_predict(idx_, pred_vals_):
                 # calibrate and apply interval to the forecasts
-                q_hat_ = self._calibrate_interval(res[:, :, cal_start:cal_end])
+                q_hat_ = self._calibrate_interval(calibration_scores(idx_))
                 vals = self._apply_interval(pred_vals_, q_hat_)
 
                 # optionally, generate samples from the intervals
@@ -1362,6 +1541,134 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     cp_preds.append(cp_pred)
             cp_hfcs.append(cp_preds)
         return cp_hfcs
+
+    def _check_calibration_input(
+        self,
+        forecast_horizon: int,
+        series: TimeSeriesLike | None,
+        show_warnings: bool,
+    ) -> None:
+        """Checks that the calibration stored by :meth:`calibrate()` supports the forecast horizon and the number of
+        `series`."""
+        cal_horizon = len(self._cal_q_hats[0][0])
+        if forecast_horizon > cal_horizon:
+            raise_log(
+                ValueError(
+                    f"The model was calibrated for a maximum `forecast_horizon={cal_horizon}`, but the requested "
+                    f"forecast horizon is `{forecast_horizon}`. Call `calibrate()` with a larger `forecast_horizon`."
+                ),
+            )
+        if self.global_fit:
+            return
+
+        n_series = 1 if series is None else len(series2seq(series))
+        n_cal = len(self._cal_q_hats)
+        if n_series > n_cal:
+            raise_log(
+                ValueError(
+                    f"{n_series} series were provided, but the model was calibrated on only {n_cal} series. With "
+                    f"`global_fit=False`, the `i`-th calibration is applied to the `i`-th series."
+                ),
+            )
+        elif n_series < n_cal and show_warnings:
+            logger.warning(
+                f"Only {n_series} series were provided, which is lower than the number of series (n={n_cal}) used "
+                f"for the calibration. With `global_fit=False`, the `i`-th calibration is applied to the `i`-th "
+                f"series. This can result in a mismatch between the series and their calibration."
+            )
+
+    def _apply_calibration(
+        self,
+        series: Sequence[TimeSeries],
+        forecasts: Sequence[Sequence[TimeSeries]] | Sequence[TimeSeries],
+        num_samples: int,
+        forecast_horizon: int,
+        last_points_only: bool,
+        predict_likelihood_parameters: bool,
+    ) -> list[TimeSeries] | list[list[TimeSeries]]:
+        """Applies the calibration stored by :meth:`calibrate()` to the forecasting model's (historical) forecasts."""
+        cp_hfcs = []
+        for series_idx, (series_, s_hfcs) in enumerate(zip(series, forecasts)):
+            # no historical forecasts were generated
+            if not s_hfcs:
+                cp_hfcs.append([])
+                continue
+
+            q_hat_lo, q_hat_hi = self._cal_q_hats[0 if self.global_fit else series_idx]
+            if last_points_only:
+                # all points come from the last step in the horizon
+                horizon_slice = slice(forecast_horizon - 1, forecast_horizon)
+                s_hfcs = [s_hfcs]
+            else:
+                horizon_slice = slice(forecast_horizon)
+            q_hat = (q_hat_lo[horizon_slice], q_hat_hi[horizon_slice])
+
+            comp_names_out = (
+                self.likelihood.component_names(series=series_)
+                if predict_likelihood_parameters
+                else None
+            )
+            cp_preds = []
+            for hfc in s_hfcs:
+                vals = self._apply_interval(hfc.all_values(copy=False), q_hat)
+                if not predict_likelihood_parameters:
+                    vals = sample_from_quantiles(
+                        vals, self.quantiles, num_samples=num_samples
+                    )
+                cp_preds.append(
+                    _build_forecast_series(
+                        points_preds=vals,
+                        input_series=series_,
+                        custom_columns=comp_names_out,
+                        time_index=hfc._time_index,
+                        with_static_covs=not predict_likelihood_parameters,
+                        with_hierarchy=False,
+                        copy=False,
+                    )
+                )
+            cp_hfcs.append(cp_preds[0] if last_points_only else cp_preds)
+        return cp_hfcs
+
+    def _calibration_historical_forecasts(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: TimeSeriesLike | None,
+        future_covariates: TimeSeriesLike | None,
+        forecast_horizon: int,
+        verbose: bool | None,
+        random_state: int | None,
+        predict_kwargs: dict[str, Any],
+    ) -> Sequence[Sequence[TimeSeries]]:
+        """Generates the forecasting model's historical forecasts on `series` that are required to calibrate a
+        forecast with horizon `forecast_horizon` starting after the end of each series (the last historical forecast).
+        """
+        cal_start, cal_start_format = _get_calibration_hfc_start(
+            series=series,
+            horizon=forecast_horizon,
+            output_chunk_shift=self.output_chunk_shift,
+            cal_length=self.cal_length,
+            cal_stride=self.cal_stride,
+            start="end",
+            start_format="position",
+        )
+        return self.model.historical_forecasts(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+            num_samples=self.cal_num_samples,
+            start=cal_start,
+            start_format=cal_start_format,
+            stride=self.cal_stride,
+            retrain=False,
+            overlap_end=True,
+            last_points_only=False,
+            verbose=verbose,
+            show_warnings=False,
+            predict_likelihood_parameters=False,
+            random_state=random_state,
+            predict_kwargs=predict_kwargs,
+        )
 
     def _clean(self) -> Self:
         """Cleans the model and sub-model."""
@@ -1503,7 +1810,16 @@ class ConformalModel(GlobalForecastingModel, ABC):
         non-conformity scores."""
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
-        super()._historical_forecasts_sanity_checks(*args, **kwargs, is_conformal=True)
+        # with a calibration from `calibrate()`, the forecasts do not depend on `cal_stride` or a calibration set
+        super()._historical_forecasts_sanity_checks(
+            *args, **kwargs, is_conformal=self._cal_q_hats is None
+        )
+        if self._cal_q_hats is not None:
+            self._check_calibration_input(
+                forecast_horizon=kwargs["forecast_horizon"],
+                series=args[0],
+                show_warnings=kwargs["show_warnings"],
+            )
 
     @property
     def output_chunk_length(self) -> int | None:
@@ -1617,6 +1933,7 @@ class ConformalNaiveModel(ConformalModel):
         cal_length: int | None = None,
         cal_stride: int = 1,
         cal_num_samples: int = 500,
+        global_fit: bool = False,
         random_state: int | None = None,
     ):
         """Naive Conformal Prediction Model.
@@ -1663,6 +1980,9 @@ class ConformalNaiveModel(ConformalModel):
         - When computing `historical_forecasts()`, `backtest()`, `residuals()`, ... the above is applied for each
           forecast (the forecasting model's historical forecasts are only generated once for efficiency).
         - For multi-horizon forecasts, the above is applied for each step in the horizon separately.
+        - Optionally, the model can be calibrated once on a calibration set with :meth:`calibrate()`. All forecasting
+          methods then apply this stored calibration instead of re-calibrating each forecast on the past of the input
+          series, and do not require the calibration history as input anymore.
 
         Parameters
         ----------
@@ -1689,6 +2009,11 @@ class ConformalNaiveModel(ConformalModel):
             model). The non-conformity scores are computed on the quantile values of these forecasts (using quantiles
             `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number
             of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).
+        global_fit
+            Only effective when calling :meth:`calibrate()` with multiple series. If `True`, the non-conformity scores
+            of all series are pooled into a *single* calibration, which is applied to any series in the forecasting
+            methods. If `False`, a separate calibration is computed for each series, and the `i`-th calibration is
+            applied to the `i`-th series in the forecasting methods.
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         """
@@ -1700,6 +2025,7 @@ class ConformalNaiveModel(ConformalModel):
             cal_num_samples=cal_num_samples,
             random_state=random_state,
             cal_stride=cal_stride,
+            global_fit=global_fit,
         )
 
     def _calibrate_interval(
@@ -1746,6 +2072,7 @@ class ConformalQRModel(ConformalModel):
         cal_length: int | None = None,
         cal_stride: int = 1,
         cal_num_samples: int = 500,
+        global_fit: bool = False,
         random_state: int | None = None,
     ):
         """Conformalized Quantile Regression Model.
@@ -1795,6 +2122,9 @@ class ConformalQRModel(ConformalModel):
         - When computing `historical_forecasts()`, `backtest()`, `residuals()`, ... the above is applied for each
           forecast (the forecasting model's historical forecasts are only generated once for efficiency).
         - For multi-horizon forecasts, the above is applied for each step in the horizon separately.
+        - Optionally, the model can be calibrated once on a calibration set with :meth:`calibrate()`. All forecasting
+          methods then apply this stored calibration instead of re-calibrating each forecast on the past of the input
+          series, and do not require the calibration history as input anymore.
 
         Parameters
         ----------
@@ -1822,6 +2152,11 @@ class ConformalQRModel(ConformalModel):
             model). The non-conformity scores are computed on the quantile values of these forecasts (using quantiles
             `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number
             of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).
+        global_fit
+            Only effective when calling :meth:`calibrate()` with multiple series. If `True`, the non-conformity scores
+            of all series are pooled into a *single* calibration, which is applied to any series in the forecasting
+            methods. If `False`, a separate calibration is computed for each series, and the `i`-th calibration is
+            applied to the `i`-th series in the forecasting methods.
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         """
@@ -1840,6 +2175,7 @@ class ConformalQRModel(ConformalModel):
             cal_num_samples=cal_num_samples,
             random_state=random_state,
             cal_stride=cal_stride,
+            global_fit=global_fit,
         )
 
     def _calibrate_interval(

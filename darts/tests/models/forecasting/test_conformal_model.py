@@ -1,4 +1,5 @@
 import copy
+import logging
 import math
 import os
 
@@ -1756,3 +1757,407 @@ class TestConformalModel:
         _ = cp_model.historical_forecasts(
             forecast_horizon=n, series=val_series, overlap_end=True
         )
+
+    @pytest.mark.parametrize(
+        "config",
+        param_product(
+            [
+                (ConformalNaiveModel, "regression", True),
+                (ConformalNaiveModel, "regression", False),
+            ],
+            [1, 3, 5],
+            [None, 2],
+            [1, 2],
+            [0, 1],
+            [True, False],
+        )
+        + param_product(
+            [
+                (ConformalNaiveModel, "regression_prob", True),
+                (ConformalQRModel, "regression_qr", True),
+                (ConformalQRModel, "regression_qr", False),
+            ],
+            [1, 3],
+            [None],
+            [1],
+            [0],
+            [True, False],
+        ),
+    )
+    def test_calibrate_predict(self, config):
+        """Checks that a model calibrated with `calibrate()` predicts the same as an uncalibrated model calibrating on
+        the same input series in `predict()`, for:
+        - different horizons (smaller, equal, larger than ocl)
+        - with and without `cal_length`, `cal_stride` and output shift
+        - single and multiple (multivariate) series
+        - deterministic and probabilistic forecasting models
+        - naive conformal and conformalized quantile regression with symmetric/asymmetric non-conformity scores
+        """
+        (
+            (model_cls, model_type, symmetric),
+            n,
+            cal_length,
+            cal_stride,
+            ocs,
+            is_single,
+        ) = config
+        if ocs and n > OUT_LEN:
+            # auto-regression not allowed with ocs
+            return
+
+        series = self.helper_prepare_series(False, is_single)
+        model_fc = train_model(
+            series,
+            model_type=model_type,
+            model_params={"output_chunk_shift": ocs},
+            quantiles=q,
+        )
+        model_kwargs = {
+            "quantiles": q,
+            "symmetric": symmetric,
+            "cal_length": cal_length,
+            "cal_stride": cal_stride,
+        }
+        model = model_cls(model_fc, **model_kwargs)
+        model_cal = model_cls(model_fc, **model_kwargs)
+        assert model_cal.calibrate(series, forecast_horizon=n) is model_cal
+
+        preds = model.predict(n, series=series, **pred_lklp)
+        preds_cal = model_cal.predict(n, series=series, **pred_lklp)
+        assert isinstance(preds_cal, TimeSeries) == is_single
+        if is_single:
+            preds, preds_cal = [preds], [preds_cal]
+        assert len(preds_cal) == len(preds)
+        for pred, pred_cal in zip(preds, preds_cal):
+            assert pred_cal.time_index.equals(pred.time_index)
+            assert pred_cal.columns.equals(pred.columns)
+            self.helper_compare_preds(pred_cal, pred.all_values(), model_type)
+
+        if model_type != "regression":
+            return
+
+        # sampled predictions are identical with the same random state
+        preds = model.predict(n, series=series, num_samples=10, random_state=1)
+        preds_cal = model_cal.predict(n, series=series, num_samples=10, random_state=1)
+        if is_single:
+            preds, preds_cal = [preds], [preds_cal]
+        for pred, pred_cal in zip(preds, preds_cal):
+            assert pred_cal.n_samples == 10
+            np.testing.assert_array_almost_equal(
+                pred_cal.all_values(), pred.all_values()
+            )
+
+    @pytest.mark.parametrize("use_covs", [False, True])
+    def test_calibrate_predict_input(self, use_covs):
+        """Checks that a calibrated model only requires the input of the forecasting model in `predict()`, and that it
+        supports all horizons up to the calibrated `forecast_horizon`."""
+        n = OUT_LEN
+        series = self.ts_pass_train
+        model_params, covs_kwargs = {}, {}
+        if use_covs:
+            model_params = {
+                "lags_past_covariates": IN_LEN,
+                "lags_future_covariates": (IN_LEN, OUT_LEN),
+            }
+            # covariates extend `n` steps after the end of `series`, as required by `predict()`
+            covs = self.time_covariates[: len(series) + n]
+            covs_kwargs = {"past_covariates": covs, "future_covariates": covs}
+
+        model_fc = train_model(series, model_params=model_params, **covs_kwargs)
+        pred = ConformalNaiveModel(model_fc, quantiles=q).predict(
+            n, series=series, **covs_kwargs, **pred_lklp
+        )
+        model = ConformalNaiveModel(model_fc, quantiles=q).calibrate(
+            series, forecast_horizon=n, **covs_kwargs
+        )
+
+        # the calibrated model only requires the input of the forecasting model (no calibration history)
+        series_short = series[-IN_LEN:]
+        covs_kwargs_short = {
+            name: covs_[-(IN_LEN + n) :] for name, covs_ in covs_kwargs.items()
+        }
+        pred_cal = model.predict(
+            n, series=series_short, **covs_kwargs_short, **pred_lklp
+        )
+        assert pred_cal.time_index.equals(pred.time_index)
+        np.testing.assert_array_almost_equal(pred_cal.all_values(), pred.all_values())
+
+        # an uncalibrated model requires the calibration history
+        with pytest.raises(ValueError) as exc:
+            ConformalNaiveModel(model_fc, quantiles=q).predict(
+                n, series=series_short, **covs_kwargs_short
+            )
+        assert str(exc.value).startswith(
+            "Could not build the minimum required calibration input"
+        )
+
+        # without `series`, the calibrated model forecasts after the end of the forecasting model's training series
+        pred_cal = model.predict(n, **pred_lklp)
+        assert pred_cal.time_index.equals(pred.time_index)
+        np.testing.assert_array_almost_equal(pred_cal.all_values(), pred.all_values())
+
+        # shorter horizons use the calibrated intervals of the first steps
+        pred_cal_1 = model.predict(
+            1, series=series_short, **covs_kwargs_short, **pred_lklp
+        )
+        np.testing.assert_array_almost_equal(
+            pred_cal_1.all_values(), pred[:1].all_values()
+        )
+
+        # longer horizons require a new calibration
+        with pytest.raises(ValueError) as exc:
+            model.predict(n + 1, series=series_short, **covs_kwargs_short)
+        assert str(exc.value) == (
+            f"The model was calibrated for a maximum `forecast_horizon={n}`, but the requested forecast "
+            f"horizon is `{n + 1}`. Call `calibrate()` with a larger `forecast_horizon`."
+        )
+
+    @pytest.mark.parametrize("config", param_product([1, 3], [None, 2]))
+    def test_calibrate_multi_series(self, caplog, config):
+        """Checks the calibration on multiple series with one calibration per series (`global_fit=False`) and with a
+        single calibration from the pooled non-conformity scores of all series (`global_fit=True`)."""
+        n, cal_length = config
+        series = self.helper_prepare_series(True, False)
+        series_new = series + [series[0] + 10.0]
+        model_fc = train_model(series)
+        model_kwargs = {"quantiles": q, "cal_length": cal_length}
+
+        # `global_fit=False`: the `i`-th calibration is applied to the `i`-th series
+        model = ConformalNaiveModel(model_fc, **model_kwargs).calibrate(
+            series, forecast_horizon=n
+        )
+        preds = model.predict(n, series=series, **pred_lklp)
+        assert preds == ConformalNaiveModel(model_fc, **model_kwargs).predict(
+            n, series=series, **pred_lklp
+        )
+
+        with pytest.raises(ValueError) as exc:
+            model.predict(n, series=series_new)
+        assert str(exc.value) == (
+            "3 series were provided, but the model was calibrated on only 2 series. With `global_fit=False`, the "
+            "`i`-th calibration is applied to the `i`-th series."
+        )
+        with pytest.raises(ValueError) as exc:
+            model.historical_forecasts(series_new, forecast_horizon=n)
+        assert str(exc.value).startswith("3 series were provided")
+
+        with caplog.at_level(logging.WARNING):
+            pred = model.predict(n, series=series[:1], **pred_lklp)
+        assert caplog.messages == [
+            "Only 1 series were provided, which is lower than the number of series (n=2) used for the calibration. "
+            "With `global_fit=False`, the `i`-th calibration is applied to the `i`-th series. This can result in a "
+            "mismatch between the series and their calibration."
+        ]
+        assert pred == preds[:1]
+
+        # `global_fit=True`: a single calibration from the pooled scores is applied to any series
+        model = ConformalNaiveModel(
+            model_fc, global_fit=True, **model_kwargs
+        ).calibrate(series, forecast_horizon=n)
+        preds = model.predict(n, series=series_new, **pred_lklp)
+        assert len(preds) == len(series_new)
+
+        # the interval widths are identical for all series
+        widths = [pred.all_values() - pred.all_values()[:, 1:2] for pred in preds]
+        for widths_ in widths[1:]:
+            np.testing.assert_array_almost_equal(widths_, widths[0])
+        if n > 1:
+            return
+
+        # with `n=1`, the expected intervals can be computed from the pooled scores directly
+        residuals = model_fc.residuals(
+            series,
+            retrain=False,
+            forecast_horizon=n,
+            overlap_end=True,
+            last_points_only=False,
+            values_only=True,
+            metric=ae,
+        )
+        residuals = np.concatenate(
+            [
+                np.concatenate(res[:-1], axis=2)[:, :, -(cal_length or 0) :]
+                for res in residuals
+            ],
+            axis=2,
+        )
+        for series_, pred in zip(series_new, preds):
+            pred_vals_expected = self.helper_compute_pred_cal(
+                residuals,
+                model_fc.predict(n, series=series_).all_values(),
+                n,
+                q,
+                model_type="regression",
+                symmetric=True,
+            )
+            np.testing.assert_array_almost_equal(pred.all_values(), pred_vals_expected)
+
+    @pytest.mark.parametrize("config", param_product([1, 3, 5], [True, False], [1, 2]))
+    def test_calibrate_historical_forecasts(self, config):
+        """Checks that a calibrated model applies the stored calibration to all historical forecasts, without requiring
+        a calibration set."""
+        n, is_single, cal_stride = config
+        series = self.helper_prepare_series(True, is_single)
+        model_fc = train_model(series)
+        model = ConformalNaiveModel(
+            model_fc, quantiles=q, cal_stride=cal_stride
+        ).calibrate(series, forecast_horizon=n)
+
+        # `stride` does not have to be a multiple of `cal_stride` with a calibrated model
+        hfc_kwargs = {
+            "forecast_horizon": n,
+            "overlap_end": True,
+            "stride": 1,
+            **pred_lklp,
+        }
+        hfcs = model.historical_forecasts(series, last_points_only=False, **hfc_kwargs)
+        hfcs_fc = model_fc.historical_forecasts(
+            series,
+            forecast_horizon=n,
+            overlap_end=True,
+            last_points_only=False,
+            retrain=False,
+        )
+        hfcs_lpo = model.historical_forecasts(
+            series, last_points_only=True, **hfc_kwargs
+        )
+        if is_single:
+            hfcs, hfcs_fc, hfcs_lpo = [hfcs], [hfcs_fc], [hfcs_lpo]
+        series = [series] if is_single else series
+
+        for hfc, hfc_fc, hfc_lpo in zip(hfcs, hfcs_fc, hfcs_lpo):
+            # no calibration set required: the forecasts start at the first predictable point
+            assert len(hfc) == len(hfc_fc)
+            for fc, fc_fc in zip(hfc, hfc_fc):
+                assert fc.time_index.equals(fc_fc.time_index)
+
+            # last points only are the last points of each forecast
+            hfc_last_points = concatenate([fc[-1:] for fc in hfc], axis=0)
+            assert hfc_lpo.time_index.equals(hfc_last_points.time_index)
+            np.testing.assert_array_almost_equal(
+                hfc_lpo.all_values(), hfc_last_points.all_values()
+            )
+
+        # each historical forecast is identical to a calibrated prediction from the same forecast point
+        for idx, fc in enumerate(hfcs[0]):
+            series_input = [
+                series_.drop_after(fc.start_time())
+                if fc.start_time() <= series_.end_time()
+                else series_
+                for series_ in series
+            ]
+            preds = model.predict(n, series=series_input, **pred_lklp)
+            for hfc, pred in zip(hfcs, preds):
+                assert hfc[idx].time_index.equals(pred.time_index)
+                np.testing.assert_array_almost_equal(
+                    hfc[idx].all_values(), pred.all_values()
+                )
+
+        # `start` is applied to the forecasts directly
+        hfcs_start = model.historical_forecasts(
+            series, start=0.5, last_points_only=False, **hfc_kwargs
+        )
+        for hfc, hfc_start in zip(hfcs, hfcs_start):
+            assert hfc_start == hfc[-len(hfc_start) :]
+
+        # backtest uses the calibrated historical forecasts
+        bt_kwargs = {
+            "metric": mic,
+            "metric_kwargs": {"q_interval": model.q_interval},
+            "last_points_only": True,
+        }
+        assert model.backtest(
+            series, forecast_horizon=n, **bt_kwargs, **pred_lklp
+        ) == model.backtest(
+            series,
+            historical_forecasts=model.historical_forecasts(
+                series, forecast_horizon=n, last_points_only=True, **pred_lklp
+            ),
+            **bt_kwargs,
+        )
+
+        # longer horizons require a new calibration
+        with pytest.raises(ValueError) as exc:
+            model.historical_forecasts(series, forecast_horizon=n + 1)
+        assert str(exc.value).startswith(
+            f"The model was calibrated for a maximum `forecast_horizon={n}`"
+        )
+
+    def test_calibrate_save_load(self, tmpdir_fn):
+        """Checks that the calibration is saved and loaded with the model (using safe loading)."""
+        n = OUT_LEN
+        series = self.ts_pass_train
+        series_short = series[-IN_LEN:]
+        model = ConformalNaiveModel(
+            train_model(series), quantiles=q, random_state=42
+        ).calibrate(series, forecast_horizon=n)
+        pred = model.predict(n, series=series_short, **pred_lklp)
+        pred_samples = model.predict(
+            n, series=series_short, num_samples=10, random_state=1
+        )
+
+        path = os.path.join(tmpdir_fn, "model.pkl")
+        path_clean = os.path.join(tmpdir_fn, "model_clean.pkl")
+        model.save(path)
+        model.save(path_clean, clean=True)
+        for path_ in [path, path_clean]:
+            model_loaded = ConformalNaiveModel.load(path_)
+            assert model_loaded.predict(n, series=series_short, **pred_lklp) == pred
+            assert (
+                model_loaded.predict(
+                    n, series=series_short, num_samples=10, random_state=1
+                )
+                == pred_samples
+            )
+            with pytest.raises(ValueError):
+                model_loaded.predict(n + 1, series=series_short)
+
+    def test_calibrate_fit_and_errors(self):
+        """Checks the interaction of `calibrate()` with `fit()` and invalid calibration inputs."""
+        n = OUT_LEN
+        series = self.ts_pass_train
+        series_short = series[-IN_LEN:]
+        model_fc = train_model(series)
+        pred_fc = model_fc.predict(n)
+        pred = ConformalNaiveModel(model_fc, quantiles=q).predict(
+            n, series=series, **pred_lklp
+        )
+        too_short_msg = "Could not build the minimum required calibration input"
+
+        # `calibrate()` uses the forecasting model's `output_chunk_length` by default and does not train the model
+        model = ConformalNaiveModel(model_fc, quantiles=q)
+        model.calibrate(series + 10.0)
+        assert model.model.predict(n) == pred_fc
+        pred_cal = model.predict(n, series=series_short, **pred_lklp)
+        assert not np.allclose(pred_cal.all_values(), pred.all_values())
+        with pytest.raises(ValueError):
+            model.predict(OUT_LEN + 1, series=series_short)
+
+        # calling `calibrate()` again replaces the calibration
+        model.calibrate(series, forecast_horizon=n)
+        pred_cal = model.predict(n, series=series_short, **pred_lklp)
+        np.testing.assert_array_almost_equal(pred_cal.all_values(), pred.all_values())
+
+        # an untrained model copy is not calibrated
+        with pytest.raises(ValueError) as exc:
+            model.untrained_model().predict(n, series=series_short)
+        assert str(exc.value).startswith(too_short_msg)
+
+        # `fit()` trains the forecasting model and discards the calibration
+        model.fit(series)
+        with pytest.raises(ValueError) as exc:
+            model.predict(n, series=series_short)
+        assert str(exc.value).startswith(too_short_msg)
+
+        # invalid forecast horizon
+        with pytest.raises(ValueError) as exc:
+            model.calibrate(series, forecast_horizon=0)
+        assert str(exc.value) == (
+            "`forecast_horizon` must be a positive integer (it is required if the forecasting `model` has no "
+            "`output_chunk_length`). Received `0`."
+        )
+
+        # calibration series too short
+        with pytest.raises(ValueError) as exc:
+            model.calibrate(series_short, forecast_horizon=n)
+        assert str(exc.value).startswith(too_short_msg)
