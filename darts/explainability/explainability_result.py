@@ -454,7 +454,7 @@ class ShapSingleExplainabilityResult(ComponentBasedExplainabilityResult):
     - :func:`get_explanation() <get_explanation>`: SHAP values for a given component in multivariate ``TimeSeries``
       format.
     - :func:`get_feature_values() <get_feature_values>`: input feature values for a given component in
-      single-timestamp multivariate ``TimeSeries`` format.
+      multivariate ``TimeSeries`` format.
     - :func:`get_shap_explanation_object() <get_shap_explanation_object>`: ``shap.Explanation`` object for a given
       component.
 
@@ -517,9 +517,9 @@ class ShapSingleExplainabilityResult(ComponentBasedExplainabilityResult):
         Returns the ``TimeSeries`` representing the feature values for a given component.
 
         The components of the ``TimeSeries`` correspond to the input features used by the model to produce the
-        forecasts. The time index contains only one timestamp, which is the first forecasted timestamp in the future.
-        The values of the ``TimeSeries`` are the feature values used by the model to produce the forecast starting
-        at that timestamp.
+        forecasts. When all horizons use the same input features, the time index contains only the first forecasted
+        timestamp. For sklearn models with ``multi_models=False``, each horizon uses a different input window, so
+        the time index contains every forecasted timestamp and each row contains the feature values for that horizon.
 
         Parameters
         ----------

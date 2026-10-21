@@ -36,6 +36,11 @@ Depending on the model and training data, features can include:
     - ``{comp}`` is the component name of the target series if static covariates are component-specific, or
       ``"global_components"`` if they are global.
 
+    With ``multi_models=False``, the same estimator predicts each horizon from a different input window.
+    Lag names retain the model's training convention: for horizon ``h``, the window starts
+    ``output_chunk_length - h`` steps earlier than for ``multi_models=True``. The feature values in the
+    explanation reflect this shift.
+
 .. note::
    SHAP uses a feature-independence assumption. Indirect effects between features are not captured.
 
@@ -543,6 +548,11 @@ class ShapExplainer(_ForecastingModelExplainer):
         )
 
         freq = foreground_series_[0].freq
+        n_feature_windows = (
+            self.n
+            if isinstance(self.model, SKLearnModel) and not self.model.multi_models
+            else 1
+        )
         shap_values_dict = {}
         feature_values_dict = {}
         shap_explanation_object_dict = {}
@@ -560,9 +570,9 @@ class ShapExplainer(_ForecastingModelExplainer):
                 times=generate_index(
                     start=shap_[t].time_index[0],
                     freq=freq,
-                    length=1,
+                    length=n_feature_windows,
                 ),
-                values=shap_[t].data[:1],
+                values=shap_[t].data[:n_feature_windows],
                 components=shap_[t].feature_names,
             )
             shap_explanation_object_dict[t] = shap_[t]
@@ -666,7 +676,7 @@ class ShapExplainer(_ForecastingModelExplainer):
                 )
                 shap.summary_plot(
                     shap_values=shaps_[h][t],
-                    features=foreground_arr,
+                    features=shaps_[h][t].data,
                     plot_type=plot_type,
                     **(plot_kwargs or {}),
                 )
@@ -763,7 +773,7 @@ class ShapExplainer(_ForecastingModelExplainer):
 
         return shap.force_plot(
             base_value=shap_[horizon][target_component],
-            features=foreground_arr,
+            features=shap_[horizon][target_component].data,
             out_names=target_component,
             **(plot_kwargs or {}),
         )

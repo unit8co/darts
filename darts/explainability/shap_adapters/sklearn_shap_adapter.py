@@ -3,12 +3,15 @@ SKLearnModel Adapter for SHAP Explainer
 ---------------------------------------
 """
 
+from collections.abc import Sequence
+
 import numpy as np
 import pandas as pd
 import shap
 
 from darts.explainability.shap_adapters.shap_adapter import (
     MIN_BACKGROUND_SAMPLE,
+    DartsShapExplanation,
     ShapAdapter,
     SHAPMethod,
 )
@@ -73,6 +76,12 @@ class SKLearnShapAdapter(ShapAdapter):
         shap_method: SHAPMethod,
         **kwargs,
     ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
+        if not model.multi_models:
+            background_arr = background_arr[:, -len(self.feature_names) :]
+            self.background_arr = background_arr
+            self.n_output_features = self.n_targets_likelihood
+            self.single_output = self.n_targets_likelihood == 1
+
         likelihood = model.likelihood
         has_quantile_container = model._model_container is not None
 
@@ -94,7 +103,7 @@ class SKLearnShapAdapter(ShapAdapter):
         # per-estimator explainers (MultiOutputMixin and/or QuantileRegression)
         n_params = likelihood.num_parameters if likelihood is not None else 1
         explainers = {}
-        for i in range(self.n):
+        for i in range(self.n if model.multi_models else 1):
             explainers[i] = {}
             for j in range(self.n_targets_likelihood):
                 if has_quantile_container:
@@ -112,6 +121,33 @@ class SKLearnShapAdapter(ShapAdapter):
                     **kwargs,
                 )
         return explainers
+
+    def shap_explanations(
+        self,
+        foreground_arr: np.ndarray,
+        foreground_times: pd.Index,
+        horizons: Sequence[int],
+        target_components: Sequence[str],
+        **kwargs,
+    ) -> dict[int, dict[str, DartsShapExplanation]]:
+        if self.model.multi_models:
+            return super().shap_explanations(
+                foreground_arr, foreground_times, horizons, target_components, **kwargs
+            )
+
+        # A single estimator predicts the final output step. Earlier horizons
+        # use older feature windows, as in SKLearnModel.predict().
+        windows = foreground_arr.reshape(len(foreground_arr), self.n, -1)
+        return {
+            horizon: super(SKLearnShapAdapter, self).shap_explanations(
+                windows[:, horizon - 1],
+                foreground_times,
+                [1],
+                target_components,
+                **kwargs,
+            )[1]
+            for horizon in horizons
+        }
 
     def _build_explainer_sklearn(
         self,
@@ -181,6 +217,27 @@ class SKLearnShapAdapter(ShapAdapter):
         # Remove sample axis:
         X = X[:, :, 0]
 
+        if not self.model.multi_models:
+            series_features = np.split(X, np.cumsum([len(idx) for idx in indexes])[:-1])
+            windows = []
+            for features in series_features:
+                n_forecasts = len(features) - self.n + 1
+                if n_forecasts <= 0:
+                    raise_log(
+                        ValueError(
+                            "The series does not contain enough history to explain "
+                            "all horizons with `multi_models=False`."
+                        )
+                    )
+                windows.append(
+                    np.concatenate(
+                        [features[h : h + n_forecasts] for h in range(self.n)],
+                        axis=1,
+                    )
+                )
+            X = np.concatenate(windows)
+            indexes = [idx[self.n - 1 :] for idx in indexes]
+
         if input_type == "background" and len(X) <= MIN_BACKGROUND_SAMPLE:
             raise_log(
                 ValueError(
@@ -240,14 +297,5 @@ class SKLearnShapAdapter(ShapAdapter):
                 ValueError(
                     f"Invalid `model` type: `{type(model)}`. Only models of type "
                     f"`SKLearnModel` are supported."
-                )
-            )
-
-        if not model.multi_models:
-            raise_log(
-                ValueError(
-                    "Invalid `multi_models` value `False`. Currently, "
-                    "ShapExplainer only supports SKLearnModels "
-                    "with `multi_models=True`."
                 )
             )
