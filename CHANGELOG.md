@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `extract_subseries()` raising an error on all-NaN series and on multivariate series with leading/trailing NaNs when `mode="any"`, and fixed `TimeSeries.strip()` and `longest_contiguous_slice()` returning unstripped NaNs on all-NaN series or with `mode="any"`. by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
+
 **Dependencies**
 
 ### For developers of the library:
