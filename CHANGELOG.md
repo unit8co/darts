@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `ShapExplainer` rejecting sklearn models trained with `multi_models=False` and `output_chunk_length > 1`. Explanations now use the input window for each forecast horizon, including covariates and multivariate targets. [#1686](https://github.com/unit8co/darts/issues/1686) by [ska2704](https://github.com/ska2704).
+
 **Dependencies**
 
 ### For developers of the library:

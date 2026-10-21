@@ -276,17 +276,6 @@ class TestShapExplainer:
         ):
             ShapExplainer(m)
 
-        # For now, multi_models=False not allowed
-        m = LinearRegressionModel(lags=1, output_chunk_length=2, multi_models=False)
-        m.fit(
-            series=self.target_ts,
-        )
-        with pytest.raises(ValueError):
-            ShapExplainer(
-                m,
-                self.target_ts,
-            )
-
         # Linear model - also not a MultiOutputRegressor
         m = LinearRegressionModel(
             lags=1,
@@ -329,6 +318,170 @@ class TestShapExplainer:
 
         shap_explain = ShapExplainer(m)
         assert isinstance(shap_explain.explainer.explainer, shap.explainers.Linear)
+
+    @pytest.mark.parametrize("output_chunk_length", [1, 3])
+    @pytest.mark.parametrize("multivariate", [False, True])
+    @pytest.mark.parametrize("estimator", ["linear", "native_tree", "wrapped_tree"])
+    def test_single_model_explanations(
+        self, output_chunk_length, multivariate, estimator
+    ):
+        series = (self.target_ts if multivariate else self.target_ts["price"]).astype(
+            "float64"
+        )
+        estimators = {
+            "linear": sklearn.linear_model.LinearRegression(),
+            "native_tree": sklearn.ensemble.ExtraTreesRegressor(
+                n_estimators=3, random_state=0
+            ),
+            "wrapped_tree": sklearn.ensemble.GradientBoostingRegressor(
+                n_estimators=3, random_state=0
+            ),
+        }
+        model = SKLearnModel(
+            lags=3,
+            output_chunk_length=output_chunk_length,
+            multi_models=False,
+            model=estimators[estimator],
+        ).fit(series)
+        explainer = ShapExplainer(model, test_stationarity=False)
+        foreground = series[-15:]
+        prediction = model.predict(output_chunk_length, series=foreground)
+        results = explainer.explain(foreground)
+        single = explainer.explain_single(foreground)
+
+        for component in series.components:
+            raw_single = single.get_shap_explanation_object(component=component)
+            assert_array_equal(
+                single.get_feature_values(component=component).values(), raw_single.data
+            )
+            np.testing.assert_allclose(
+                raw_single.base_values + raw_single.values.sum(axis=1),
+                prediction[component].values().ravel(),
+            )
+            for horizon in range(1, output_chunk_length + 1):
+                raw = results.get_shap_explanation_object(
+                    horizon=horizon, component=component
+                )
+                np.testing.assert_allclose(
+                    raw.base_values[-1] + raw.values[-1].sum(),
+                    prediction[component].values()[horizon - 1, 0],
+                )
+                assert_array_equal(raw.data[-1], raw_single.data[horizon - 1])
+                assert_array_equal(raw.values[-1], raw_single.values[horizon - 1])
+                assert (
+                    results.get_feature_values(
+                        horizon=horizon, component=component
+                    ).end_time()
+                    == foreground.end_time() + foreground.freq
+                )
+
+    @pytest.mark.parametrize("quantiles", [[0.5], [0.1, 0.5, 0.9]])
+    def test_single_model_quantile_explanations(self, quantiles):
+        series = self.target_ts.astype("float64")
+        model = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=3,
+            multi_models=False,
+            likelihood="quantile",
+            quantiles=quantiles,
+        ).fit(series)
+        explainer = ShapExplainer(model, test_stationarity=False)
+        prediction = model.predict(3, predict_likelihood_parameters=True)
+        results = explainer.explain(horizons=[3, 1])
+        single = explainer.explain_single()
+        for component in prediction.components:
+            raw_single = single.get_shap_explanation_object(component=component)
+            np.testing.assert_allclose(
+                raw_single.base_values + raw_single.values.sum(axis=1),
+                prediction[component].values().ravel(),
+            )
+            for horizon in [3, 1]:
+                raw = results.get_shap_explanation_object(
+                    horizon=horizon, component=component
+                )
+                np.testing.assert_allclose(
+                    raw.base_values[-1] + raw.values[-1].sum(),
+                    prediction[component].values()[horizon - 1, 0],
+                )
+
+    @pytest.mark.parametrize("range_index", [False, True])
+    def test_single_model_covariates_and_multiple_series(self, range_index):
+        series = self.target_ts_with_multi_component_static_covs.astype("float64")
+        past = self.past_cov_ts.astype("float64")
+        future = self.fut_cov_ts.astype("float64")
+        if range_index:
+            series = TimeSeries.from_values(
+                series.values(),
+                columns=series.components,
+                static_covariates=series.static_covariates,
+            )
+            past = TimeSeries.from_values(past.values(), columns=past.components)
+            future = TimeSeries.from_values(future.values(), columns=future.components)
+        targets = [series, series + 50]
+        past_covs = [past, past + 100]
+        future_covs = [future, future - 100]
+        model = LinearRegressionModel(
+            lags={"price": [-3, -2], "power": [-1]},
+            lags_past_covariates=[-2],
+            lags_future_covariates=[0, 1],
+            output_chunk_length=3,
+            multi_models=False,
+        ).fit(targets, past_covariates=past_covs, future_covariates=future_covs)
+        explainer = ShapExplainer(
+            model,
+            background_series=targets,
+            background_past_covariates=past_covs,
+            background_future_covariates=future_covs,
+            test_stationarity=False,
+        )
+        results = explainer.explain()
+        for i, target in enumerate(targets):
+            raw = results.get_shap_explanation_object(horizon=1, component="power")[i]
+            for idx in [0, -1]:
+                origin = raw.time_index[idx]
+                context = target.drop_after(origin - target.freq, keep_point=True)
+                prediction = model.predict(
+                    3,
+                    series=context,
+                    past_covariates=past_covs[i],
+                    future_covariates=future_covs[i],
+                )
+                for horizon in [1, 2, 3]:
+                    explanation = results.get_shap_explanation_object(
+                        horizon=horizon, component="power"
+                    )[i]
+                    np.testing.assert_allclose(
+                        explanation.base_values[idx] + explanation.values[idx].sum(),
+                        prediction["power"].values()[horizon - 1, 0],
+                    )
+
+    def test_single_model_short_foreground(self):
+        series = self.target_ts["price"].astype("float64")
+        model = LinearRegressionModel(
+            lags=3, output_chunk_length=3, multi_models=False
+        ).fit(series)
+        explainer = ShapExplainer(model, test_stationarity=False)
+        with pytest.raises(ValueError, match="enough history"):
+            explainer.explain(series[-4:])
+        result = explainer.explain(series[-5:])
+        assert len(result.get_explanation(horizon=1)) == 1
+        sampled = ShapExplainer(
+            model, background_num_samples=5, test_stationarity=False
+        )
+        assert sampled.explainer.background_arr.shape == (5, 3)
+
+    def test_single_model_plots(self, mpl_safe_plotting):
+        series = self.target_ts["price"].astype("float64")
+        model = LinearRegressionModel(
+            lags=2, output_chunk_length=3, multi_models=False
+        ).fit(series)
+        explainer = ShapExplainer(model, test_stationarity=False)
+        result = explainer.summary_plot(
+            foreground_series=series[-20:], num_samples=5, horizons=[1, 3], show=False
+        )
+        assert result[1]["price"].data.shape == (5, 2)
+        plot = explainer.force_plot(foreground_series=series[-20:], horizon=2)
+        assert isinstance(plot, shap.plots._force.BaseVisualizer)
 
     def test_explain(self):
         m = self.model_cls(
