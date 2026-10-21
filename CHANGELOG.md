@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
+- Fixed `extract_subseries()` raising an error on all-NaN series and on multivariate series with leading/trailing NaNs when `mode="any"`, and fixed `TimeSeries.strip()` and `longest_contiguous_slice()` returning unstripped NaNs on all-NaN series or with `mode="any"`. by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 
 **Dependencies**
 

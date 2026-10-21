@@ -2164,6 +2164,23 @@ class TestTimeSeries:
         assert len(series1.longest_contiguous_slice()) == 3
         assert len(series1.longest_contiguous_slice(2)) == 6
 
+        # all-NaN series returns empty series
+        all_nan = TimeSeries.from_values(np.full((5, 1), np.nan))
+        assert len(all_nan.longest_contiguous_slice()) == 0
+
+        # multivariate series with mode="any" and boundary partial NaNs
+        df_multi = pd.DataFrame(
+            {
+                "a": [np.nan, 1.0, 2.0, 3.0, 4.0],
+                "b": [1.0, 1.0, 2.0, 3.0, np.nan],
+            },
+            index=pd.date_range("20130101", periods=5),
+        )
+        ts_multi = TimeSeries.from_dataframe(df_multi)
+        res_lcs = ts_multi.longest_contiguous_slice(max_gap_size=1, mode="any")
+        assert len(res_lcs) == 3
+        assert not np.isnan(res_lcs.values()).any()
+
     @pytest.mark.parametrize(
         "times",
         [
