@@ -166,6 +166,22 @@ class TestTimeSeriesMultivariate:
         assert (series1.strip().time_index == self.times1[1:-1]).all()
         assert (series1.strip(how="any").time_index == self.times1[2:-2]).all()
 
+        # all-NaN multivariate series strips to empty series with preserved components
+        all_nan_series = TimeSeries.from_values(
+            np.full((5, 2), np.nan), columns=["0", "1"]
+        )
+        assert len(all_nan_series.strip()) == 0
+        assert len(all_nan_series.strip(how="any")) == 0
+        assert all_nan_series.strip().components.tolist() == ["0", "1"]
+
+        # multivariate series where every row has at least one NaN
+        row_nans = TimeSeries.from_values(np.array([[np.nan, 1.0], [2.0, np.nan]]))
+        assert len(row_nans.strip(how="any")) == 0
+
+        # empty series strips to empty series
+        empty_series = TimeSeries.from_values(np.array([]))
+        assert len(empty_series.strip()) == 0
+
     """
     Testing new multivariate methods.
     """
