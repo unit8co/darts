@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `check_seasonality()` using an incorrect significance threshold and omitting the preceding lag from Bartlett's standard error, which caused false seasonality detections. This can change automatically inferred periods in `Theta` and `FourTheta`; set `seasonality_period` when the period is known. [#3286](https://github.com/unit8co/darts/issues/3286) by [Aman Agnihotri](https://github.com/its-amann).
+
 **Dependencies**
 
 ### For developers of the library:
