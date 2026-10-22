@@ -68,6 +68,16 @@ def _historical_forecasts_general_checks(
             ValueError("`stride` must be a positive integer."),
         )
 
+    if kwargs.get("concatenate_forecasts", False) and (
+        n.last_points_only or n.stride != n.forecast_horizon
+    ):
+        raise_log(
+            ValueError(
+                "`concatenate_forecasts=True` requires `last_points_only=False` "
+                "and `stride == forecast_horizon`."
+            ),
+        )
+
     # check stride for ConformalModel
     if is_conformal and (
         n.stride < model.cal_stride or n.stride % model.cal_stride > 0

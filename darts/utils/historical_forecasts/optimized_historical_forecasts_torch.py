@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
+from darts.logging import raise_log
 from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_boundaries,
     _process_predict_start_points_bounds,
@@ -35,6 +36,7 @@ def _optimized_historical_forecasts(
     predict_likelihood_parameters: bool = False,
     random_state: int | None = None,
     predict_kwargs: dict[str, Any] | None = None,
+    concatenate_forecasts: bool = False,
 ) -> Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
     """
     Optimized historical forecasts for TorchForecastingModels
@@ -88,14 +90,13 @@ def _optimized_historical_forecasts(
         bounds=bounds,
     )
 
-    # to avoid having to generate `TimeSeries` twice when `last_points_only=True`, we only
-    # return the values in that case
+    # Avoid creating intermediate forecast series when returning one series per input.
     model_out = model.predict_from_dataset(
         n=forecast_horizon,
         dataset=dataset,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
-        values_only=last_points_only,
+        values_only=last_points_only or concatenate_forecasts,
         random_state=random_state,
         **predict_kwargs,
     )
@@ -109,20 +110,30 @@ def _optimized_historical_forecasts(
         pred_idx_start = 0 if not series_idx else cum_lengths[series_idx - 1]
         pred_idx_end = cum_lengths[series_idx]
 
-        if last_points_only:
+        if last_points_only or concatenate_forecasts:
             # model output is tuple of (np.ndarray of predictions, series schemas, pred start times)
             preds = model_out[0][pred_idx_start:pred_idx_end]
             schema = model_out[1][pred_idx_start]
             pred_start = model_out[2][pred_idx_start]
 
-            # predictions come with the entire horizon: we extract last values
-            preds = preds[:, -1]
-            pred_start += (forecast_horizon - 1) * schema["time_freq"]
+            if last_points_only:
+                preds = preds[:, -1]
+                pred_start += (forecast_horizon - 1) * schema["time_freq"]
+                schema["time_freq"] *= stride
+            else:
+                pred_starts = model_out[2][pred_idx_start:pred_idx_end]
+                if any(
+                    left + forecast_horizon * schema["time_freq"] != right
+                    for left, right in zip(pred_starts, pred_starts[1:])
+                ):
+                    raise_log(
+                        ValueError(
+                            "When concatenating over time axis, all series need to be "
+                            "contiguous in the time dimension."
+                        )
+                    )
+                preds = preds.reshape(-1, *preds.shape[2:])
 
-            # adjust frequency with stride
-            schema["time_freq"] *= stride
-
-            # predictions come with the entire horizon: we extract last values
             preds = _build_forecast_series_from_schema(
                 values=preds,
                 schema=schema,

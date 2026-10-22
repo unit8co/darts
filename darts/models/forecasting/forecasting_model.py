@@ -911,14 +911,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             each series.
         """
         # note: decorator already sanity-checked the parameters
-        if concatenate_forecasts and (last_points_only or stride != forecast_horizon):
-            raise_log(
-                ValueError(
-                    "`concatenate_forecasts=True` requires `last_points_only=False` "
-                    "and `stride == forecast_horizon`."
-                ),
-            )
-
         model: ForecastingModel = self
 
         fit_kwargs = fit_kwargs or {}
@@ -939,9 +931,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         def process_forecasts(forecasts):
             if concatenate_forecasts:
+                if sequence_type_in == SeriesType.SINGLE:
+                    forecasts = [forecasts]
                 forecasts = [
-                    concatenate(fc, axis=0)
-                    for fc in series2seq(forecasts, seq_type_out=SeriesType.SEQ_SEQ)
+                    fc if isinstance(fc, TimeSeries) else concatenate(fc, axis=0)
+                    for fc in forecasts
                 ]
                 return series2seq(forecasts, seq_type_out=sequence_type_in)
             return forecasts
@@ -1006,6 +1000,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
                 predict_kwargs=predict_kwargs,
+                # Inverse transformations can depend on each window's history (e.g. Diff).
+                # Keep those windows separate until after inversion.
+                concatenate_forecasts=concatenate_forecasts
+                and not (
+                    "series" in data_transformers
+                    and data_transformers["series"].invertible
+                ),
             )
 
             return process_forecasts(
@@ -2960,6 +2961,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         predict_kwargs: dict[str, Any] | None = None,
+        concatenate_forecasts: bool = False,
     ) -> Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
         logger.warning(
             "`optimized historical forecasts is not available for this model, use `historical_forecasts` instead."

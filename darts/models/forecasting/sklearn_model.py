@@ -1587,6 +1587,7 @@ class SKLearnModel(GlobalForecastingModel):
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         predict_kwargs: dict[str, Any] | None = None,
+        concatenate_forecasts: bool = False,
     ) -> Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
         """
         For SKLearnModels we create the lagged prediction data once per series using a moving window.
@@ -1618,6 +1619,7 @@ class SKLearnModel(GlobalForecastingModel):
             random_state=random_state,
             predict_kwargs=predict_kwargs,
             last_points_only=last_points_only,
+            concatenate_forecasts=concatenate_forecasts,
         )
         return hfc
 

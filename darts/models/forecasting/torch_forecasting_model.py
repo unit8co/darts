@@ -2826,6 +2826,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predict_likelihood_parameters: bool = False,
         random_state: int | None = None,
         predict_kwargs: dict[str, Any] | None = None,
+        concatenate_forecasts: bool = False,
     ) -> Sequence[TimeSeries] | Sequence[Sequence[TimeSeries]]:
         """
         For TorchForecastingModels we use a strided inference dataset to avoid having to recreate trainers and
@@ -2855,6 +2856,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
             predict_kwargs=predict_kwargs,
+            concatenate_forecasts=concatenate_forecasts,
         )
         return forecasts_list
 

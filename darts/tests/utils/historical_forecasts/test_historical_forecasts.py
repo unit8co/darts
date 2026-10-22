@@ -1,3 +1,4 @@
+import inspect
 import logging
 import math
 from copy import deepcopy
@@ -12,6 +13,7 @@ import darts
 from darts import TimeSeries, concatenate, slice_intersect
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
+    Diff,
     FittableDataTransformer,
     InvertibleDataTransformer,
     Scaler,
@@ -453,10 +455,27 @@ class TestHistoricalforecast:
     sine_univariate3 = tg.sine_timeseries(length=50, value_phase=0.1963125) * -9 + 1.5
 
     @pytest.mark.parametrize(
-        "config", param_product([False, True], [False, True], [False, True], [1, 4])
+        "config",
+        param_product(
+            [False, True],
+            [False, True],
+            [False, True],
+            [1, 4],
+            [False, True],
+            ["regression", "torch"],
+        ),
     )
     def test_concatenate_forecasts(self, config):
-        enable_optimization, multiple_series, range_index, num_samples = config
+        (
+            enable_optimization,
+            multiple_series,
+            range_index,
+            num_samples,
+            use_scaler,
+            model_type,
+        ) = config
+        if model_type == "torch" and not TORCH_AVAILABLE:
+            pytest.skip("Requires Torch")
         series = self.ts_pass_train
         if range_index:
             series = TimeSeries.from_times_and_values(
@@ -472,13 +491,8 @@ class TestHistoricalforecast:
         )
         series = [series, series + 1] if multiple_series else series
         scaler = Scaler(global_fit=True)
-        model = LinearRegressionModel(
-            lags=4,
-            output_chunk_length=6,
-            likelihood="quantile" if num_samples > 1 else None,
-            quantiles=[0.1, 0.5, 0.9] if num_samples > 1 else None,
-        )
-        model.fit(scaler.fit_transform(series))
+        model = self.create_model(ocl=6, use_ll=num_samples > 1, model_type=model_type)
+        model.fit(scaler.fit_transform(series) if use_scaler else series)
         kwargs = dict(
             series=series,
             forecast_horizon=6,
@@ -490,7 +504,7 @@ class TestHistoricalforecast:
             enable_optimization=enable_optimization,
             num_samples=num_samples,
             random_state=42,
-            data_transformers={"series": scaler},
+            data_transformers={"series": scaler} if use_scaler else None,
         )
         windows = model.historical_forecasts(**kwargs)
         assert windows == model.historical_forecasts(
@@ -503,6 +517,10 @@ class TestHistoricalforecast:
         ) as optimized:
             forecasts = model.historical_forecasts(**kwargs, concatenate_forecasts=True)
         assert optimized.called == enable_optimization
+        if enable_optimization:
+            assert optimized.call_args.kwargs["concatenate_forecasts"] == (
+                not use_scaler
+            )
         if multiple_series:
             assert isinstance(forecasts, list) and len(forecasts) == 2
         else:
@@ -525,6 +543,101 @@ class TestHistoricalforecast:
             )
             assert forecast.hierarchy == target.hierarchy
             assert forecast.metadata == target.metadata
+
+    @pytest.mark.parametrize("multi_models", [False, True])
+    @pytest.mark.parametrize(
+        "horizon,output_chunk_shift,likelihood_parameters",
+        [(1, 0, False), (6, 0, False), (9, 0, False), (6, 2, False), (6, 0, True)],
+    )
+    def test_concatenate_forecasts_regression_direct(
+        self, multi_models, horizon, output_chunk_shift, likelihood_parameters
+    ):
+        series = [self.ts_pass_train, self.ts_pass_train + 1]
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=6,
+            output_chunk_shift=output_chunk_shift,
+            multi_models=multi_models,
+            likelihood="quantile" if likelihood_parameters else None,
+            quantiles=[0.1, 0.5, 0.9] if likelihood_parameters else None,
+        ).fit(series)
+        kwargs = dict(
+            series=series,
+            forecast_horizon=horizon,
+            stride=horizon,
+            retrain=False,
+            last_points_only=False,
+            predict_likelihood_parameters=likelihood_parameters,
+        )
+        expected = [concatenate(fc) for fc in model.historical_forecasts(**kwargs)]
+        with patch(
+            "darts.utils.historical_forecasts.optimized_historical_forecasts_regression.TimeSeries",
+            wraps=TimeSeries,
+        ) as construct:
+            actual = model.historical_forecasts(**kwargs, concatenate_forecasts=True)
+        assert construct.call_count == len(series)
+        assert actual == expected
+
+    @pytest.mark.parametrize("model_type", ["regression", "torch"])
+    def test_concatenate_forecasts_diff(self, model_type):
+        if model_type == "torch" and not TORCH_AVAILABLE:
+            pytest.skip("Requires Torch")
+        series = self.ts_pass_train
+        transformer = Pipeline([Diff(), Scaler()])
+        model = self.create_model(ocl=6, use_ll=False, model_type=model_type)
+        model.fit(transformer.fit_transform(series))
+        kwargs = dict(
+            series=series,
+            forecast_horizon=6,
+            stride=6,
+            start=24,
+            start_format="position",
+            retrain=False,
+            last_points_only=False,
+            data_transformers={"series": transformer},
+        )
+        expected = concatenate(model.historical_forecasts(**kwargs))
+        assert (
+            model.historical_forecasts(**kwargs, concatenate_forecasts=True) == expected
+        )
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="Requires Torch")
+    @pytest.mark.parametrize("range_index", [False, True])
+    @pytest.mark.parametrize("shift", [0, -1, 1])
+    def test_concatenate_forecasts_torch_arrays(self, range_index, shift):
+        series = self.ts_pass_train_range if range_index else self.ts_pass_train
+        series = [series, series + 1]
+        model = self.create_model(ocl=6, use_ll=True, model_type="torch")
+        model.fit(series)
+        kwargs = dict(
+            series=series,
+            forecast_horizon=6,
+            stride=6,
+            retrain=False,
+            last_points_only=False,
+            predict_likelihood_parameters=True,
+        )
+        expected = [concatenate(fc) for fc in model.historical_forecasts(**kwargs)]
+        predict_from_dataset = model.predict_from_dataset
+
+        def predict_arrays(*args, **kwargs):
+            assert kwargs["values_only"]
+            output = predict_from_dataset(*args, **kwargs)
+            if shift:
+                output[2][1] += shift * series[0].freq
+            return output
+
+        with patch.object(model, "predict_from_dataset", side_effect=predict_arrays):
+            if shift:
+                with pytest.raises(
+                    ValueError, match="all series need to be contiguous"
+                ):
+                    model.historical_forecasts(**kwargs, concatenate_forecasts=True)
+            else:
+                assert (
+                    model.historical_forecasts(**kwargs, concatenate_forecasts=True)
+                    == expected
+                )
 
     def test_concatenate_forecasts_retrain(self):
         model = NaiveSeasonal(K=12)
@@ -554,6 +667,20 @@ class TestHistoricalforecast:
                 stride=stride,
                 last_points_only=last_points_only,
                 concatenate_forecasts=True,
+            )
+
+    def test_concatenate_forecasts_shared_checks(self):
+        model = NaiveSeasonal()
+        params = inspect.signature(model.historical_forecasts).bind(self.ts_pass_train)
+        params.apply_defaults()
+        kwargs = dict(params.arguments)
+        series = kwargs.pop("series")
+        kwargs.pop("concatenate_forecasts")
+        # Other callers, including conformal models, do not expose this option.
+        model._historical_forecasts_sanity_checks(series, **kwargs)
+        with pytest.raises(ValueError, match="`concatenate_forecasts=True` requires"):
+            model._historical_forecasts_sanity_checks(
+                series, **kwargs, concatenate_forecasts=True
             )
 
     @pytest.mark.parametrize(

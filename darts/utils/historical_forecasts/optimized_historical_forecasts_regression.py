@@ -37,6 +37,7 @@ def _optimized_historical_forecasts_regression(
     random_state: int | None = None,
     predict_kwargs: dict[str, Any] | None = None,
     last_points_only: bool = False,
+    concatenate_forecasts: bool = False,
 ) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
     """
     Optimized historical forecasts for SKLearnModel.
@@ -306,19 +307,27 @@ def _optimized_historical_forecasts_regression(
             else:
                 predictions = np.concatenate([predictions, forecast], axis=1)
 
-        if last_points_only:
-            # a single TimeSeries with only the last points of each forecast
-            # -> TimeSeries with shape: (n_forecasts, n_components, n_samples)
+        if last_points_only or concatenate_forecasts:
+            if last_points_only:
+                values = predictions[:, -1]
+                forecast_start = (
+                    hist_fct_start + (forecast_horizon + output_chunk_shift - 1) * freq
+                )
+                forecast_freq = freq * stride
+            else:
+                # Flatten consecutive, non-overlapping windows without creating intermediate series.
+                values = predictions.reshape(-1, *predictions.shape[2:])
+                forecast_start = hist_fct_start + output_chunk_shift * freq
+                forecast_freq = freq
             new_times = generate_index(
-                start=hist_fct_start
-                + (forecast_horizon + output_chunk_shift - 1) * freq,
-                length=predictions.shape[0],
-                freq=freq * stride,
+                start=forecast_start,
+                length=len(values),
+                freq=forecast_freq,
                 name=series_._time_index.name,
             )
             forecasts = TimeSeries(
                 times=new_times,
-                values=predictions[:, -1],
+                values=values,
                 components=forecast_components,
                 static_covariates=series_.static_covariates,
                 hierarchy=series_.hierarchy,
