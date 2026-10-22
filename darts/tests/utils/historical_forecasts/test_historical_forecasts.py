@@ -452,6 +452,137 @@ class TestHistoricalforecast:
     sine_univariate2 = tg.sine_timeseries(length=50, value_phase=1.5705) * 5 + 1.5
     sine_univariate3 = tg.sine_timeseries(length=50, value_phase=0.1963125) * -9 + 1.5
 
+    @pytest.mark.parametrize(
+        "config", param_product([False, True], [False, True], [False, True], [1, 4])
+    )
+    def test_concatenate_forecasts(self, config):
+        enable_optimization, multiple_series, range_index, num_samples = config
+        series = self.ts_pass_train
+        if range_index:
+            series = TimeSeries.from_times_and_values(
+                pd.RangeIndex(10, 10 + 2 * len(series), 2), series.values()
+            )
+        series = series.stack(series * 2)
+        series = (
+            series
+            .with_columns_renamed(series.columns, ["a", "total"])
+            .with_static_covariates(pd.DataFrame({"group": [1.0]}))
+            .with_hierarchy({"a": "total"})
+            .with_metadata({"source": "historical forecasts"})
+        )
+        series = [series, series + 1] if multiple_series else series
+        scaler = Scaler(global_fit=True)
+        model = LinearRegressionModel(
+            lags=4,
+            output_chunk_length=6,
+            likelihood="quantile" if num_samples > 1 else None,
+            quantiles=[0.1, 0.5, 0.9] if num_samples > 1 else None,
+        )
+        model.fit(scaler.fit_transform(series))
+        kwargs = dict(
+            series=series,
+            forecast_horizon=6,
+            stride=6,
+            start=24,
+            start_format="position",
+            last_points_only=False,
+            retrain=False,
+            enable_optimization=enable_optimization,
+            num_samples=num_samples,
+            random_state=42,
+            data_transformers={"series": scaler},
+        )
+        windows = model.historical_forecasts(**kwargs)
+        assert windows == model.historical_forecasts(
+            **kwargs, concatenate_forecasts=False
+        )
+        with patch.object(
+            model,
+            "_optimized_historical_forecasts",
+            wraps=model._optimized_historical_forecasts,
+        ) as optimized:
+            forecasts = model.historical_forecasts(**kwargs, concatenate_forecasts=True)
+        assert optimized.called == enable_optimization
+        if multiple_series:
+            assert isinstance(forecasts, list) and len(forecasts) == 2
+        else:
+            assert isinstance(forecasts, TimeSeries)
+            windows, forecasts, series = [windows], [forecasts], [series]
+        for chunks, forecast, target in zip(windows, forecasts, series):
+            assert isinstance(chunks, list) and len(chunks) > 1
+            expected = concatenate(chunks, axis=0)
+            assert forecast == expected
+            assert forecast.time_index.equals(expected.time_index)
+            np.testing.assert_array_equal(
+                forecast.all_values(),
+                np.concatenate([fc.all_values() for fc in chunks]),
+            )
+            assert forecast.freq == target.freq
+            assert forecast.components.equals(target.components)
+            assert forecast.n_samples == num_samples
+            pd.testing.assert_frame_equal(
+                forecast.static_covariates, target.static_covariates
+            )
+            assert forecast.hierarchy == target.hierarchy
+            assert forecast.metadata == target.metadata
+
+    def test_concatenate_forecasts_retrain(self):
+        model = NaiveSeasonal(K=12)
+        kwargs = dict(
+            series=self.ts_pass_train,
+            forecast_horizon=6,
+            stride=6,
+            last_points_only=False,
+            data_transformers={"series": Scaler()},
+        )
+        expected = concatenate(model.historical_forecasts(**kwargs))
+        assert (
+            model.historical_forecasts(**kwargs, concatenate_forecasts=True) == expected
+        )
+
+    @pytest.mark.parametrize(
+        "last_points_only,stride", [(True, 6), (False, 3), (False, 9)]
+    )
+    def test_concatenate_forecasts_invalid_parameters(self, last_points_only, stride):
+        with pytest.raises(
+            ValueError,
+            match="requires `last_points_only=False` and `stride == forecast_horizon`",
+        ):
+            NaiveSeasonal().historical_forecasts(
+                self.ts_pass_train,
+                forecast_horizon=6,
+                stride=stride,
+                last_points_only=last_points_only,
+                concatenate_forecasts=True,
+            )
+
+    @pytest.mark.parametrize(
+        "config", param_product([False, True], [False, True], [-1, 1])
+    )
+    def test_concatenate_forecasts_noncontiguous(self, config):
+        enable_optimization, range_index, shift = config
+        series = self.ts_pass_train_range if range_index else self.ts_pass_train
+        model = LinearRegressionModel(lags=4, output_chunk_length=6).fit(series)
+        kwargs = dict(
+            series=series,
+            forecast_horizon=6,
+            stride=6,
+            last_points_only=False,
+            retrain=False,
+            enable_optimization=enable_optimization,
+        )
+        windows = model.historical_forecasts(**kwargs)
+        windows[1] = windows[1].shift(shift)
+        # Inject overlapping or gapped timestamps despite stride == forecast_horizon.
+        method, mock_kwargs = (
+            ("_optimized_historical_forecasts", {"return_value": [windows]})
+            if enable_optimization
+            else ("_predict_wrapper", {"side_effect": windows})
+        )
+        with patch.object(model, method, **mock_kwargs):
+            with pytest.raises(ValueError, match="all series need to be contiguous"):
+                model.historical_forecasts(**kwargs, concatenate_forecasts=True)
+
     @staticmethod
     def create_model(ocl, use_ll=True, model_type="regression", n_epochs=1, **kwargs):
         if model_type == "regression":

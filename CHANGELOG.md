@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `concatenate_forecasts` to `historical_forecasts()` to return contiguous, non-overlapping full forecast windows as one `TimeSeries` per input series when `last_points_only=False` and `stride == forecast_horizon`. [#3277](https://github.com/unit8co/darts/issues/3277).
+
 **Fixed**
 
 **Dependencies**

@@ -31,7 +31,7 @@ from typing import Any, BinaryIO, Literal, Self
 import numpy as np
 import pandas as pd
 
-from darts import TimeSeries, metrics
+from darts import TimeSeries, concatenate, metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
@@ -712,6 +712,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         predict_kwargs: dict[str, Any] | None = None,
         sample_weight: TimeSeriesLike | str | None = None,
         random_state: int | None = None,
+        concatenate_forecasts: bool = False,
     ) -> TimeSeries | list[TimeSeries] | list[list[TimeSeries]]:
         """Generates historical forecasts by simulating predictions at various points in time throughout the history of
         the provided (potentially multiple) `series`. This process involves retrospectively applying the model to
@@ -748,6 +749,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         `series.freq * stride`.
         If `last_points_only=False`, it will instead return a list (or a sequence of lists) of the full historical
         forecast series each with frequency `series.freq`.
+        With `concatenate_forecasts=True`, these forecasts are concatenated into a single time series per input
+        series, retaining frequency `series.freq`. This requires `stride == forecast_horizon`.
 
         Parameters
         ----------
@@ -841,7 +844,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         last_points_only
             Whether to return only the last point of each historical forecast. If set to ``True``, the method returns a
             single ``TimeSeries`` (for each time series in `series`) containing the successive point forecasts.
-            Otherwise, returns a list of historical ``TimeSeries`` forecasts.
+            Otherwise, returns a list of historical ``TimeSeries`` forecasts unless `concatenate_forecasts=True`.
         verbose
             Whether to print the progress.
         show_warnings
@@ -880,26 +883,42 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             computed per time `series`.
         random_state
             Controls the randomness of probabilistic predictions.
+        concatenate_forecasts
+            Whether to concatenate the full historical forecasts along the time axis into a single ``TimeSeries``
+            per input series. Requires `last_points_only=False` and `stride == forecast_horizon`. Raises a
+            ``ValueError`` if adjacent forecast windows are not contiguous in time. Concatenation is applied after
+            any inverse transformations and preserves forecast components, samples, and metadata. Default: ``False``.
 
         Returns
         -------
         TimeSeries
             A single historical forecast for a single `series` and `last_points_only=True`: it contains only the
             predictions at step `forecast_horizon` from all historical forecasts.
+            With `concatenate_forecasts=True`, it contains all predictions from the full historical forecasts instead.
         List[TimeSeries]
             A list of historical forecasts for:
 
             - a sequence (list) of `series` and `last_points_only=True`: for each series, it contains only the
               predictions at step `forecast_horizon` from all historical forecasts.
-            - a single `series` and `last_points_only=False`: for each historical forecast, it contains the entire
-              horizon `forecast_horizon`.
+            - a sequence (list) of `series` and `concatenate_forecasts=True`: one concatenated forecast per series.
+            - a single `series`, `last_points_only=False` and `concatenate_forecasts=False`: for each historical
+              forecast, it contains the entire horizon `forecast_horizon`.
         List[List[TimeSeries]]
-            A list of lists of historical forecasts for a sequence of `series` and `last_points_only=False`. For each
-            series, and historical forecast, it contains the entire horizon `forecast_horizon`. The outer list
+            A list of lists of historical forecasts for a sequence of `series`, `last_points_only=False` and
+            `concatenate_forecasts=False`. For each series and historical forecast, it contains the entire horizon
+            `forecast_horizon`. The outer list
             is over the series provided in the input sequence, and the inner lists contain the historical forecasts for
             each series.
         """
         # note: decorator already sanity-checked the parameters
+        if concatenate_forecasts and (last_points_only or stride != forecast_horizon):
+            raise_log(
+                ValueError(
+                    "`concatenate_forecasts=True` requires `last_points_only=False` "
+                    "and `stride == forecast_horizon`."
+                ),
+            )
+
         model: ForecastingModel = self
 
         fit_kwargs = fit_kwargs or {}
@@ -917,6 +936,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             retrain_func = retrain
 
         sequence_type_in = get_series_seq_type(series)
+
+        def process_forecasts(forecasts):
+            if concatenate_forecasts:
+                forecasts = [
+                    concatenate(fc, axis=0)
+                    for fc in series2seq(forecasts, seq_type_out=SeriesType.SEQ_SEQ)
+                ]
+                return series2seq(forecasts, seq_type_out=sequence_type_in)
+            return forecasts
+
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
@@ -979,10 +1008,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 predict_kwargs=predict_kwargs,
             )
 
-            return _apply_inverse_data_transformers(
-                series=series2seq(series, seq_type_out=sequence_type_in),
-                forecasts=series2seq(forecasts, seq_type_out=sequence_type_in),
-                data_transformers=data_transformers,
+            return process_forecasts(
+                _apply_inverse_data_transformers(
+                    series=series2seq(series, seq_type_out=sequence_type_in),
+                    forecasts=series2seq(forecasts, seq_type_out=sequence_type_in),
+                    data_transformers=data_transformers,
+                )
             )
 
         forecasts_list = [[] for _ in range(len(series))]
@@ -1264,7 +1295,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
         else:
             forecasts = forecasts_list
-        return series2seq(forecasts, seq_type_out=sequence_type_in)
+        return process_forecasts(series2seq(forecasts, seq_type_out=sequence_type_in))
 
     def backtest(
         self,
