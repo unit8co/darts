@@ -101,8 +101,6 @@ class TestStepwiseLaggedFeatures:
             np.testing.assert_array_equal(
                 rep.horizon(h), np.repeat(X.horizon(h), 3, axis=0)
             )
-        with pytest.raises(ValueError):
-            X.repeat(3, axis=1)
 
     def test_concatenate(self):
         X1, X2 = self.helper_container(n_obs=5), self.helper_container(n_obs=2)

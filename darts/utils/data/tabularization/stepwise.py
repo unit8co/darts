@@ -7,7 +7,7 @@ output chunk (see `lags_future_covariates_stepwise` in `SKLearnModel`).
 """
 
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
 
@@ -15,32 +15,6 @@ from darts.logging import raise_log
 
 
 class StepwiseLaggedFeatures:
-    """
-    Compact representation of the per-horizon features arrays `X_0, ..., X_{output_chunk_length - 1}` that arise
-    when some future covariates lags are relative to the forecasted step ("step-wise" lags).
-
-    Rather than storing `output_chunk_length` copies of the full features array, the container stores:
-
-    - `base`: the features array `X_0` for horizon `0`, with shape `(n_observations, n_features[, n_samples])`.
-      The columns of the step-wise features contain the values for horizon `0`.
-    - `step_values`: the values of the step-wise columns for every horizon, with shape
-      `(n_horizons, n_observations, n_step_cols[, n_samples])`.
-    - `step_cols`: the (sorted) indices of the step-wise columns along the features axis of `base`.
-
-    Invariant: `step_values[0] == base[:, step_cols]`.
-
-    The features array for horizon `h` is obtained with `horizon(h)`: a copy of `base` with the step-wise columns
-    replaced by `step_values[h]` (horizon `0` returns `base` itself, without copying). Non-step-wise columns (target
-    lags, past covariates lags, absolute future covariates lags, static covariates) are only ever modified through
-    `base`, so that in-place updates (e.g. auto-regression writing target columns) are reflected in every horizon.
-
-    `format_fn` is an optional hook applied to the array returned by `horizon()` (e.g. to convert it into a
-    `pd.DataFrame` for models with categorical features).
-
-    Only the row axis (and, when present, the samples axis) can be indexed with `__getitem__`; indexing the
-    features axis is not supported since it would invalidate `step_cols`.
-    """
-
     def __init__(
         self,
         base: np.ndarray,
@@ -48,6 +22,43 @@ class StepwiseLaggedFeatures:
         step_cols: np.ndarray | Sequence[int],
         format_fn: Callable[[np.ndarray], Any] | None = None,
     ):
+        """Stepwise Lagged Features
+
+        Compact representation of the per-horizon features arrays `X_0, ..., X_{output_chunk_length - 1}` that arise
+        when some future covariates lags are relative to the forecasted step ("step-wise" lags).
+
+        Rather than storing `output_chunk_length` copies of the full features array, the container stores:
+
+        - `base`: the features array `X_0` for horizon `0`, with shape `(n_observations, n_features[, n_samples])`.
+          The columns of the step-wise features contain the values for horizon `0`.
+        - `step_values`: the values of the step-wise columns for every horizon, with shape
+          `(n_horizons, n_observations, n_step_cols[, n_samples])`.
+        - `step_cols`: the (sorted) indices of the step-wise columns along the features axis of `base`.
+
+        Invariant: `step_values[0] == base[:, step_cols]`.
+
+        The features array for horizon `h` is obtained with `horizon(h)`: a copy of `base` with the step-wise columns
+        replaced by `step_values[h]` (horizon `0` returns `base` itself, without copying). Non-step-wise columns (target
+        lags, past covariates lags, absolute future covariates lags, static covariates) are only ever modified through
+        `base`, so that in-place updates (e.g. auto-regression writing target columns) are reflected in every horizon.
+
+        `format_fn` is an optional hook applied to the array returned by `horizon()` (e.g. to convert it into a
+        `pd.DataFrame` for models with categorical features).
+
+        Only the row axis (and, when present, the samples axis) can be indexed with `__getitem__`; indexing the
+        features axis is not supported since it would invalidate `step_cols`.
+
+        Parameters
+        ----------
+        base
+            The features array `X_0` for horizon `0`, with shape `(n_observations, n_features[, n_samples])`.
+            The columns of the step-wise features contain the values for horizon `0`.
+        step_values
+            The values of the step-wise columns for every horizon, with shape `(n_horizons, n_observations,
+            n_step_cols[, n_samples])`.
+        step_cols
+            The (sorted) indices of the step-wise columns along the features axis of `base`.
+        """
         step_cols = np.asarray(step_cols, dtype=int)
         if step_values.ndim != base.ndim + 1:
             raise_log(
@@ -105,7 +116,7 @@ class StepwiseLaggedFeatures:
     def __len__(self) -> int:
         return len(self.base)
 
-    def __getitem__(self, key) -> "StepwiseLaggedFeatures":
+    def __getitem__(self, key) -> Self:
         """
         Indexes the observations axis and, when present, the samples axis. The features axis must be left untouched
         (either omitted or indexed with `:`).
@@ -133,11 +144,9 @@ class StepwiseLaggedFeatures:
                     "(it would drop the axis); use a slice instead."
                 ),
             )
-        base_key = (rows_key,) + key[1:]
-        step_key = (slice(None), rows_key, slice(None)) + key[2:]
-        return StepwiseLaggedFeatures(
-            base=self.base[base_key],
-            step_values=self.step_values[step_key],
+        return self.__class__(
+            base=self.base[key],
+            step_values=self.step_values[(slice(None),) + key],
             step_cols=self.step_cols,
             format_fn=self.format_fn,
         )
@@ -165,25 +174,21 @@ class StepwiseLaggedFeatures:
         for h in range(self.n_horizons):
             yield self.horizon(h)
 
-    def with_base(self, base: np.ndarray) -> "StepwiseLaggedFeatures":
+    def with_base(self, base: np.ndarray) -> Self:
         """
         Returns a new container with `base` replaced. The new `base` must keep the step-wise columns at the same
         positions (e.g. columns were appended to the right).
         """
-        return StepwiseLaggedFeatures(
+        return self.__class__(
             base=base,
             step_values=self.step_values,
             step_cols=self.step_cols,
             format_fn=self.format_fn,
         )
 
-    def repeat(self, repeats: int, axis: int = 0) -> "StepwiseLaggedFeatures":
-        """Repeats the observations `repeats` times (only `axis=0` is supported)."""
-        if axis != 0:
-            raise_log(
-                ValueError("`StepwiseLaggedFeatures.repeat()` only supports `axis=0`."),
-            )
-        return StepwiseLaggedFeatures(
+    def repeat(self, repeats: int) -> Self:
+        """Repeats the observations `repeats` times."""
+        return self.__class__(
             base=np.repeat(self.base, repeats, axis=0),
             step_values=np.repeat(self.step_values, repeats, axis=1),
             step_cols=self.step_cols,
@@ -191,9 +196,7 @@ class StepwiseLaggedFeatures:
         )
 
     @classmethod
-    def concatenate(
-        cls, items: Sequence["StepwiseLaggedFeatures"]
-    ) -> "StepwiseLaggedFeatures":
+    def concatenate(cls, items: Sequence[Self]) -> Self:
         """Concatenates the observations of several containers sharing the same layout."""
         if not items:
             raise_log(ValueError("Cannot concatenate an empty sequence."))
