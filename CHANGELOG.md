@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `ZeroInflatedLikelihood` for `TorchForecastingModel`: it wraps any univariate torch likelihood and adds a zero-inflation probability per component, e.g. a zero-inflated Poisson or negative binomial for intermittent demand, or a hurdle model with a continuous likelihood such as `GammaLikelihood` for targets that contain zeros. [#3245](https://github.com/unit8co/darts/pull/3245) by [Abhay Juloori](https://github.com/AbhayJuloori).
+
 **Fixed**
 
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
