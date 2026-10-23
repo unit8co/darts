@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀 Added the `lags_future_covariates_stepwise` parameter to `SKLearnModel` and its subclasses (e.g. `LinearRegressionModel`, `LightGBMModel`, `XGBModel`, `CatBoostModel`, `RandomForestModel`). When enabled for a future covariates component, the lags become relative to the step forecasted by each estimator of the output chunk instead of the first predicted step: with `output_chunk_length > 1`, the estimator predicting horizon `h` reads lag `k` of that component `h + k` steps after the first predicted step. This lets e.g. `lags_future_covariates={"holiday": [0]}` with `lags_future_covariates_stepwise={"holiday": True}` give every estimator the covariate value of the very step it forecasts, instead of having to declare the `output_chunk_length` correlated features of `list(range(output_chunk_length))`. Works with probabilistic models, encoders, historical forecasts and classifiers; not yet supported by `ShapExplainer`. [#2968](https://github.com/unit8co/darts/issues/2968) by [JuanCruzC97](https://github.com/JuanCruzC97).
+
 **Fixed**
 
 **Dependencies**
