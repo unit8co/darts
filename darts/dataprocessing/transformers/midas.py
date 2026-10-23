@@ -134,10 +134,12 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         low_freq = params["fixed"]["_low_freq"]
         for idx, ts in enumerate(series):
             high_freq = ts.freq_str
+            high_period = pd.tseries.frequencies.get_period_alias(high_freq)
+            low_period = pd.tseries.frequencies.get_period_alias(low_freq)
+            # pandas>=3.1 also considers a frequency a sub-period of itself
             if not pd.tseries.frequencies.is_subperiod(
-                pd.tseries.frequencies.get_period_alias(high_freq),
-                pd.tseries.frequencies.get_period_alias(low_freq),
-            ):
+                high_period, low_period
+            ) or pd.tseries.frequencies.is_superperiod(high_period, low_period):
                 raise_log(
                     ValueError(
                         f"The frequency string of the series at index={idx} must be higher than the "
