@@ -186,8 +186,12 @@ class StepwiseLaggedFeatures:
             format_fn=self.format_fn,
         )
 
-    def repeat(self, repeats: int) -> Self:
+    def repeat(self, repeats: int, axis: int = 0) -> Self:
         """Repeats the observations `repeats` times."""
+        if axis != 0:
+            raise_log(
+                ValueError("`StepwiseLaggedFeatures.repeat()` only supports `axis=0`."),
+            )
         return self.__class__(
             base=np.repeat(self.base, repeats, axis=0),
             step_values=np.repeat(self.step_values, repeats, axis=1),
