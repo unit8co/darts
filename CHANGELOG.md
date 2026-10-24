@@ -13,6 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed scalar division by a `TimeSeries` raising an error for nonzero values. [#3297](https://github.com/unit8co/darts/issues/3297).
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
 
 **Dependencies**

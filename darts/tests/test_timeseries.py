@@ -694,7 +694,8 @@ class TestTimeSeries:
             freq_expected = pd.tseries.frequencies.to_offset(expected)
             # apply trick to resample a timestamp to the desired frequency
             start = (
-                pd.Series(index=[pd.Timestamp("2000-01-01")])
+                pd
+                .Series(index=[pd.Timestamp("2000-01-01")])
                 .resample(freq_expected)
                 .mean()
                 .index[0]
@@ -1117,6 +1118,51 @@ class TestTimeSeries:
         with pytest.raises(ZeroDivisionError):
             # Cannot divide by 0.
             self.series1 / 0
+
+    @pytest.mark.parametrize("dtype", [np.float32, np.float64])
+    @pytest.mark.parametrize("n_samples", [1, 3])
+    @pytest.mark.parametrize("datetime_index", [False, True])
+    @pytest.mark.parametrize("numerator", [0, 2, -3.5, 4.0])
+    def test_reverse_division(self, dtype, n_samples, datetime_index, numerator):
+        values = np.arange(1, 6 * n_samples + 1, dtype=dtype).reshape(3, 2, n_samples)
+        values[0] *= -1
+        times = (
+            pd.date_range("2020-01-01", periods=3, freq="D")
+            if datetime_index
+            else pd.RangeIndex(3)
+        )
+        series = TimeSeries(
+            times,
+            values,
+            components=["part", "total"],
+            static_covariates=pd.DataFrame({"group": [1, 2]}),
+            hierarchy={"part": ["total"]},
+            metadata={"source": "test"},
+        )
+        original = series.copy()
+
+        result = numerator / series
+
+        np.testing.assert_allclose(result.all_values(), numerator / values)
+        assert result.dtype == dtype
+        assert result.time_index.equals(series.time_index)
+        assert result.components.equals(series.components)
+        assert result.static_covariates.equals(series.static_covariates)
+        assert result.hierarchy == series.hierarchy
+        assert result.metadata == series.metadata
+        assert series == original
+
+    @pytest.mark.parametrize("numerator", [0, 2])
+    def test_reverse_division_by_zero(self, numerator):
+        series = TimeSeries.from_values(np.array([1.0, 0.0, 2.0]))
+        with pytest.raises(ZeroDivisionError, match="value 0"):
+            numerator / series
+
+    @pytest.mark.parametrize("numerator", ["2", None, object()])
+    def test_reverse_division_invalid_operand(self, numerator):
+        series = TimeSeries.from_values(np.array([1.0, 2.0]))
+        with pytest.raises(TypeError, match="unsupported operand"):
+            numerator / series
 
     def test_ops_array(self):
         # can work with xarray directly

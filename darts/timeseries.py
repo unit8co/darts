@@ -5453,7 +5453,20 @@ class TimeSeries:
         return ts
 
     def __rtruediv__(self, n):
-        return n * (self ** (-1))
+        if not isinstance(n, int | float | np.integer):
+            raise_log(
+                TypeError(
+                    "unsupported operand type(s) for / or truediv():"
+                    f" '{type(n).__name__}' and '{type(self).__name__}'."
+                ),
+            )
+        if (self._values == 0).any():
+            raise_log(
+                ZeroDivisionError("Cannot divide by a TimeSeries with a value 0."),
+            )
+        ts = self.copy()
+        np.divide(n, ts._values, out=ts._values)
+        return ts
 
     def __abs__(self):
         ts = self.copy()
