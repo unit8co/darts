@@ -13,8 +13,20 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import pytorch_lightning as pl
+
 from darts.explainability import TFTExplainabilityResult, TFTExplainer
 from darts.models import TFTModel
+
+
+class _PredictionBatchSizes(pl.Callback):
+    def __init__(self):
+        self.batch_sizes = []
+
+    def on_predict_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ):
+        self.batch_sizes.append(batch.past_target.shape[0])
 
 
 def helper_create_test_cases(series_options: list):
@@ -321,21 +333,71 @@ class TestTFTExplainer:
         for ts in enc_imp_ot + dec_imp_ot:
             np.testing.assert_allclose(ts.values().sum(axis=1), 100.0, atol=0.1)
 
-        # cannot explain more series than the batch size
-        with pytest.raises(ValueError) as exc:
-            explainer.explain(
-                foreground_series=[series[0]] * (model.batch_size + 1),
-                foreground_past_covariates=[pc[0]] * (model.batch_size + 1)
-                if use_pc
-                else None,
-                foreground_future_covariates=[fc[0]] * (model.batch_size + 1)
-                if use_fc
-                else None,
-            )
-        assert str(exc.value) == (
-            "The number of back- or foreground series to explain (33) must be smaller than "
-            "or equal to the model's batch size (32)."
+    @pytest.mark.parametrize("with_static_covariates", [True, False])
+    @pytest.mark.parametrize("n_series,batch_sizes", [(2, [2]), (5, [2, 2, 1])])
+    def test_explainer_more_series_than_batch_size(
+        self, n_series, batch_sizes, with_static_covariates
+    ):
+        """Test that series spread over several prediction batches are explained the same as
+        when they are explained one at a time."""
+        series, past_covariates, future_covariates = self.helper_get_distinct_input(
+            n_series, with_static_covariates
         )
+        callback = _PredictionBatchSizes()
+        model = self.helper_create_model(batch_size=2, callbacks=[callback])
+        model.fit(
+            series, past_covariates=past_covariates, future_covariates=future_covariates
+        )
+        explainer = TFTExplainer(
+            model,
+            background_series=series,
+            background_past_covariates=past_covariates,
+            background_future_covariates=future_covariates,
+        )
+        result = explainer.explain()
+        assert callback.batch_sizes == batch_sizes
+
+        for idx in range(n_series):
+            expected = explainer.explain(
+                foreground_series=series[idx],
+                foreground_past_covariates=past_covariates[idx],
+                foreground_future_covariates=future_covariates[idx],
+            )
+            for getter in [
+                "get_attention",
+                "get_encoder_importance",
+                "get_decoder_importance",
+                "get_static_covariates_importance",
+                "get_encoder_importance_over_time",
+                "get_decoder_importance_over_time",
+            ]:
+                actual_value = getattr(result, getter)()[idx]
+                expected_value = getattr(expected, getter)()
+                if isinstance(expected_value, TimeSeries):
+                    assert actual_value.time_index.equals(expected_value.time_index)
+                    np.testing.assert_allclose(
+                        actual_value.values(),
+                        expected_value.values(),
+                        rtol=1e-6,
+                        atol=1e-6,
+                    )
+                else:
+                    pd.testing.assert_frame_equal(
+                        actual_value.reset_index(drop=True),
+                        expected_value.reset_index(drop=True),
+                        check_like=True,
+                        rtol=1e-6,
+                        atol=1e-6,
+                    )
+
+    @pytest.mark.parametrize("devices", [1, 2])
+    def test_explainer_distributed_prediction(self, devices):
+        """Test that multi-device and multi-node prediction is rejected."""
+        model = self.helper_create_model()
+        model.fit(self.series_mv1, past_covariates=self.pc, future_covariates=self.fc)
+        model.trainer_params.update(devices=devices, strategy="ddp_spawn")
+        with pytest.raises(ValueError, match="multi-device or multi-node"):
+            TFTExplainer(model).explain()
 
     @pytest.mark.parametrize("n_series", [1, 2])
     def test_variable_selection_explanation(self, n_series, mpl_safe_plotting):
@@ -530,20 +592,49 @@ class TestTFTExplainer:
                 _check_plot(n_series, 2, plot_type="invalid", show_index_as="time")
 
     def helper_create_model(
-        self, use_encoders=True, add_relative_idx=True, full_attention=False
+        self,
+        use_encoders=True,
+        add_relative_idx=True,
+        full_attention=False,
+        batch_size=32,
+        callbacks=None,
     ):
         add_encoders = (
             {"cyclic": {"past": ["month"], "future": ["month"]}}
             if use_encoders
             else None
         )
+        model_kwargs = dict(tfm_kwargs)
+        if callbacks is not None:
+            model_kwargs["pl_trainer_kwargs"] = {
+                **tfm_kwargs["pl_trainer_kwargs"],
+                "callbacks": callbacks,
+            }
         return TFTModel(
             input_chunk_length=5,
             output_chunk_length=2,
             n_epochs=1,
+            batch_size=batch_size,
             add_encoders=add_encoders,
             add_relative_index=add_relative_idx,
             full_attention=full_attention,
             random_state=42,
-            **tfm_kwargs,
+            **model_kwargs,
         )
+
+    def helper_get_distinct_input(self, n_series, with_static_covariates):
+        series, past_covariates, future_covariates = [], [], []
+        for idx in range(n_series):
+            static_covariates = (
+                pd.Series([idx % 2, idx + 0.25], index=["cat", "num"])
+                if with_static_covariates
+                else None
+            )
+            series.append(
+                (self.series_mv1 * (idx + 1) + idx)
+                .shift(idx * 12)
+                .with_static_covariates(static_covariates)
+            )
+            past_covariates.append((self.pc * (idx + 1)).shift(idx * 12))
+            future_covariates.append((self.fc * (idx + 2) + idx).shift(idx * 12))
+        return series, past_covariates, future_covariates
