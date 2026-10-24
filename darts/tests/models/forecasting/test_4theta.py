@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import pytest
 
+from darts import TimeSeries
 from darts.metrics import mape
 from darts.models import FourTheta, Theta
 from darts.utils.timeseries_generation import linear_timeseries as lt
@@ -15,6 +16,18 @@ py_312_or_higher = sys.version_info >= (3, 12, 0)
 
 
 class TestFourTheta:
+    @pytest.mark.parametrize("model_cls", [Theta, FourTheta])
+    @pytest.mark.parametrize("period", [0, 12])
+    def test_inferred_seasonality(self, model_cls, period):
+        values = 10 + np.random.default_rng(0).normal(scale=0.1, size=120)
+        if period:
+            values += np.cos(2 * np.pi * np.arange(len(values)) / period)
+        model = model_cls().fit(TimeSeries.from_values(values))
+
+        assert model.is_seasonal == (period > 0)
+        assert model.season_period == period
+        assert np.isfinite(model.predict(12).values()).all()
+
     def test_input(self):
         with pytest.raises(ValueError):
             FourTheta(model_mode=SeasonalityMode.ADDITIVE)
