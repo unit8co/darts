@@ -6,6 +6,7 @@ Base Adapter for SHAP Explainer
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from enum import Enum
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -229,7 +230,11 @@ class ShapAdapter(ABC):
                 for t_idx, t in enumerate(self.target_components_likelihood):
                     if t not in target_components:
                         continue
-                    explanation = self.explainer[h - 1][t_idx](foreground_arr, **kwargs)
+                    explainer = self.explainer[h - 1][t_idx]
+                    if isinstance(explainer, partial):
+                        explainer = explainer()
+                        self.explainer[h - 1][t_idx] = explainer
+                    explanation = explainer(foreground_arr, **kwargs)
                     explanation = DartsShapExplanation(
                         values=explanation.values,
                         data=explanation.data,
@@ -366,7 +371,7 @@ class ShapAdapter(ABC):
         background_arr: np.ndarray,
         shap_method: SHAPMethod,
         **kwargs,
-    ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
+    ) -> shap.Explainer | dict[int, dict[int, shap.Explainer | partial]]:
         """
         Builds the SHAP explainer based on the specified SHAP method.
 

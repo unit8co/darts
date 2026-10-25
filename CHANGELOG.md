@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Build sklearn per-estimator SHAP explainers lazily for requested horizons and likelihood components, and cache them for reuse. Native multi-output explainers remain eager. Addresses the lazy-construction part of [#3293](https://github.com/unit8co/darts/issues/3293).
+
 **Fixed**
 
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).

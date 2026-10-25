@@ -129,6 +129,15 @@ class ShapExplainer(_ForecastingModelExplainer):
         **kwargs
             Optionally, additional keyword arguments passed to ``shap_method``.
 
+        Notes
+        -----
+        For sklearn models with separate estimators per horizon or likelihood parameter,
+        SHAP explainers are created only when their output is first requested and are
+        cached for subsequent calls. Constructor options in ``kwargs`` are applied at
+        that time, so output-specific SHAP initialization errors are reported on the
+        first explanation request. Native multi-output models still use a single
+        eagerly constructed explainer.
+
         Examples
         --------
         For ``SKLearnModel``:

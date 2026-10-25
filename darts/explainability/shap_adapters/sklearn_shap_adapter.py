@@ -3,6 +3,8 @@ SKLearnModel Adapter for SHAP Explainer
 ---------------------------------------
 """
 
+from functools import partial
+
 import numpy as np
 import pandas as pd
 import shap
@@ -72,7 +74,7 @@ class SKLearnShapAdapter(ShapAdapter):
         background_arr: np.ndarray,
         shap_method: SHAPMethod,
         **kwargs,
-    ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
+    ) -> shap.Explainer | dict[int, dict[int, shap.Explainer | partial]]:
         likelihood = model.likelihood
         has_quantile_container = model._model_container is not None
 
@@ -103,7 +105,8 @@ class SKLearnShapAdapter(ShapAdapter):
                 else:
                     target_dim = j
                     quantile = None
-                explainers[i][j] = self._build_explainer_sklearn(
+                explainers[i][j] = partial(
+                    self._build_explainer_sklearn,
                     model_sklearn=model.get_estimator(
                         horizon=i, target_dim=target_dim, quantile=quantile
                     ),

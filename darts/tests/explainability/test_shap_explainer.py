@@ -258,6 +258,10 @@ class TestShapExplainer:
             # CatBoostModel supports multi-output for certain loss functions
             assert isinstance(shap_explain.explainer.explainer, shap.explainers.Tree)
         else:
+            # Separate estimators create their SHAP explainer on first use.
+            shap_explain.explain(
+                horizons=[1], target_components=[self.target_ts.components[0]]
+            )
             assert isinstance(
                 shap_explain.explainer.explainer[0][0], shap.explainers.Tree
             )
