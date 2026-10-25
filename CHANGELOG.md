@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Enabled sampled forecasts in `NaiveEnsembleModel` with mixed probabilistic and deterministic models, and aligned deterministic member forecasts when retaining regression training samples. [#3295](https://github.com/unit8co/darts/issues/3295).
+
 **Fixed**
 
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).

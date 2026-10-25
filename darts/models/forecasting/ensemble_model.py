@@ -7,7 +7,10 @@ import copy
 import os
 from abc import abstractmethod
 from collections import defaultdict
+from collections.abc import Sequence
 from typing import BinaryIO, Self
+
+import numpy as np
 
 from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_log
@@ -309,8 +312,18 @@ class EnsembleModel(GlobalForecastingModel):
         super().fit(series, past_covariates, future_covariates, verbose=verbose)
         return self
 
-    def _stack_ts_seq(self, predictions):
-        # stacks list of predictions into one multivariate timeseries
+    def _stack_ts_seq(self, predictions: Sequence[TimeSeries]) -> TimeSeries:
+        # Align deterministic point forecasts with sampled forecasts before stacking.
+        num_samples = max(prediction.n_samples for prediction in predictions)
+        if num_samples > 1:
+            predictions = [
+                prediction.with_values(
+                    np.repeat(prediction.all_values(copy=False), num_samples, axis=2)
+                )
+                if prediction.n_samples == 1
+                else prediction
+                for prediction in predictions
+            ]
         return concatenate(predictions, axis=1)
 
     def _stack_ts_multiseq(self, predictions_list):
@@ -796,7 +809,9 @@ class EnsembleModel(GlobalForecastingModel):
 
     @property
     def supports_probabilistic_prediction(self) -> bool:
-        return self._models_are_probabilistic
+        return any(
+            model.supports_probabilistic_prediction for model in self.forecasting_models
+        )
 
     @property
     def supports_multivariate(self) -> bool:

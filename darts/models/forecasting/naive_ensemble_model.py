@@ -25,6 +25,11 @@ class NaiveEnsembleModel(EnsembleModel):
         Naive implementation of `EnsembleModel`
         Returns the average of all predictions of the constituent models
 
+        Probabilistic predictions are supported if at least one constituent model
+        supports them. Deterministic forecasts are repeated across samples before
+        averaging, contributing the same point forecast to every ensemble sample.
+        Predicting likelihood parameters still requires all models to use the same likelihood.
+
         If `future_covariates` or `past_covariates` are provided at training or inference time,
         they will be passed only to the models supporting them.
 
