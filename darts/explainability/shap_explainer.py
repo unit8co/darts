@@ -152,6 +152,29 @@ class ShapExplainer(_ForecastingModelExplainer):
         >>> explainer.summary_plot()
         >>> explainer.force_plot()
 
+        For a univariate quantile model, request a horizon and its median component
+        explicitly to avoid constructing explainers for unused outputs. The component
+        name can be obtained from the fitted likelihood rather than formatted manually:
+
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.explainability import ShapExplainer
+        >>> from darts.models import LightGBMModel
+        >>> series = TimeSeries.from_values(np.sin(np.arange(96) / 4), columns=["target"])
+        >>> quantiles = [0.1, 0.5, 0.9]
+        >>> model = LightGBMModel(
+        ...     lags=3, output_chunk_length=3, likelihood="quantile",
+        ...     quantiles=quantiles, n_estimators=5, num_leaves=4,
+        ...     min_child_samples=2, n_jobs=1, verbosity=-1,
+        ... ).fit(series)
+        >>> components = model.likelihood.component_names(series=series)
+        >>> median_component = components[quantiles.index(0.5)]
+        >>> explainer = ShapExplainer(model)
+        >>> result = explainer.explain(
+        ...     foreground_series=series[-24:], horizons=[1],
+        ...     target_components=[median_component],
+        ... )
+
         For ``TorchForecastingModel``:
 
         >>> from darts.datasets import AusBeerDataset
