@@ -2050,7 +2050,7 @@ class TimeSeries:
         self._assert_deterministic()
         return self._values[-1, :, 0].copy()
 
-    def values(self, copy: bool = True, sample: int = 0) -> np.ndarray:
+    def values(self, copy: bool = True, sample: int | None = None) -> np.ndarray:
         """Return a 2-D array of shape (time, component), containing the series' values for one `sample`.
 
         Parameters
@@ -2059,13 +2059,24 @@ class TimeSeries:
             Whether to return a copy of the values, otherwise returns a view.
             Leave it to True unless you know what you are doing.
         sample
-            For stochastic series, the sample for which to return values. Default: 0 (first sample).
+            For stochastic series, the sample for which to return values.
+            If omitted, sample 0 is returned with a warning. Default: None
 
         Returns
         -------
         numpy.ndarray
             The values composing the time series.
         """
+        if sample is None:
+            if self.is_stochastic:
+                logger.warning(
+                    "You are extracting values from a stochastic TimeSeries, "
+                    "but only sample 0 will be returned. If you want a point "
+                    "forecast, use TimeSeries.mean() or TimeSeries.quantile(0.5) "
+                    "before calling values()."
+                )
+            sample = 0
+
         if self.is_deterministic and sample != 0:
             raise_log(
                 ValueError(

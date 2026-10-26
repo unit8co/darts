@@ -2362,6 +2362,42 @@ class TestTimeSeries:
 
         assert ts.time_index.equals(idx)
 
+    def test_values_stochastic_default_warns(self, caplog):
+        ts = TimeSeries.from_values(np.arange(30).reshape(10, 1, 3))
+
+        with caplog.at_level(logging.WARNING):
+            values = ts.values()
+
+        assert "only sample 0 will be returned" in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 0])
+
+    def test_values_stochastic_explicit_sample_no_warning(self, caplog):
+        ts = TimeSeries.from_values(np.arange(30).reshape(10, 1, 3))
+
+        with caplog.at_level(logging.WARNING):
+            values = ts.values(sample=1)
+
+        assert "only sample 0 will be returned" not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
+
+    def test_values_deterministic_no_warning(self, caplog):
+        ts = TimeSeries.from_values(np.arange(10))
+
+        with caplog.at_level(logging.WARNING):
+            values = ts.values()
+
+        assert "only sample 0 will be returned" not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 0])
+
+    def test_values_stochastic_explicit_sample_zero_no_warning(self, caplog):
+        ts = TimeSeries.from_values(np.arange(30).reshape(10, 1, 3))
+
+        with caplog.at_level(logging.WARNING):
+            values = ts.values(sample=0)
+
+        assert "only sample 0 will be returned" not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 0])
+
 
 def helper_test_slice(test_series: TimeSeries):
     # base case
