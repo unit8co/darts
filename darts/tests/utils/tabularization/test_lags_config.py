@@ -507,6 +507,24 @@ class TestFutureLags:
 
 
 class TestLagConfig:
+    def test_legacy_views_before_resolution(self):
+        config = LagConfig.from_user(
+            lags={"a": [-2, -1], "b": [-3]},
+            lags_past_covariates=2,
+            lags_future_covariates={"f": [0, 1], "default_lags": [2]},
+            output_chunk_shift=2,
+        )
+
+        assert config.legacy_lags_dict() == {
+            "target": [-3, -1],
+            "past": [-2, -1],
+            "future": [2, 4],
+        }
+        assert config.legacy_component_lags_dict() == {
+            "target": {"a": [-2, -1], "b": [-3]},
+            "future": {"f": [2, 3], "default_lags": [4]},
+        }
+
     def test_at_least_one_lags_argument(self):
         with pytest.raises(ValueError) as exc:
             LagConfig.from_user()
@@ -629,6 +647,31 @@ def _resolve_legacy_components(component_lags, components):
             for comp in components[kind]
         }
     return resolved
+
+
+@pytest.mark.parametrize("case", _LEGACY_CASES)
+def test_unresolved_legacy_representation_matches_generate_lags(case):
+    generate_lags = getattr(SKLearnModel, "_generate_lags", None)
+    if generate_lags is None or (
+        "lags_future_covariates_stepwise" in inspect.signature(generate_lags).parameters
+    ):
+        pytest.skip("the legacy `_generate_lags` implementation is no longer available")
+
+    config = LagConfig.from_user(
+        lags=case.get("lags"),
+        lags_past_covariates=case.get("lags_past"),
+        lags_future_covariates=case.get("lags_future"),
+        output_chunk_shift=case.get("output_chunk_shift", 0),
+    )
+    legacy_lags, legacy_component_lags = generate_lags(
+        lags=case.get("lags"),
+        lags_past_covariates=case.get("lags_past"),
+        lags_future_covariates=case.get("lags_future"),
+        output_chunk_shift=case.get("output_chunk_shift", 0),
+    )
+
+    assert config.legacy_lags_dict() == legacy_lags
+    assert config.legacy_component_lags_dict() == legacy_component_lags
 
 
 @pytest.mark.parametrize("case", _LEGACY_CASES)

@@ -3,6 +3,7 @@ import importlib
 import inspect
 import logging
 import math
+import pickle
 from copy import deepcopy
 from typing import Any
 from unittest.mock import patch
@@ -559,6 +560,44 @@ class TestSKLearnModels:
             model(lags=5, lags_future_covariates={}, multi_models=mode)
         with pytest.raises(ValueError):
             model(lags=None, lags_future_covariates={}, multi_models=mode)
+
+    def test_legacy_pickle_state_rebuilds_forecast_config(self):
+        series = TimeSeries.from_values(
+            np.random.RandomState(0).randn(40, 2), columns=["a", "b"]
+        )
+        model = LinearRegressionModel(
+            lags={"a": [-2, -1], "b": [-3]},
+            output_chunk_length=2,
+        ).fit(series)
+        expected_lags = {kind: list(lags) for kind, lags in model.lags.items()}
+        expected_component_lags = {
+            kind: {comp: list(lags) for comp, lags in per_comp.items()}
+            for kind, per_comp in model.component_lags.items()
+        }
+        expected_prediction = model.predict(2).values()
+
+        # simulate the state of a model pickled before the forecast config existed
+        for key in (
+            "_config",
+            "_resolved_config",
+            "_legacy_lags",
+            "_legacy_component_lags",
+        ):
+            model.__dict__.pop(key, None)
+        model.__dict__["lags"] = expected_lags
+        model.__dict__["component_lags"] = expected_component_lags
+
+        restored = pickle.loads(pickle.dumps(model))
+
+        assert restored.lags == expected_lags
+        assert restored.component_lags == expected_component_lags
+        assert restored._config is not None
+        assert restored._resolved_config is None
+        np.testing.assert_array_equal(restored.predict(2).values(), expected_prediction)
+
+        # the rebuilt config also supports a later refit
+        restored.fit(series)
+        assert restored._resolved_config is not None
 
     @pytest.mark.parametrize("config", param_product([True, False], [1, 2]))
     def test_training_data_creation(self, config):
