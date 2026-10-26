@@ -2,10 +2,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.utils.data.tabularization.features import (
+from darts.utils.data.tabularization import (
     ArrayLaggedFeatures,
-    StepwiseLaggedFeatures,
+    add_static_covariates_to_lagged_data,
+    create_lagged_prediction_data,
+    create_lagged_training_data,
 )
+from darts.utils.data.tabularization.features import StepwiseLaggedFeatures
+from darts.utils.timeseries_generation import linear_timeseries
 
 
 def make_stepwise(ndim: int = 2):
@@ -326,3 +330,167 @@ class TestStepwiseLaggedFeatures:
                 step_values=np.zeros(step_values_shape),
                 step_cols=step_cols,
             )
+
+
+class TestTabularizationContainers:
+    @staticmethod
+    def target(length: int = 30):
+        return linear_timeseries(length=length)
+
+    def test_training_data_returns_container(self):
+        target = self.target()
+        features, labels, _, _, _ = create_lagged_training_data(
+            target_series=target,
+            output_chunk_length=4,
+            output_chunk_shift=0,
+            lags=[-2, -1],
+            uses_static_covariates=False,
+        )
+
+        assert isinstance(features, ArrayLaggedFeatures)
+        assert features.n_horizons == 4
+        assert features.horizon(0) is features
+        assert features.horizon(3) is features
+        assert np.shares_memory(features, features.array)
+        assert not isinstance(labels, ArrayLaggedFeatures)
+        assert isinstance(labels, np.ndarray)
+
+    def test_recursive_training_data_has_one_horizon(self):
+        target = self.target()
+        features, _, _, _, _ = create_lagged_training_data(
+            target_series=target,
+            output_chunk_length=4,
+            output_chunk_shift=0,
+            lags=[-2, -1],
+            multi_models=False,
+            uses_static_covariates=False,
+        )
+
+        assert isinstance(features, ArrayLaggedFeatures)
+        assert features.n_horizons == 1
+
+    def test_sequence_without_concatenation(self):
+        target = self.target()
+        features, _, _, _, _ = create_lagged_training_data(
+            target_series=[target, target],
+            output_chunk_length=3,
+            output_chunk_shift=0,
+            lags=[-2, -1],
+            concatenate=False,
+            uses_static_covariates=False,
+        )
+
+        assert isinstance(features, list)
+        assert len(features) == 2
+        assert all(isinstance(item, ArrayLaggedFeatures) for item in features)
+        assert all(item.n_horizons == 3 for item in features)
+
+    def test_prediction_data_returns_container(self):
+        target = self.target()
+        features, _ = create_lagged_prediction_data(
+            target_series=target,
+            lags=[-2, -1],
+            uses_static_covariates=False,
+        )
+
+        assert isinstance(features, ArrayLaggedFeatures)
+        assert features.n_horizons == 1
+        assert features.horizon(0) is features
+
+    def test_training_data_with_static_covariates(self):
+        target = self.target()
+        static = pd.DataFrame({"sc1": [1.0], "sc2": [2.0]}, index=target.columns)
+        target = target.with_static_covariates(static)
+
+        features, _, _, static_shape, _ = create_lagged_training_data(
+            target_series=target,
+            output_chunk_length=2,
+            output_chunk_shift=0,
+            lags=[-2, -1],
+            uses_static_covariates=True,
+        )
+
+        assert isinstance(features, ArrayLaggedFeatures)
+        assert features.n_horizons == 2
+        assert static_shape == (1, 2)
+        assert np.array_equal(
+            features.array[:, -2:, 0],
+            np.tile([1.0, 2.0], (len(features), 1)),
+        )
+
+    def test_add_static_covariates_preserves_container(self):
+        target = self.target()
+        features, _, _, _, _ = create_lagged_training_data(
+            target_series=target,
+            output_chunk_length=3,
+            output_chunk_shift=0,
+            lags=[-2, -1],
+            uses_static_covariates=False,
+        )
+        static = pd.DataFrame({"sc": [5.0]}, index=target.columns)
+        target = target.with_static_covariates(static)
+
+        features_with_static, static_shape = add_static_covariates_to_lagged_data(
+            features=features,
+            target_series=target,
+            uses_static_covariates=True,
+        )
+
+        assert isinstance(features_with_static, ArrayLaggedFeatures)
+        assert features_with_static.n_horizons == 3
+        assert static_shape == (1, 1)
+        assert np.array_equal(
+            features_with_static.array[:, -1, 0],
+            np.full(len(features_with_static), 5.0),
+        )
+        assert np.array_equal(features_with_static.array[:, :-1], features.array)
+
+    def test_add_static_covariates_preserves_stepwise_layout(self):
+        features, array, step_values = make_stepwise()
+        target = self.target(length=len(array))
+        static = pd.DataFrame({"sc": [5.0]}, index=target.columns)
+        target = target.with_static_covariates(static)
+
+        features_with_static, static_shape = add_static_covariates_to_lagged_data(
+            features=features,
+            target_series=target,
+            uses_static_covariates=True,
+        )
+
+        assert isinstance(features_with_static, StepwiseLaggedFeatures)
+        assert features_with_static.shape == (len(array), array.shape[1] + 1)
+        assert features_with_static.n_horizons == features.n_horizons
+        assert np.array_equal(features_with_static.step_values, step_values)
+        assert np.array_equal(features_with_static.step_cols, features.step_cols)
+        assert np.array_equal(features_with_static.array[:, :-1], array)
+        assert np.array_equal(
+            features_with_static.horizon(1)[:, -1],
+            np.full(len(array), 5.0),
+        )
+
+    def test_add_static_covariates_keeps_plain_arrays(self):
+        target = self.target()
+        features = np.arange(12.0).reshape(6, 2)
+        static = pd.DataFrame({"sc": [5.0]}, index=target.columns)
+        target = target.with_static_covariates(static)
+
+        features_with_static, _ = add_static_covariates_to_lagged_data(
+            features=features,
+            target_series=target,
+            uses_static_covariates=True,
+        )
+
+        assert type(features_with_static) is np.ndarray
+        assert features_with_static.shape == (6, 3)
+
+    def test_disabled_static_covariates_returns_input(self):
+        features = ArrayLaggedFeatures(np.zeros((4, 2)), n_horizons=2)
+        target = self.target()
+
+        returned, _ = add_static_covariates_to_lagged_data(
+            features=features,
+            target_series=target,
+            uses_static_covariates=False,
+        )
+
+        assert returned is features
