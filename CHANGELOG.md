@@ -13,6 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `BernoulliLikelihood` losing training gradients for confident, incorrect predictions by computing its loss and optional prior regularization directly from logits. Related to [#621](https://github.com/unit8co/darts/issues/621).
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
 
 **Dependencies**

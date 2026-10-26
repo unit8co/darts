@@ -185,6 +185,72 @@ class TestTorchLikelihoodModel:
         assert torch.isfinite(distr.log_prob(target)).all()
 
 
+class TestBernoulliLogitLoss:
+    @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+    @pytest.mark.parametrize("weighted", [False, True])
+    @pytest.mark.parametrize("prior_p", [None, 0.25])
+    def test_confident_incorrect_predictions(self, dtype, weighted, prior_p):
+        likelihood = BernoulliLikelihood(prior_p=prior_p, prior_strength=0.3)
+        output = torch.tensor([-40.0, 40.0], dtype=dtype).reshape(1, 1, 2, 1)
+        output.requires_grad_()
+        target = torch.tensor([1.0, 0.0], dtype=dtype).reshape(1, 1, 2)
+        weights = torch.tensor([0.5, 2.0], dtype=dtype).reshape(1, 1, 2)
+        sample_weight = weights if weighted else None
+
+        loss = likelihood.compute_loss(output, target, sample_weight)
+        gradient = torch.autograd.grad(loss, output)[0].squeeze(-1)
+        logits = output.detach().squeeze(-1)
+        expected_loss = torch.nn.functional.softplus((1 - 2 * target) * logits)
+        expected_gradient = logits.sigmoid() - target
+        if weighted:
+            expected_loss = expected_loss * weights
+            expected_gradient = expected_gradient * weights
+        expected_loss = expected_loss.mean()
+        expected_gradient = expected_gradient / target.numel()
+        if prior_p is not None:
+            prior = torch.tensor(prior_p, dtype=dtype)
+            neg_entropy = prior.xlogy(prior) + (1 - prior).xlogy(1 - prior)
+            cross_entropy = torch.nn.functional.softplus(logits) - prior * logits
+            expected_loss += 0.3 * (cross_entropy + neg_entropy).mean()
+            expected_gradient += 0.3 * (logits.sigmoid() - prior) / target.numel()
+        torch.testing.assert_close(loss, expected_loss)
+        torch.testing.assert_close(gradient, expected_gradient)
+
+    @pytest.mark.parametrize("prior_p", [None, 0.25])
+    def test_ordinary_predictions_match_probability_loss(self, prior_p):
+        likelihood = BernoulliLikelihood(prior_p=prior_p, prior_strength=0.3)
+        output = torch.tensor([-2.0, 0.0, 3.0], dtype=torch.float64)
+        output = output.reshape(1, 1, 3, 1).requires_grad_()
+        target = torch.tensor([1.0, 0.0, 1.0], dtype=output.dtype).reshape(1, 1, 3)
+        weights = torch.tensor([0.5, 1.0, 2.0], dtype=output.dtype).reshape(1, 1, 3)
+        reference = super(BernoulliLikelihood, likelihood).compute_loss(
+            output, target, weights
+        )
+        actual = likelihood.compute_loss(output, target, weights)
+        expected_grad = torch.autograd.grad(reference, output, retain_graph=True)[0]
+        actual_grad = torch.autograd.grad(actual, output)[0]
+        torch.testing.assert_close(actual, reference)
+        torch.testing.assert_close(actual_grad, expected_grad)
+
+    def test_training_step_recovers_from_confident_wrong_prediction(self):
+        model = torch.nn.Linear(1, 1)
+        with torch.no_grad():
+            model.weight.zero_()
+            model.bias.fill_(20)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+        likelihood = BernoulliLikelihood()
+        inputs = torch.ones((2, 1))
+        target = torch.zeros((2, 1, 1))
+        before = likelihood.compute_loss(
+            model(inputs).reshape(2, 1, 1, 1), target, None
+        )
+        optimizer.zero_grad()
+        before.backward()
+        optimizer.step()
+        after = likelihood.compute_loss(model(inputs).reshape(2, 1, 1, 1), target, None)
+        assert after < before
+
+
 class TestTorchLikelihoodInputValidation:
     def test_gaussian_negative_prior_mu(self):
         with pytest.raises(ValueError, match="strictly positive"):

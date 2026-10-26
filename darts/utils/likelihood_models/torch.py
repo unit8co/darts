@@ -485,6 +485,35 @@ class BernoulliLikelihood(TorchLikelihood):
             prior_strength=prior_strength,
         )
 
+    def compute_loss(
+        self,
+        model_output: torch.Tensor,
+        target: torch.Tensor,
+        sample_weight: torch.Tensor,
+    ) -> torch.Tensor:
+        """Compute the NLL and optional prior KL without rounding probabilities."""
+        # Keep logits for the loss: converting to probabilities first can round
+        # confident predictions to 0 or 1 and lose their training gradients.
+        out_distr = _Bernoulli(logits=model_output.squeeze(dim=-1))
+        loss = -out_distr.log_prob(target)
+        if sample_weight is not None:
+            loss = loss * sample_weight
+        loss = loss.mean()
+        if self.prior_p is not None:
+            prior_p = torch.tensor(self.prior_p).to(model_output.device)
+            dtype = torch.promote_types(model_output.dtype, prior_p.dtype)
+            prior_p = prior_p.to(dtype=dtype)
+            prior_distr = _Bernoulli(probs=prior_p)
+            # KL(prior || output) is cross-entropy minus prior entropy. Keep
+            # logits here too, since output probabilities can round to 0 or 1.
+            cross_entropy = nn.functional.binary_cross_entropy_with_logits(
+                out_distr.logits.to(dtype=dtype),
+                prior_p.expand_as(out_distr.logits),
+                reduction="none",
+            )
+            loss += self.prior_strength * (cross_entropy - prior_distr.entropy()).mean()
+        return loss
+
     @property
     def _prior_params(self) -> tuple[Any, ...] | None:
         return (self.prior_p,)
