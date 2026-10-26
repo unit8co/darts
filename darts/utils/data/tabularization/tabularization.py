@@ -19,6 +19,10 @@ from numpy.lib.stride_tricks import as_strided
 from darts import TimeSeries
 from darts.logging import raise_log
 from darts.typing import TimeIndex, TimeSeriesLike
+from darts.utils.data.tabularization.features import (
+    ArrayLaggedFeatures,
+    LaggedFeatures,
+)
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
@@ -351,6 +355,10 @@ def create_lagged_data(
         lags_past_covariates,
         lags_future_covariates,
     )
+    # the feature matrix is shared by all horizons with `multi_models=True`; with
+    # `multi_models=False` the estimator predicts the last step of the output chunk
+    n_horizons = output_chunk_length if multi_models else 1
+
     X, y, times, sample_weights = [], [], [], []
     for i in range(max(seq_ts_lens)):
         target_i = target_series[i] if target_series else None
@@ -405,6 +413,7 @@ def create_lagged_data(
                 stride=stride,
                 show_warnings=show_warnings,
             )
+        X_i = ArrayLaggedFeatures.wrap(X_i, n_horizons=n_horizons)
         X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
             features=X_i,
             target_series=target_i,
@@ -418,7 +427,7 @@ def create_lagged_data(
             sample_weights.append(weights_i)
 
     if concatenate:
-        X = np.concatenate(X, axis=0)
+        X = ArrayLaggedFeatures.wrap(np.concatenate(X, axis=0), n_horizons=n_horizons)
     if not is_training:
         y = None
     elif concatenate:
@@ -802,17 +811,28 @@ def add_static_covariates_to_lagged_data(
                 )
             # flatten static covariates along columns -> results in [scov0_comp0, scov0_comp1, scov1_comp0, ...]
             static_covs = ts.static_covariates.values.flatten(order="F")
+            feature = features[idx]
+            feature_array = (
+                feature.array
+                if isinstance(feature, LaggedFeatures)
+                else np.asarray(feature)
+            )
             # we stack the static covariates to the right of lagged features
             # the broadcasting repeats the static covariates along axis=0 to match the number of feature rows
             shape_out = (
-                (len(features[idx]), len(static_covs))
-                if len(features[idx].shape) == 2
-                else (len(features[idx]), len(static_covs), 1)
+                (len(feature_array), len(static_covs))
+                if feature_array.ndim == 2
+                else (len(feature_array), len(static_covs), 1)
             )
-            features[idx] = np.hstack([
-                features[idx],
+            feature_with_static = np.hstack([
+                feature_array,
                 np.broadcast_to(static_covs, shape_out[:2]).reshape(shape_out),
             ])
+            features[idx] = (
+                feature.with_base(feature_with_static)
+                if isinstance(feature, LaggedFeatures)
+                else feature_with_static
+            )
 
     if input_not_list:
         features = features[0]
