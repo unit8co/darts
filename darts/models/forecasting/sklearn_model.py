@@ -76,6 +76,7 @@ from darts.utils.data.tabularization import (
     create_lagged_component_names,
     create_lagged_training_data,
 )
+from darts.utils.forecast_config import ForecastConfig, ResolvedForecastConfig
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
     _optimized_historical_forecasts_regression,
@@ -243,10 +244,7 @@ class SKLearnModel(GlobalForecastingModel):
         super().__init__(add_encoders=add_encoders)
 
         self.model = model
-        self.lags: dict[str, list[int]] = {}
-        self.component_lags: dict[str, dict[str, list[int]]] = {}
         self.input_dim = None
-        self.multi_models = True if multi_models or output_chunk_length == 1 else False
         self._considers_static_covariates = use_static_covariates
         self._static_covariates_shape: tuple[int, int] | None = None
         self._lagged_feature_names: list[str] | None = None
@@ -285,16 +283,88 @@ class SKLearnModel(GlobalForecastingModel):
             lags_future_covariates=lags_future_covariates,
         )
 
-        # convert lags arguments to list of int
-        # lags attribute should always be accessed with self._get_lags(), not self.lags.get()
-        self.lags, self.component_lags = self._generate_lags(
+        # the resolved config is built in `fit()` once the training components are known
+        self._config = ForecastConfig.from_user(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
+            multi_models=multi_models,
+        )
+        self._resolved_config: ResolvedForecastConfig | None = None
+        # legacy views, kept derived from the config for backwards compatibility
+        self._legacy_lags = self._config.lags.legacy_lags_dict()
+        self._legacy_component_lags = self._config.lags.legacy_component_lags_dict()
+        self.multi_models = self._config.strategy.name == "direct"
+        self.pred_dim = self._config.strategy.pred_dim
+
+    def __setstate__(self, state):
+        # Older pickles stored the lags directly on the instance. Keep them as the legacy
+        # view and rebuild the config from the captured constructor arguments.
+        legacy_lags = state.pop("lags", None)
+        legacy_component_lags = state.pop("component_lags", None)
+        self.__dict__.update(state)
+
+        if "_legacy_lags" not in self.__dict__:
+            self._legacy_lags = {} if legacy_lags is None else legacy_lags
+        if "_legacy_component_lags" not in self.__dict__:
+            self._legacy_component_lags = (
+                {} if legacy_component_lags is None else legacy_component_lags
+            )
+        if "_resolved_config" not in self.__dict__:
+            self._resolved_config = None
+        if "_config" not in self.__dict__:
+            self._config = self._build_config_from_model_params()
+
+    def _build_config_from_model_params(self) -> ForecastConfig | None:
+        params = getattr(self, "_model_params", None)
+        if not params:
+            return None
+        return ForecastConfig.from_user(
+            lags=params.get("lags"),
+            lags_past_covariates=params.get("lags_past_covariates"),
+            lags_future_covariates=params.get("lags_future_covariates"),
+            output_chunk_length=params.get(
+                "output_chunk_length", self.__dict__.get("_output_chunk_length", 1)
+            ),
+            output_chunk_shift=params.get(
+                "output_chunk_shift", self.__dict__.get("_output_chunk_shift", 0)
+            ),
+            multi_models=params.get("multi_models", True),
+            lags_future_covariates_stepwise=params.get(
+                "lags_future_covariates_stepwise", False
+            ),
         )
 
-        self.pred_dim = self.output_chunk_length if self.multi_models else 1
+    def _ensure_config(self) -> ForecastConfig:
+        config = getattr(self, "_config", None)
+        if config is None:
+            config = self._build_config_from_model_params()
+            if config is None:
+                raise_log(
+                    ValueError(
+                        "The model's forecast configuration is not available. Re-create "
+                        "the model from its constructor arguments."
+                    ),
+                )
+            self._config = config
+        return config
+
+    @property
+    def lags(self) -> dict[str, list[int]]:
+        """The legacy ``model.lags`` view derived from the forecast config."""
+        return getattr(self, "_legacy_lags", {})
+
+    @property
+    def component_lags(self) -> dict[str, dict[str, list[int]]]:
+        """The legacy ``model.component_lags`` view derived from the forecast config."""
+        return getattr(self, "_legacy_component_lags", {})
+
+    def _apply_resolved_config(self, resolved: ResolvedForecastConfig) -> None:
+        self._resolved_config = resolved
+        self._legacy_lags = resolved.lags.legacy_lags_dict()
+        self._legacy_component_lags = resolved.lags.legacy_component_lags_dict()
 
     def _validate_lags(
         self,
@@ -986,6 +1056,9 @@ class SKLearnModel(GlobalForecastingModel):
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
+        # older pickles may not have the config; rebuild it from model_params
+        self._ensure_config()
+
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
@@ -1095,54 +1168,16 @@ class SKLearnModel(GlobalForecastingModel):
             future_covariates=seq2series(future_covariates),
             verbose=verbose,
         )
-        variate2arg = {
-            "target": "lags",
-            "past": "lags_past_covariates",
-            "future": "lags_future_covariates",
-        }
-
-        # if provided, component-wise lags must be defined for all the components of the first series
-        component_lags_error_msg = []
-        for variate_type, variate in zip(
-            ["target", "past", "future"], [series, past_covariates, future_covariates]
-        ):
-            if variate_type not in self.component_lags:
-                continue
-
-            # ignore the fallback lags entry
-            provided_components = set(self.component_lags[variate_type].keys())
-            required_components = set(variate[0].components)
-
-            wrong_components = list(
-                provided_components - {"default_lags"} - required_components
-            )
-            missing_keys = list(required_components - provided_components)
-            # lags were specified for unrecognized components
-            if len(wrong_components) > 0:
-                component_lags_error_msg.append(
-                    f"The `{variate2arg[variate_type]}` dictionary specifies lags for components that are not "
-                    f"present in the series : {wrong_components}. They must be removed to avoid any ambiguity."
-                )
-            elif len(missing_keys) > 0 and "default_lags" not in provided_components:
-                component_lags_error_msg.append(
-                    f"The {variate2arg[variate_type]} dictionary is missing the lags for the following components "
-                    f"present in the series: {missing_keys}. The key 'default_lags' can be used to provide lags for "
-                    f"all the non-explicitely defined components."
-                )
-            else:
-                # reorder the components based on the input series, insert the default when necessary
-                self.component_lags[variate_type] = {
-                    comp_name: (
-                        self.component_lags[variate_type][comp_name]
-                        if comp_name in self.component_lags[variate_type]
-                        else self.component_lags[variate_type]["default_lags"]
-                    )
-                    for comp_name in variate[0].components
-                }
-
-        # single error message for all the lags arguments
-        if len(component_lags_error_msg) > 0:
-            raise_log(ValueError("\n".join(component_lags_error_msg)))
+        resolved = self._ensure_config().resolve(
+            target_components=series[0].components,
+            past_components=(
+                past_covariates[0].components if past_covariates else None
+            ),
+            future_components=(
+                future_covariates[0].components if future_covariates else None
+            ),
+        )
+        self._apply_resolved_config(resolved)
 
         self._fit_model(
             series=series,

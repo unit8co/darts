@@ -165,6 +165,17 @@ TRUSTED_PREFIXES: TrustedPrefixPolicy = (
 # Instantiating them does not compile code or spawn a process. CmdStan types
 # are intentionally absent: ``CmdStanModel.__init__`` compiles a Stan file.
 EXACT_STATE_CLASSES: frozenset[str] = frozenset({
+    # darts; forecast configuration state (frozen dataclasses and strategy objects)
+    "darts.utils.data.tabularization.lags.ComponentLags",
+    "darts.utils.data.tabularization.lags.FutureLags",
+    "darts.utils.data.tabularization.lags.LagConfig",
+    "darts.utils.data.tabularization.lags.ResolvedLagConfig",
+    "darts.utils.data.tabularization.lags.SharedLags",
+    "darts.utils.forecast_config.ForecastConfig",
+    "darts.utils.forecast_config.ResolvedForecastConfig",
+    "darts.utils.output_chunk.DirectOutputStrategy",
+    "darts.utils.output_chunk.DirRecOutputStrategy",
+    "darts.utils.output_chunk.RecursiveOutputStrategy",
     # boosters and non-BaseEstimator estimators (estimators covered via safe base below)
     "lightgbm.basic.Booster",
     "lightgbm.callback._EarlyStoppingCallback",

@@ -565,6 +565,42 @@ class LagConfig:
             legacy_lags=legacy_lags,
         )
 
+    def _lags_for_kind(self, kind: LagsKind) -> Lags | None:
+        if kind == "target":
+            return self.target
+        if kind == "past":
+            return self.past
+        return None if self.future is None else self.future.lags
+
+    def legacy_lags_dict(self) -> dict[str, list[int]]:
+        """The pre-fit ``model.lags`` representation of this config."""
+        processed: dict[str, list[int]] = {}
+        for kind in _LAGS_ARG_NAMES:
+            lags = self._lags_for_kind(kind)
+            if lags is None:
+                continue
+            if kind == "future" and self.output_chunk_shift:
+                lags = lags.shifted(self.output_chunk_shift)
+            processed[kind] = list(lags.legacy_lags)
+        return processed
+
+    def legacy_component_lags_dict(self) -> dict[str, dict[str, list[int]]]:
+        """The pre-fit ``model.component_lags`` representation of this config."""
+        processed: dict[str, dict[str, list[int]]] = {}
+        for kind in _LAGS_ARG_NAMES:
+            lags = self._lags_for_kind(kind)
+            if not isinstance(lags, ComponentLags):
+                continue
+            if kind == "future" and self.output_chunk_shift:
+                lags = lags.shifted(self.output_chunk_shift)
+            component_lags = {
+                comp: list(comp_lags) for comp, comp_lags in lags.per_component.items()
+            }
+            if lags.default is not None:
+                component_lags[_DEFAULT_LAGS_KEY] = list(lags.default)
+            processed[kind] = component_lags
+        return processed
+
 
 def _resolve_lags(
     lags: Lags, components: Sequence[str], kind: LagsKind
