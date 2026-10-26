@@ -10,6 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
+- Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
 
 **Fixed**
 
