@@ -91,6 +91,7 @@ from darts.utils.likelihood_models.sklearn import (
     _get_likelihood,
 )
 from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
+from darts.utils.output_chunk import OutputChunkStrategy
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 from darts.utils.utils import ModelType, random_method
 
@@ -346,6 +347,13 @@ class SKLearnModel(GlobalForecastingModel):
             self._config = config
         return config
 
+    @property
+    def _strategy(self) -> OutputChunkStrategy:
+        """The output-chunk strategy, resolved when the model has been fitted."""
+        if self._resolved_config is not None:
+            return self._resolved_config.strategy
+        return self._ensure_config().strategy
+
     def _build_resolved_config_from_legacy_state(
         self,
         legacy_lags: dict[str, list[int]] | None,
@@ -482,24 +490,23 @@ class SKLearnModel(GlobalForecastingModel):
     def _model_encoder_settings(
         self,
     ) -> tuple[int, int, bool, bool, list[int] | None, list[int] | None]:
+        strategy = self._strategy
         target_lags = self._get_extreme_lags("target") or [0]
         lags_past_covariates = self._get_extreme_lags("past")
         if lags_past_covariates is not None:
             lags_past_covariates = [
-                min(lags_past_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
+                min(lags_past_covariates) - strategy.feature_lag_offset,
                 max(lags_past_covariates),
             ]
         lags_future_covariates = self._get_extreme_lags("future")
         if lags_future_covariates is not None:
             lags_future_covariates = [
-                min(lags_future_covariates)
-                - int(not self.multi_models) * (self.output_chunk_length - 1),
+                min(lags_future_covariates) - strategy.feature_lag_offset,
                 max(lags_future_covariates),
             ]
         return (
             abs(min(target_lags)),
-            self.output_chunk_length + self.output_chunk_shift,
+            strategy.output_chunk_length + self.output_chunk_shift,
             lags_past_covariates is not None,
             lags_future_covariates is not None,
             lags_past_covariates,
@@ -518,11 +525,12 @@ class SKLearnModel(GlobalForecastingModel):
         int | None,
         int,
     ]:
+        strategy = self._strategy
         target_lags = self._get_extreme_lags("target")
         past_cov_lags = self._get_extreme_lags("past")
         future_cov_lags = self._get_extreme_lags("future")
         min_target_lag = target_lags[0] if target_lags is not None else None
-        max_target_lag = self.output_chunk_length - 1 + self.output_chunk_shift
+        max_target_lag = strategy.output_chunk_length - 1 + self.output_chunk_shift
         min_past_cov_lag = past_cov_lags[0] if past_cov_lags is not None else None
         max_past_cov_lag = past_cov_lags[-1] if past_cov_lags is not None else None
         min_future_cov_lag = future_cov_lags[0] if future_cov_lags is not None else None
@@ -549,9 +557,13 @@ class SKLearnModel(GlobalForecastingModel):
 
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
+        strategy = self._strategy
         target_lags = self._get_extreme_lags("target")
         input_chunk_length = -target_lags[0] if target_lags is not None else 0
-        return input_chunk_length, self.output_chunk_length + self.output_chunk_shift
+        return (
+            input_chunk_length,
+            strategy.output_chunk_length + self.output_chunk_shift,
+        )
 
     @property
     def min_train_samples(self) -> int:
@@ -630,7 +642,8 @@ class SKLearnModel(GlobalForecastingModel):
             )
             return model
 
-        if not 0 <= horizon < self.output_chunk_length:
+        strategy = self._strategy
+        if not 0 <= horizon < strategy.output_chunk_length:
             raise_log(
                 ValueError(
                     f"`horizon` must be `>= 0` and `< output_chunk_length={self.output_chunk_length}`."
@@ -643,9 +656,8 @@ class SKLearnModel(GlobalForecastingModel):
                 ),
             )
 
-        # when multi_models=True, one model per horizon and target component
-        idx_estimator = (
-            self.multi_models * self.input_dim["target"] * horizon + target_dim
+        idx_estimator = strategy.estimator_index(
+            horizon, target_dim, self.input_dim["target"]
         )
         return model.estimators_[idx_estimator]
 
@@ -705,6 +717,7 @@ class SKLearnModel(GlobalForecastingModel):
         stride: int = 1,
         last_static_covariates_shape: tuple[int, int] | None = None,
     ):
+        strategy = self._strategy
         (
             features,
             labels,
@@ -713,7 +726,7 @@ class SKLearnModel(GlobalForecastingModel):
             sample_weights,
         ) = create_lagged_training_data(
             target_series=series,
-            output_chunk_length=self.output_chunk_length,
+            output_chunk_length=strategy.output_chunk_length,
             output_chunk_shift=self.output_chunk_shift,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -723,7 +736,7 @@ class SKLearnModel(GlobalForecastingModel):
             uses_static_covariates=self.uses_static_covariates,
             last_static_covariates_shape=last_static_covariates_shape,
             max_samples_per_ts=max_samples_per_ts,
-            multi_models=self.multi_models,
+            multi_models=strategy.name == "direct",
             check_inputs=False,
             concatenate=False,
             sample_weight=sample_weight,
@@ -857,7 +870,7 @@ class SKLearnModel(GlobalForecastingModel):
                 lags=self._get_lags("target"),
                 lags_past_covariates=self._get_lags("past"),
                 lags_future_covariates=self._get_lags("future"),
-                output_chunk_length=self.output_chunk_length,
+                output_chunk_length=self._strategy.output_chunk_length,
                 concatenate=False,
                 use_static_covariates=self.uses_static_covariates,
             )
@@ -916,7 +929,8 @@ class SKLearnModel(GlobalForecastingModel):
             Additional keyword arguments passed to the `fit` method of the model.
         """
         # older pickles may not have the config; rebuild it from model_params
-        self._ensure_config()
+        config = self._ensure_config()
+        strategy = config.strategy
 
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
@@ -990,18 +1004,19 @@ class SKLearnModel(GlobalForecastingModel):
         }
 
         # Check if multi-output regression is required
-        requires_multioutput = not series[0].is_univariate or (
-            self.output_chunk_length > 1 and self.multi_models
+        requires_multioutput = strategy.n_outputs(series[0].width) > 1
+        per_horizon_features = (
+            config.lags.future is not None and config.lags.future.has_stepwise
         )
 
-        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputMixin
+        # If multi-output is required and the estimator needs the wrapper, add it
         if (
             requires_multioutput
             and not isinstance(self.model, MultiOutputMixin)
-            and (
-                not self._supports_native_multioutput
-                or sample_weight
-                is not None  # we have 2D sample (and time) weights, only supported in Darts
+            and strategy.requires_wrapper(
+                native_multioutput=self._supports_native_multioutput,
+                sample_weight=sample_weight is not None,
+                per_horizon_features=per_horizon_features,
             )
         ):
             val_set_name, val_weight_name = self.val_set_params
@@ -1009,8 +1024,8 @@ class SKLearnModel(GlobalForecastingModel):
                 "eval_set_name": val_set_name,
                 "eval_weight_name": val_weight_name,
                 "n_jobs": n_jobs_multioutput_wrapper,
+                "strategy": strategy,
             }
-            mor_kwargs["output_chunk_length"] = self.output_chunk_length
 
             self.model = get_multioutput_estimator_cls(self._model_type)(
                 estimator=self.model, **mor_kwargs
@@ -1028,7 +1043,7 @@ class SKLearnModel(GlobalForecastingModel):
             future_covariates=seq2series(future_covariates),
             verbose=verbose,
         )
-        resolved = self._ensure_config().resolve(
+        resolved = config.resolve(
             target_components=series[0].components,
             past_components=(
                 past_covariates[0].components if past_covariates else None
@@ -1178,13 +1193,10 @@ class SKLearnModel(GlobalForecastingModel):
             "future": (future_covariates, self._get_extreme_lags("future")),
         }
 
-        # prepare one_shot shift and step
-        if self.multi_models:
-            shift = 0
-            step = self.output_chunk_length
-        else:
-            shift = self.output_chunk_length - 1
-            step = 1
+        # prepare one_shot shift and step from the output-chunk strategy
+        strategy = self._strategy
+        shift = strategy.feature_lag_offset
+        step = strategy.pred_dim
 
         # check all target series are long enough
         target_lags = self._get_extreme_lags("target")
@@ -1384,7 +1396,7 @@ class SKLearnModel(GlobalForecastingModel):
 
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
-        return prediction.reshape(k, self.pred_dim, -1)
+        return prediction.reshape(k, self._strategy.pred_dim, -1)
 
     @property
     def lagged_feature_names(self) -> list[str] | None:
@@ -2054,7 +2066,7 @@ class _ClassifierMixin:
         )
 
         classes = self.class_labels
-        if self.multi_models and self._output_chunk_length > 1:
+        if self._strategy.name == "direct" and self._output_chunk_length > 1:
             # make sure that all individual models have seen the same classes during training
             num_components = len(classes) // self._output_chunk_length
 

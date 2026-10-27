@@ -1555,6 +1555,45 @@ class TestSKLearnModels:
         model.fit(series=self.sine_multivariate_multiseries)
         check_only_non_native_are_wrapped(model, supports_multioutput_natively)
 
+    def test_multioutput_wrapper_receives_strategy(self):
+        model = SKLearnModel(
+            model=HistGradientBoostingRegressor(),
+            lags=2,
+            output_chunk_length=3,
+        )
+        model.fit(self.sine_univariate1)
+
+        assert isinstance(model.model, MultiOutputRegressor)
+        assert model.model.strategy is model._config.strategy
+        assert model.model.strategy is model._resolved_config.strategy
+
+        # the wrapper and the model agree on the estimator mapping
+        n_components = model.input_dim["target"]
+        for horizon in range(model.output_chunk_length):
+            for component in range(n_components):
+                index = model._strategy.estimator_index(
+                    horizon, component, n_components
+                )
+                assert (
+                    model.get_estimator(horizon, component)
+                    is (model.model.estimators_[index])
+                )
+
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_encoder_settings_use_strategy(self, multi_models):
+        model = SKLearnModel(
+            lags=4,
+            lags_past_covariates=12,
+            lags_future_covariates=(6, 4),
+            output_chunk_length=3,
+            multi_models=multi_models,
+        )
+
+        *_, past_lags, future_lags = model._model_encoder_settings
+        offset = model._strategy.feature_lag_offset
+        assert past_lags == [-12 - offset, -1]
+        assert future_lags == [-6 - offset, 3]
+
     model_configs_multioutput = [
         (
             SKLearnModel,

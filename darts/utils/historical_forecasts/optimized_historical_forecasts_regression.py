@@ -188,7 +188,8 @@ def _optimized_historical_forecasts_regression(
         )
 
         # -> (n_forecasts, n_lags)
-        X = X[0][:, :, 0]
+        # use a plain array: the feature matrix is shared across horizons, matching `predict()`
+        X = np.asarray(X[0][:, :, 0])
 
         # get forecast iterations and their forecast end times
         if not is_auto_regression:
