@@ -892,7 +892,7 @@ class TestShapExplainer:
 
         explanation_results = shap_explain.explain(ts)
         assert len(explanation_results.explained_forecasts[1]["price"].columns) == (
-            -(min(model.lags["target"])) + model.static_covariates.shape[1]
+            -(min(model._get_extreme_lags("target"))) + model.static_covariates.shape[1]
         )
 
         model.fit(
@@ -904,7 +904,7 @@ class TestShapExplainer:
         for comp in self.target_ts_with_multi_component_static_covs.components:
             comps_out = explanation_results.explained_forecasts[1][comp].columns
             assert len(comps_out) == (
-                -(min(model.lags["target"])) * model.input_dim["target"]
+                -(min(model._get_extreme_lags("target"))) * model.input_dim["target"]
                 + model.input_dim["target"] * model.static_covariates.shape[1]
             )
             assert comps_out[-4:].tolist() == [
@@ -939,7 +939,9 @@ class TestShapExplainer:
             output_chunk_length=1,
         )
         # multivariate ts as short as possible
-        min_ts_length = MIN_BACKGROUND_SAMPLE * np.abs(min(model.lags["target"]))
+        min_ts_length = MIN_BACKGROUND_SAMPLE * np.abs(
+            min(model._get_extreme_lags("target"))
+        )
         ts = linear_timeseries(
             start_value=1,
             end_value=min_ts_length,
@@ -1001,7 +1003,7 @@ class TestShapExplainer:
         components = {
             f"{name}_target_lag-{lag + 1}"
             for name in foreground_series.columns
-            for lag in range(abs(min(model.lags["target"])))
+            for lag in range(abs(min(model._get_extreme_lags("target"))))
         }
 
         with pytest.raises(ValueError, match="component parameter is required"):
@@ -1073,7 +1075,7 @@ class TestShapExplainer:
 
         expected_components = {
             f"price_target_lag-{lag + 1}"
-            for lag in range(abs(min(model.lags["target"])))
+            for lag in range(abs(min(model._get_extreme_lags("target"))))
         }
 
         assert isinstance(explanation, TimeSeries)
@@ -1338,7 +1340,7 @@ class TestShapExplainer:
         components = {
             f"{name}_target_lag-{lag + 1}"
             for name in series.columns
-            for lag in range(abs(min(model.lags["target"])))
+            for lag in range(abs(min(model._get_extreme_lags("target"))))
         }
 
         valid_horizon = 2
@@ -1449,7 +1451,7 @@ class TestShapExplainer:
         components = {
             f"{name}_target_lag-{lag + 1}"
             for name in series.columns
-            for lag in range(abs(min(model.lags["target"])))
+            for lag in range(abs(min(model._get_extreme_lags("target"))))
         }
 
         explanation = results.get_explanation(component=likelihood_components[0])
