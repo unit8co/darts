@@ -2417,6 +2417,30 @@ class TestTimeSeries:
 
         assert ts.time_index.equals(idx)
 
+    def test_values_stochastic_warning(self, caplog):
+        ts = TimeSeries.from_values(np.arange(30).reshape(10, 1, 3))
+        msg = "stochastic series only extracts values of a single sample"
+        with caplog.at_level(logging.WARNING):
+            values = ts.values()
+
+        assert msg in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 0])
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            values = ts.values(sample=1)
+
+        assert msg not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            values = TimeSeries.from_values(ts.values(sample=1)).values()
+
+        assert msg not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
+        caplog.clear()
+
 
 def helper_test_slice(test_series: TimeSeries):
     # base case
