@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀 Added `NBEATSExplainer` and `NBEATSExplainabilityResult` in `darts.explainability` to explain the interpretable `NBEATSModel` (`generic_architecture=False`): the explainer returns the forecast contribution of the trend and seasonality stacks, which add up to the model forecast. [#3263](https://github.com/unit8co/darts/pull/3263) by [Krisna Parahita](https://github.com/krisnaparahita).
+
 **Fixed**
 
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).

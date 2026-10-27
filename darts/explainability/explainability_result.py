@@ -12,6 +12,8 @@ Contains the explainability results obtained from :func:`_ForecastingModelExplai
   <darts.explainability.shap_explainer.ShapExplainer>`. Contains the explainability result for a single model forecast.
 - :class:`TFTExplainabilityResult <TFTExplainabilityResult>` for :class:`TFTExplainer
   <darts.explainability.tft_explainer.TFTExplainer>`.
+- :class:`NBEATSExplainabilityResult <NBEATSExplainabilityResult>` for :class:`NBEATSExplainer
+  <darts.explainability.nbeats_explainer.NBEATSExplainer>`.
 - :class:`ComponentBasedExplainabilityResult <ComponentBasedExplainabilityResult>` for generic component-based
   explainability result.
 - :class:`HorizonBasedExplainabilityResult <HorizonBasedExplainabilityResult>` for generic horizon-based
@@ -674,3 +676,71 @@ class TFTExplainabilityResult(ComponentBasedExplainabilityResult):
         of `TimeSeries`.
         """
         return self.get_explanation("decoder_importance_over_time")
+
+
+class NBEATSExplainabilityResult(ComponentBasedExplainabilityResult):
+    """
+    Stores the explainability results of a :class:`NBEATSExplainer
+    <darts.explainability.nbeats_explainer.NBEATSExplainer>` with convenient access to the results. It extends the
+    :class:`ComponentBasedExplainabilityResult` and carries information specific to the interpretable N-BEATS
+    architecture.
+
+    For every explained target component, the explanation is a `TimeSeries` over the forecast horizon with the
+    components `"trend"` and `"seasonality"`, which are the forecast contributions of the trend and seasonality
+    stacks. Their sum is the model forecast.
+
+    - :func:`get_trend() <NBEATSExplainabilityResult.get_trend>`: the contribution of the trend stack.
+    - :func:`get_seasonality() <NBEATSExplainabilityResult.get_seasonality>`: the contribution of the seasonality
+      stack.
+
+    Examples
+    --------
+    >>> from darts.datasets import AirPassengersDataset
+    >>> from darts.explainability import NBEATSExplainer
+    >>> from darts.models import NBEATSModel
+    >>>
+    >>> series = AirPassengersDataset().load().astype("float32")
+    >>> model = NBEATSModel(input_chunk_length=24, output_chunk_length=12, generic_architecture=False)
+    >>> model.fit(series)
+    >>>
+    >>> explainer = NBEATSExplainer(model)
+    >>> result = explainer.explain()
+    >>> trend = result.get_trend()
+    >>> seasonality = result.get_seasonality()
+    """
+
+    def get_trend(self, component: str | None = None) -> TimeSeries | list[TimeSeries]:
+        """
+        Returns the forecast contribution of the trend stack for a given target component. If multiple series were
+        used when calling :func:`NBEATSExplainer.explain()
+        <darts.explainability.nbeats_explainer.NBEATSExplainer.explain>`, returns a list of `TimeSeries`.
+
+        Parameters
+        ----------
+        component
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate series.
+        """
+        return self._get_stack(component, "trend")
+
+    def get_seasonality(
+        self, component: str | None = None
+    ) -> TimeSeries | list[TimeSeries]:
+        """
+        Returns the forecast contribution of the seasonality stack for a given target component. If multiple series
+        were used when calling :func:`NBEATSExplainer.explain()
+        <darts.explainability.nbeats_explainer.NBEATSExplainer.explain>`, returns a list of `TimeSeries`.
+
+        Parameters
+        ----------
+        component
+            Optionally, the target series component for which to return the explanation. Must be supplied for
+            multivariate series.
+        """
+        return self._get_stack(component, "seasonality")
+
+    def _get_stack(self, component: str | None, stack: str):
+        expl = self.get_explanation(component)
+        if isinstance(expl, list):
+            return [e[stack] for e in expl]
+        return expl[stack]
