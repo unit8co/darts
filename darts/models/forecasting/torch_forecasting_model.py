@@ -384,6 +384,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ),
             )
 
+        likelihood = kwargs.get("likelihood")
+        if (
+            kwargs.get("use_reversible_instance_norm")
+            and likelihood is not None
+            and likelihood._rin_parameters is None
+        ):
+            raise_log(
+                ValueError(
+                    "`use_reversible_instance_norm` only supports `QuantileRegression`, "
+                    "`GaussianLikelihood`, `LaplaceLikelihood`, `CauchyLikelihood` and "
+                    "`GumbelLikelihood` as `likelihood`, "
+                    f"received `{type(likelihood).__name__}`."
+                ),
+            )
+
     @classmethod
     def _extract_torch_model_params(cls, **kwargs):
         """extract params from model creation to set up TorchForecastingModels"""

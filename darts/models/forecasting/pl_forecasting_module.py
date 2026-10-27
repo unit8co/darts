@@ -59,7 +59,24 @@ def io_processor(forward):
         x_in = x_in.replace(past_target=self.rin(x_in.past_target.clone()))
         out = forward(self, x_in, *args, **kwargs)
         # inverse transform target output back to original scale
-        return out.replace(prediction=self.rin.inverse(out.prediction))
+        rin_parameters = (
+            None if self.likelihood is None else self.likelihood._rin_parameters
+        )
+        if rin_parameters is None or "scale" not in rin_parameters:
+            prediction = self.rin.inverse(out.prediction)
+        else:
+            prediction = torch.cat(
+                [
+                    (
+                        self.rin.inverse_scale(out.prediction[..., i : i + 1])
+                        if parameter == "scale"
+                        else self.rin.inverse(out.prediction[..., i : i + 1])
+                    )
+                    for i, parameter in enumerate(rin_parameters)
+                ],
+                dim=-1,
+            )
+        return out.replace(prediction=prediction)
 
     return forward_wrapper
 

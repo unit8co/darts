@@ -97,6 +97,10 @@ def _check_in_open_0_1_intvl(param, param_name=""):
 
 
 class TorchLikelihood(Likelihood, ABC):
+    # RIN inverse for each raw output channel; scale channels use softplus.
+    # None indicates that the likelihood does not support RIN.
+    _rin_parameters: tuple[str, ...] | None = None
+
     def __init__(
         self,
         likelihood_type: LikelihoodType,
@@ -232,6 +236,8 @@ class TorchLikelihood(Likelihood, ABC):
 
 
 class GaussianLikelihood(TorchLikelihood):
+    _rin_parameters = ("loc", "scale")
+
     def __init__(
         self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta_nll=0.0
     ):
@@ -562,6 +568,8 @@ class BetaLikelihood(TorchLikelihood):
 
 
 class CauchyLikelihood(TorchLikelihood):
+    _rin_parameters = ("loc", "scale")
+
     def __init__(self, prior_xzero=None, prior_gamma=None, prior_strength=1.0):
         """
         Cauchy Distribution.
@@ -876,6 +884,8 @@ class GeometricLikelihood(TorchLikelihood):
 
 
 class GumbelLikelihood(TorchLikelihood):
+    _rin_parameters = ("loc", "scale")
+
     def __init__(self, prior_mu=None, prior_beta=None, prior_strength=1.0):
         """
         Gumbel distribution.
@@ -978,6 +988,8 @@ class HalfNormalLikelihood(TorchLikelihood):
 
 
 class LaplaceLikelihood(TorchLikelihood):
+    _rin_parameters = ("loc", "scale")
+
     def __init__(self, prior_mu=None, prior_b=None, prior_strength=1.0):
         """
         Laplace distribution.
@@ -1179,6 +1191,10 @@ class QuantileRegression(TorchLikelihood):
         )
         # ignore additional attributes
         self.ignore_attrs_equality += ["_median_idx", "first", "quantiles_tensor"]
+
+    @property
+    def _rin_parameters(self) -> tuple[str, ...]:
+        return ("loc",) * self.num_parameters
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
