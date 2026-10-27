@@ -2086,6 +2086,20 @@ class TestTimeSeries:
             "fn must return an array of shape `(3, 1, 1)`. Received shape `(3, 2, 1)`"
         )
 
+    def test_strip(self):
+        vals = np.array([np.nan, 1.0, 2.0, np.nan])
+        series = TimeSeries.from_values(vals)
+        # leading and trailing nan
+        assert series.strip() == series[1:-1]
+        # trailing nan only
+        assert series[1:].strip() == series[1:-1]
+        # leading nan only
+        assert series[:-1].strip() == series[1:-1]
+        # zero nan
+        assert series[1:-1].strip() == series[1:-1]
+        # only nan
+        assert series[:1].strip() == series[:0]
+
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
         times2 = pd.date_range("20120101", "20210301", freq="QE")
@@ -2190,6 +2204,20 @@ class TestTimeSeries:
 
         assert len(series1.longest_contiguous_slice()) == 3
         assert len(series1.longest_contiguous_slice(2)) == 6
+
+        # all-NaN series returns empty series
+        all_nan = TimeSeries.from_values(np.array([np.nan]))
+        assert len(all_nan.longest_contiguous_slice()) == 0
+
+        # multivariate series with mode="any" and boundary partial NaNs
+        vals = np.array([
+            [np.nan, 1.0, 2.0, 3.0, 4.0],
+            [1.0, 1.0, 2.0, 3.0, np.nan],
+        ]).T
+        ts_multi = TimeSeries.from_values(vals)
+        res_lcs = ts_multi.longest_contiguous_slice(max_gap_size=1, mode="any")
+        assert len(res_lcs) == 3
+        assert not np.isnan(res_lcs.values()).any()
 
     @pytest.mark.parametrize(
         "times",
