@@ -5414,10 +5414,6 @@ class TimeSeries:
 
     def __pow__(self, n):
         if isinstance(n, int | float | np.integer):
-            if n < 0:
-                raise_log(
-                    ValueError("Attempted to raise a series to a negative power."),
-                )
             n = float(n)
         elif isinstance(n, TimeSeries | np.ndarray) or _is_xarray(n):
             n = self._extract_values(n)  # elementwise power
@@ -5433,14 +5429,9 @@ class TimeSeries:
 
     def __truediv__(self, other):
         if isinstance(other, int | float | np.integer):
-            if other == 0:
-                raise_log(ZeroDivisionError("Cannot divide by 0."))
+            pass
         elif isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
-            if (other == 0).any():
-                raise_log(
-                    ZeroDivisionError("Cannot divide by a TimeSeries with a value 0."),
-                )
         else:
             raise_log(
                 TypeError(
@@ -5459,10 +5450,6 @@ class TimeSeries:
                     "unsupported operand type(s) for / or truediv():"
                     f" '{type(n).__name__}' and '{type(self).__name__}'."
                 ),
-            )
-        if (self._values == 0).any():
-            raise_log(
-                ZeroDivisionError("Cannot divide by a TimeSeries with a value 0."),
             )
         ts = self.copy()
         np.divide(n, ts._values, out=ts._values)
