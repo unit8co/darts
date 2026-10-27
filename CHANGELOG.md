@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `calibrate()` to `ConformalNaiveModel` and `ConformalQRModel` to calibrate the model once on a calibration set, without training the underlying forecasting model. All forecasting methods (`predict()`, `historical_forecasts()`, `backtest()`, ...) then apply the stored calibration instead of re-calibrating each forecast on the past of the input series, so the calibration history no longer has to be passed at prediction time. The calibration is stored when saving the model. Use the new model creation parameter `global_fit` to compute a single calibration from multiple series. Without `calibrate()`, the models behave as before. [#3283](https://github.com/unit8co/darts/pull/3283) by [Shiven Aggarwal](https://github.com/shivenaggarwal).
+
 **Fixed**
 
 - Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).
