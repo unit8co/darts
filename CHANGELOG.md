@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `project_after_n_blocks` hyperparameter to `TSMixerModel`, allowing some or all of the backbone to operate in the lookback rather than forecasted time space [#2555](https://github.com/unit8co/darts/pull/2555) by [Eric Schibli](https://github.com/eschibli)
+
 **Fixed**
 
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
