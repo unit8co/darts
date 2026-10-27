@@ -118,6 +118,9 @@ if TYPE_CHECKING:
     from darts.models.forecasting.timesfm3_model import (
         TimesFM3Model as TimesFM3Model,
     )
+    from darts.models.forecasting.timestral_model import (
+        TimestralModel as TimestralModel,
+    )
     from darts.models.forecasting.tirex2_model import TiRex2Model as TiRex2Model
     from darts.models.forecasting.tirex_model import TiRexModel as TiRexModel
     from darts.models.forecasting.transformer_model import (
@@ -193,6 +196,10 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "TSMixerModel": ("darts.models.forecasting.tsmixer_model", "(Py)Torch"),
     # --- Forecasting: Foundation models (Torch-based) ---
     "Chronos2Model": ("darts.models.forecasting.chronos2_model", "(Py)Torch"),
+    "TimestralModel": (
+        "darts.models.forecasting.timestral_model",
+        "(Py)Torch and/or Timestral",
+    ),
     "PatchTSTFMModel": ("darts.models.forecasting.patchtst_fm_model", "(Py)Torch"),
     "TimesFM2p5Model": ("darts.models.forecasting.timesfm2p5_model", "(Py)Torch"),
     "TimesFM3Model": ("darts.models.forecasting.timesfm3_model", "(Py)Torch"),

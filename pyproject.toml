@@ -92,6 +92,7 @@ required-environments = [
 only-binary = [":all:"]
 
 [tool.uv.sources]
+timestral = { git = "https://github.com/mistralai/timestral", rev = "a534bdbd244d64f3d9d743f46c7bf6fc330ed4ff" }
 # Use PyTorch CPU-only index when torch-cpu group is enabled
 torch = { index = "pytorch-cpu", group = "torch-cpu" }
 
@@ -181,6 +182,7 @@ optional = [
     "neuralforecast>=3.0.0",
     "tirex-ts>=1.4.0",
     "tirex-2>=0.3.1",
+    "timestral",
     "tfc-t0[torch]>=0.6.0",
 ]
 release = [

@@ -2643,6 +2643,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             # meaningful error message if parameters are incompatible with the ckpt weights
             self._check_ckpt_parameters(tfm_save)
+            self._restore_checkpoint_metadata(tfm_save)
 
         # instantiate the model without having to call `fit_from_dataset`
         self.model = self._init_model()
@@ -2987,6 +2988,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "lr_scheduler_kwargs",
             "output_chunk_shift",
         ]
+
+    def _restore_checkpoint_metadata(self, tfm_save: "TorchForecastingModel") -> None:
+        """Restore subclass metadata before recreating a module in ``load_weights*()``.
+
+        Called after checkpoint parameters have been validated. Subclasses can use
+        this to restore fitted metadata that cannot be inferred from sample shapes.
+        """
 
     def _check_ckpt_parameters(self, tfm_save):
         """

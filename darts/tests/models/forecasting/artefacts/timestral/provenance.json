@@ -1,0 +1,15 @@
+{
+  "model_id": "mistralai/Timestral-5M",
+  "model_revision": "bdd20cfc15a3fea0e4cb5ccef37f8d3ca7aa335f",
+  "source_revision": "a534bdbd244d64f3d9d743f46c7bf6fc330ed4ff",
+  "package_versions": {
+    "timestral": "1.0.0",
+    "torch": "2.14.1",
+    "numpy": "2.3.5"
+  },
+  "device": "cpu",
+  "dtype": "float32",
+  "context_length": 64,
+  "symmetric_averaging": true,
+  "clip_nonnegative": true
+}

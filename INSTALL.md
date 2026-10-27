@@ -25,6 +25,19 @@ Some models have additional dependencies that are not included in the `all` inst
 | `TiRex2Model`         | tirex-2>=0.3.1        |
 | `T0Model`             | tfc-t0[torch]>=0.6.0  |
 
+`TimestralModel` additionally requires the upstream Timestral package, currently distributed through Git.
+Install the tested revision after installing `darts[torch]` (Git must be installed):
+
+```bash
+pip install "git+https://github.com/mistralai/timestral.git@a534bdbd244d64f3d9d743f46c7bf6fc330ed4ff"
+```
+
+Timestral's code uses the Apache-2.0 license; its pretrained weights use a separate
+[Modified MIT license](https://huggingface.co/mistralai/Timestral-209M/blob/main/LICENSE).
+Weights are downloaded on first use. Use float32 series and 32-bit trainer precision.
+CPU and CUDA are supported; Apple MPS is unsupported because Timestral computes scaling statistics in float64.
+Automatic device selection uses CUDA when available, otherwise CPU.
+
 Some optional integrations also require additional dependencies:
 
 | Integration          | Dependencies |
@@ -65,6 +78,8 @@ Some models have dependencies not available on conda-forge. To use them, you nee
 | `TiRex2Model` | tirex-2>=0.3.1       |
 | `T0Model`     | tfc-t0[torch]>=0.6.0 |
 
+
+For `TimestralModel`, use the Git installation command above inside your conda environment.
 
 ## Other Information
 

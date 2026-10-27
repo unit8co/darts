@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `TimestralModel` for zero-shot joint multivariate forecasting with numeric and categorical past/future covariates, quantile forecasts, and all four Timestral checkpoint sizes. Addresses [#3268](https://github.com/unit8co/darts/issues/3268).
+
 **Fixed**
 
 - Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).
