@@ -142,7 +142,7 @@ class GaussianLikelihood(SKLearnLikelihood):
 
     def sample(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_components * output_chunk_length, n_series * n_samples, 2)
-        # [mu, sigma] on the last dimension, grouped by component
+        # [mu, variance] on the last dimension, grouped by component
         n_entries, n_samples, n_params = model_output.shape
 
         # get samples (n_components * output_chunk_length, n_series * n_samples)
@@ -158,8 +158,12 @@ class GaussianLikelihood(SKLearnLikelihood):
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_components * output_chunk_length, n_series * n_samples, 2)
-        # [mu, sigma] on the last dimension, grouped by component
+        # [mu, variance] on the last dimension, grouped by component
         n_samples = model_output.shape[1]
+
+        # the estimator returns the variance; report the standard deviation `sigma`
+        model_output = model_output.copy()
+        model_output[:, :, 1] = np.sqrt(model_output[:, :, 1])
 
         # reshape to (n_series * n_samples, output_chunk_length, n_components)
         params_reshaped = model_output.transpose(1, 0, 2).reshape(
