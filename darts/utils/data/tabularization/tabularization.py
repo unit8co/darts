@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from functools import reduce
 from itertools import chain
 from math import inf
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pandas as pd
@@ -19,6 +19,7 @@ from numpy.lib.stride_tricks import as_strided
 from darts import TimeSeries
 from darts.logging import raise_log
 from darts.typing import TimeIndex, TimeSeriesLike
+from darts.utils.data.tabularization.data import LaggedData
 from darts.utils.data.tabularization.features import (
     ArrayLaggedFeatures,
     LaggedFeatures,
@@ -26,6 +27,9 @@ from darts.utils.data.tabularization.features import (
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
+
+if TYPE_CHECKING:
+    from darts.utils.forecast_config import ResolvedForecastConfig
 
 NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
 STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
@@ -438,6 +442,75 @@ def create_lagged_data(
     elif not sample_weights:
         sample_weights = None
     return X, y, times, last_static_covariates_shape, sample_weights
+
+
+def _config_lags(
+    config: "ResolvedForecastConfig", kind: Literal["target", "past", "future"]
+) -> list[int] | dict[str, list[int]] | None:
+    """Return the resolved lags in the representation expected by the core."""
+    lags = getattr(config.lags, kind)
+    if lags is None:
+        return None
+    if config.lags.is_component_specific.get(kind, False):
+        return {component: list(values) for component, values in lags.items()}
+    return list(config.lags.legacy_lags[kind])
+
+
+def _create_lagged_data_from_config(
+    config: "ResolvedForecastConfig",
+    target_series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    output_chunk_shift: int = 0,
+    uses_static_covariates: bool = True,
+    last_static_covariates_shape: tuple[int, int] | None = None,
+    max_samples_per_ts: int | None = None,
+    is_training: bool = True,
+    concatenate: bool = True,
+    sample_weight: str | TimeSeriesLike | None = None,
+    stride: int = 1,
+    use_moving_windows: bool = True,
+    show_warnings: bool = True,
+) -> LaggedData:
+    """Create lagged data from an already resolved forecast config.
+
+    This is the config-driven entry point of the tabularization core. It does not
+    re-validate the lags (the config is already resolved) and keeps the historical
+    ``create_lagged_data`` implementation as the single source of truth while the
+    call sites are migrated incrementally.
+    """
+    target_sequence = None if target_series is None else series2seq(target_series)
+    X, y, times, static_shape, sample_weights = create_lagged_data(
+        target_series=target_sequence,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        lags=_config_lags(config, "target"),
+        lags_past_covariates=_config_lags(config, "past"),
+        lags_future_covariates=_config_lags(config, "future"),
+        output_chunk_length=config.strategy.output_chunk_length,
+        output_chunk_shift=output_chunk_shift,
+        uses_static_covariates=uses_static_covariates,
+        last_static_covariates_shape=last_static_covariates_shape,
+        max_samples_per_ts=max_samples_per_ts,
+        multi_models=config.strategy.name == "direct",
+        check_inputs=False,
+        use_moving_windows=use_moving_windows,
+        is_training=is_training,
+        concatenate=concatenate,
+        sample_weight=sample_weight,
+        stride=stride,
+        show_warnings=show_warnings,
+    )
+    return LaggedData(
+        X=X,
+        y=y,
+        times=times,
+        sample_weights=sample_weights,
+        series_lengths=(
+            None if target_sequence is None else [len(ts) for ts in target_sequence]
+        ),
+        last_static_covariates_shape=static_shape,
+    )
 
 
 def create_lagged_training_data(
