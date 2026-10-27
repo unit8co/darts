@@ -2389,41 +2389,29 @@ class TestTimeSeries:
 
         assert ts.time_index.equals(idx)
 
-    def test_values_stochastic_default_warns(self, caplog):
+    def test_values_stochastic_warning(self, caplog):
         ts = TimeSeries.from_values(np.arange(30).reshape(10, 1, 3))
-
+        msg = "stochastic series only extracts values of a single sample"
         with caplog.at_level(logging.WARNING):
             values = ts.values()
 
-        assert "only sample 0 will be returned" in caplog.text
+        assert msg in caplog.text
         np.testing.assert_array_equal(values, ts.all_values()[:, :, 0])
-
-    def test_values_stochastic_explicit_sample_no_warning(self, caplog):
-        ts = TimeSeries.from_values(np.arange(30).reshape(10, 1, 3))
+        caplog.clear()
 
         with caplog.at_level(logging.WARNING):
             values = ts.values(sample=1)
 
-        assert "only sample 0 will be returned" not in caplog.text
+        assert msg not in caplog.text
         np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
-
-    def test_values_deterministic_no_warning(self, caplog):
-        ts = TimeSeries.from_values(np.arange(10))
+        caplog.clear()
 
         with caplog.at_level(logging.WARNING):
-            values = ts.values()
+            values = TimeSeries.from_values(ts.values(sample=1)).values()
 
-        assert "only sample 0 will be returned" not in caplog.text
-        np.testing.assert_array_equal(values, ts.all_values()[:, :, 0])
-
-    def test_values_stochastic_explicit_sample_zero_no_warning(self, caplog):
-        ts = TimeSeries.from_values(np.arange(30).reshape(10, 1, 3))
-
-        with caplog.at_level(logging.WARNING):
-            values = ts.values(sample=0)
-
-        assert "only sample 0 will be returned" not in caplog.text
-        np.testing.assert_array_equal(values, ts.all_values()[:, :, 0])
+        assert msg not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
+        caplog.clear()
 
 
 def helper_test_slice(test_series: TimeSeries):

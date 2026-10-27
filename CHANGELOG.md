@@ -10,11 +10,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
-- Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
 
+- Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
 - Improvements to `TimeSeries` :
   - `__pow__` now supports raising to negative powers (as series, arrays or scalars). E.g. `series ** (-2)`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
-  - `__truediv__` now supports dividing by zeros (as series, arrays or scalars). E.g. `series / 0.` [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
+  - `__truediv__` now supports dividing by zeros (as series, arrays or scalars). E.g. `series / 0.`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
+  - Added a warning when calling `values()` on stochastic series without specifying a sample. [#3307](https://github.com/unit8co/darts/pull/3307) by [Pallav Biyala](https://github.com/Pallav-Biyala).
 
 **Fixed**
 

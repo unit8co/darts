@@ -2070,10 +2070,10 @@ class TimeSeries:
         if sample is None:
             if self.is_stochastic:
                 logger.warning(
-                    "You are extracting values from a stochastic TimeSeries, "
-                    "but only sample 0 will be returned. If you want a point "
-                    "forecast, use TimeSeries.mean() or TimeSeries.quantile(0.5) "
-                    "before calling values()."
+                    "`TimeSeries.values()` on stochastic series only extracts values of a single sample "
+                    "(sample 0 by default). For meaningful results, use `TimeSeries.all_values()` to extract "
+                    "all sample values or any other series statistic / aggregate such as `mean()`, "
+                    "`quantile()`, ..."
                 )
             sample = 0
 
