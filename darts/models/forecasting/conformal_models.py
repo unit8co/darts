@@ -40,6 +40,7 @@ from darts.utils.ts_utils import (
 )
 from darts.utils.utils import (
     TORCH_AVAILABLE,
+    ModelType,
     _check_quantiles,
     generate_index,
     n_steps_between,
@@ -78,8 +79,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
           `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
 
         Conformal models can be applied to any of Darts' global forecasting model, as long as the model has been
-        fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
-        follows:
+        fitted before and is not a classification model. In general the workflow of the models to produce one
+        calibrated forecast/prediction is as follows:
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
           the most recent past of your input series relative to the forecast start point. The number of calibration
@@ -129,6 +130,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
                 ValueError("`model` must be a pre-trained `GlobalForecastingModel`."),
+            )
+        if getattr(model, "_model_type", None) == ModelType.FORECASTING_CLASSIFIER:
+            raise_log(
+                ValueError(
+                    "`model` must be a regression model (predicting continuous numerical "
+                    "values). Classification models are not supported."
+                ),
             )
         _check_quantiles(quantiles)
 
@@ -1643,8 +1651,8 @@ class ConformalNaiveModel(ConformalModel):
           `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
 
         Conformal models can be applied to any of Darts' global forecasting model, as long as the model has been
-        fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
-        follows:
+        fitted before and is not a classification model. In general the workflow of the models to produce one
+        calibrated forecast/prediction is as follows:
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
           the most recent past of your input series relative to the forecast start point. The number of calibration
@@ -1774,8 +1782,8 @@ class ConformalQRModel(ConformalModel):
           `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
 
         Conformal models can be applied to any of Darts' global forecasting model, as long as the model has been
-        fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
-        follows:
+        fitted before and is not a classification model. In general the workflow of the models to produce one
+        calibrated forecast/prediction is as follows:
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
           the most recent past of your input series relative to the forecast start point. The number of calibration

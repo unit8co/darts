@@ -242,9 +242,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             first_idx = first_up_sampled.index.get_loc(df.index[0])
             last_idx = first_idx + series_size - 1
 
-            start_chunk = np.empty((first_idx, 1, 1))
+            start_chunk = np.empty((first_idx, n_cols_in, n_samples))
             start_chunk.fill(np.nan)
-            end_chunk = np.empty((max_size - 1 - last_idx, 1, 1))
+            end_chunk = np.empty((max_size - 1 - last_idx, n_cols_in, n_samples))
             end_chunk.fill(np.nan)
             arr = np.concatenate([start_chunk, arr, end_chunk])
             # arr has shape (n time steps, n components, n samples)

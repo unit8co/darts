@@ -15,6 +15,7 @@ from darts.models import (
     LinearRegressionModel,
     NaiveSeasonal,
     NLinearModel,
+    SKLearnClassifierModel,
 )
 from darts.models.forecasting.conformal_models import _get_calibration_hfc_start
 from darts.models.forecasting.forecasting_model import ForecastingModel
@@ -233,6 +234,18 @@ class TestConformalModel:
         _ = ConformalQRModel(model=model_prob_q, quantiles=q)
         # works also with different likelihood
         _ = ConformalQRModel(model=model_prob_poisson, quantiles=q)
+
+    @pytest.mark.parametrize("model_cls", [ConformalNaiveModel, ConformalQRModel])
+    def test_rejects_classification_models(self, model_cls):
+        # target series with class labels `[0, 1, 2]`
+        series = (tg.sine_timeseries(length=20) + 1).map(lambda x: np.round(x))
+
+        # classification models are not supported
+        model_clf = SKLearnClassifierModel(
+            lags=IN_LEN, output_chunk_length=OUT_LEN
+        ).fit(series)
+        with pytest.raises(ValueError, match="must be a regression model"):
+            model_cls(model=model_clf, quantiles=q)
 
     def test_unsupported_properties(self):
         """Tests only here for coverage, maybe at some point we support these properties."""
