@@ -2184,7 +2184,7 @@ class TestAutoLogBacktestMetrics:
         directly with a fabricated result so the window counts per series
         are exact."""
         model = _fit_lr()
-        input_length = abs(min(model.lags["target"]))
+        input_length = abs(min(model._get_extreme_lags("target")))
         n_windows = 2
         series_two_windows = TS_UNIVARIATE[-(input_length + n_windows) :]
         # series 0 has 2 windows; series 1 (shorter, later-starting) has 1
@@ -2231,7 +2231,7 @@ class TestAutoLogBacktestMetrics:
         case, with steps ``0 .. t_max - 1`` rather than end-relative indexes.
         """
         model = _fit_lr()
-        input_length = abs(min(model.lags["target"]))
+        input_length = abs(min(model._get_extreme_lags("target")))
         n_windows = 2
         horizon = 3
         series_two_windows = TS_UNIVARIATE[-(input_length + horizon + n_windows - 1) :]
@@ -2279,7 +2279,7 @@ class TestAutoLogBacktestMetrics:
         ``series_align='start'``, so its first windows overlap the head of a
         longer series."""
         model = _fit_lr()
-        input_length = abs(min(model.lags["target"]))
+        input_length = abs(min(model._get_extreme_lags("target")))
         n_windows = 2
         series_two_windows = TS_UNIVARIATE[-(input_length + n_windows) :]
         with autolog_context(log_metrics=True, series_align="start"):
@@ -2322,7 +2322,7 @@ class TestAutoLogBacktestMetrics:
         """last_points_only with ``series_align='start'`` aligns shorter series
         at early timesteps."""
         model = _fit_lr()
-        input_length = abs(min(model.lags["target"]))
+        input_length = abs(min(model._get_extreme_lags("target")))
         n_windows = 2
         horizon = 3
         series_two_windows = TS_UNIVARIATE[-(input_length + horizon + n_windows - 1) :]

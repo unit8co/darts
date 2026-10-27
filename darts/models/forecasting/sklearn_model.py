@@ -76,6 +76,7 @@ from darts.utils.data.tabularization import (
     create_lagged_component_names,
     create_lagged_training_data,
 )
+from darts.utils.data.tabularization.lags import ResolvedLagConfig
 from darts.utils.forecast_config import ForecastConfig, ResolvedForecastConfig
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -276,13 +277,6 @@ class SKLearnModel(GlobalForecastingModel):
         if not callable(getattr(self.model, "predict", None)):
             raise_log(ValueError("Provided model object must have a predict() method"))
 
-        # check lags
-        self._validate_lags(
-            lags=lags,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
-        )
-
         # the resolved config is built in `fit()` once the training components are known
         self._config = ForecastConfig.from_user(
             lags=lags,
@@ -293,29 +287,30 @@ class SKLearnModel(GlobalForecastingModel):
             multi_models=multi_models,
         )
         self._resolved_config: ResolvedForecastConfig | None = None
-        # legacy views, kept derived from the config for backwards compatibility
-        self._legacy_lags = self._config.lags.legacy_lags_dict()
-        self._legacy_component_lags = self._config.lags.legacy_component_lags_dict()
+        self._warn_on_unsupported_lags(lags)
         self.multi_models = self._config.strategy.name == "direct"
         self.pred_dim = self._config.strategy.pred_dim
 
     def __setstate__(self, state):
-        # Older pickles stored the lags directly on the instance. Keep them as the legacy
-        # view and rebuild the config from the captured constructor arguments.
+        # Older pickles stored the resolved lags directly on the instance. Drop those
+        # views, rebuild the config from the captured constructor arguments and, for
+        # fitted models, recover the resolved lag state so predictions stay unchanged.
         legacy_lags = state.pop("lags", None)
         legacy_component_lags = state.pop("component_lags", None)
+        state.pop("_legacy_lags", None)
+        state.pop("_legacy_component_lags", None)
         self.__dict__.update(state)
 
-        if "_legacy_lags" not in self.__dict__:
-            self._legacy_lags = {} if legacy_lags is None else legacy_lags
-        if "_legacy_component_lags" not in self.__dict__:
-            self._legacy_component_lags = (
-                {} if legacy_component_lags is None else legacy_component_lags
-            )
-        if "_resolved_config" not in self.__dict__:
-            self._resolved_config = None
         if "_config" not in self.__dict__:
             self._config = self._build_config_from_model_params()
+        if "_resolved_config" not in self.__dict__:
+            self._resolved_config = (
+                self._build_resolved_config_from_legacy_state(
+                    legacy_lags, legacy_component_lags
+                )
+                if self.__dict__.get("_fit_called", False)
+                else None
+            )
 
     def _build_config_from_model_params(self) -> ForecastConfig | None:
         params = getattr(self, "_model_params", None)
@@ -351,219 +346,51 @@ class SKLearnModel(GlobalForecastingModel):
             self._config = config
         return config
 
-    @property
-    def lags(self) -> dict[str, list[int]]:
-        """The legacy ``model.lags`` view derived from the forecast config."""
-        return getattr(self, "_legacy_lags", {})
+    def _build_resolved_config_from_legacy_state(
+        self,
+        legacy_lags: dict[str, list[int]] | None,
+        legacy_component_lags: dict[str, dict[str, list[int]]] | None,
+    ) -> ResolvedForecastConfig | None:
+        """Recover the resolved lags stored by a pre-R pickle.
 
-    @property
-    def component_lags(self) -> dict[str, dict[str, list[int]]]:
-        """The legacy ``model.component_lags`` view derived from the forecast config."""
-        return getattr(self, "_legacy_component_lags", {})
+        Older pickles stored ``lags``/``component_lags`` as instance state. The
+        public views are gone now, so the fitted component mapping is converted
+        into the resolved config that the rest of the model consumes.
+        """
+        if not legacy_lags:
+            return None
+        config = self._ensure_config()
+        component_lags = legacy_component_lags or {}
+        kinds = ("target", "past", "future")
+        resolved_lags = ResolvedLagConfig(
+            target=component_lags.get("target"),
+            past=component_lags.get("past"),
+            future=component_lags.get("future"),
+            future_stepwise={},
+            is_component_specific={kind: kind in component_lags for kind in kinds},
+            legacy_lags={
+                kind: tuple(legacy_lags[kind]) for kind in kinds if kind in legacy_lags
+            },
+        )
+        return ResolvedForecastConfig(lags=resolved_lags, strategy=config.strategy)
 
     def _apply_resolved_config(self, resolved: ResolvedForecastConfig) -> None:
         self._resolved_config = resolved
-        self._legacy_lags = resolved.lags.legacy_lags_dict()
-        self._legacy_component_lags = resolved.lags.legacy_component_lags_dict()
 
-    def _validate_lags(
-        self,
-        lags: LAGS_TYPE | None,
-        lags_past_covariates: LAGS_TYPE | None,
-        lags_future_covariates: FUTURE_LAGS_TYPE | None,
-    ):
-        if (
-            (lags is None)
-            and (lags_future_covariates is None)
-            and (lags_past_covariates is None)
-        ):
-            raise_log(
-                ValueError(
-                    "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None."
-                ),
-            )
-
-    @staticmethod
-    def _generate_lags(
-        lags: LAGS_TYPE | None,
-        lags_past_covariates: LAGS_TYPE | None,
-        lags_future_covariates: FUTURE_LAGS_TYPE | None,
-        output_chunk_shift: int,
-    ) -> tuple[dict[str, list[int]], dict[str, dict[str, list[int]]]]:
-        """
-        Based on the type of the argument and the nature of the covariates, perform some sanity checks before
-        converting the lags to a list of integer.
-
-        If lags are provided as a dictionary, the component-wise values are returned in the second
-        mapping and the first mapping contains only the extreme values.
-        If the lags are provided as integer, list, tuple or dictionary containing only the
-        'default_lags' keys, the values are returned only in the first mapping.
-
-        If `output_chunk_shift > 0`, the `lags_future_covariates` are shifted into the future.
-        """
-        processed_lags: dict[str, list[int]] = dict()
-        processed_component_lags: dict[str, dict[str, list[int]]] = dict()
-        for lags_values, lags_name, lags_abbrev in zip(
-            [lags, lags_past_covariates, lags_future_covariates],
-            ["lags", "lags_past_covariates", "lags_future_covariates"],
-            ["target", "past", "future"],
-        ):
-            if lags_values is None:
-                continue
-
-            # converting to dictionary to run sanity checks
-            if not isinstance(lags_values, dict):
-                lags_values = {"default_lags": lags_values}
-            elif len(lags_values) == 0:
-                raise_log(
-                    ValueError(
-                        f"When passed as a dictionary, `{lags_name}` must contain at least one key."
-                    ),
-                )
-
-            invalid_type = False
-            supported_types = ""
-            min_lags = None
-            max_lags = None
-            tmp_components_lags: dict[str, list[int]] = dict()
-            for comp_name, comp_lags in lags_values.items():
-                if lags_name == "lags_future_covariates":
-                    if isinstance(comp_lags, tuple):
-                        if not (
-                            len(comp_lags) == 2
-                            and isinstance(comp_lags[0], int)
-                            and isinstance(comp_lags[1], int)
-                        ):
-                            raise_log(
-                                ValueError(
-                                    f"`{lags_name}` - `{comp_name}`: tuple must be of length 2, and must "
-                                    f"contain two integers."
-                                ),
-                            )
-
-                        if isinstance(comp_lags[0], bool) or isinstance(
-                            comp_lags[1], bool
-                        ):
-                            raise_log(
-                                ValueError(
-                                    f"`{lags_name}` - `{comp_name}`: tuple must contain integers, not bool."
-                                ),
-                            )
-
-                        if not (comp_lags[0] >= 0 and comp_lags[1] >= 0):
-                            raise_log(
-                                ValueError(
-                                    f"`{lags_name}` - `{comp_name}`: tuple must contain positive integers. "
-                                    f"Given: {comp_lags}."
-                                ),
-                            )
-                        if comp_lags[0] == 0 and comp_lags[1] == 0:
-                            raise_log(
-                                ValueError(
-                                    f"`{lags_name}` - `{comp_name}`: tuple cannot be (0, 0) as it corresponds "
-                                    f"to an empty list of lags."
-                                ),
-                            )
-                        tmp_components_lags[comp_name] = list(
-                            range(-comp_lags[0], comp_lags[1])
-                        )
-                    elif isinstance(comp_lags, list):
-                        for lag in comp_lags:
-                            if not isinstance(lag, int) or isinstance(lag, bool):
-                                raise_log(
-                                    ValueError(
-                                        f"`{lags_name}` - `{comp_name}`: list must contain "
-                                        f"only integers. Given: {comp_lags}."
-                                    ),
-                                )
-                        tmp_components_lags[comp_name] = sorted(comp_lags)
-                    else:
-                        invalid_type = True
-                        supported_types = "tuple or a list"
-                else:
-                    if isinstance(comp_lags, int):
-                        if comp_lags <= 0:
-                            raise_log(
-                                ValueError(
-                                    f"`{lags_name}` - `{comp_name}`: integer must be strictly "
-                                    f"positive . Given: {comp_lags}."
-                                ),
-                            )
-                        tmp_components_lags[comp_name] = list(range(-comp_lags, 0))
-                    elif isinstance(comp_lags, list):
-                        for lag in comp_lags:
-                            if not isinstance(lag, int) or (lag >= 0):
-                                raise_log(
-                                    ValueError(
-                                        f"`{lags_name}` - `{comp_name}`: list must contain "
-                                        f"only strictly negative integers. Given: {comp_lags}."
-                                    ),
-                                )
-                        tmp_components_lags[comp_name] = sorted(comp_lags)
-                    else:
-                        invalid_type = True
-                        supported_types = "strictly positive integer or a list"
-
-                if invalid_type:
-                    raise_log(
-                        ValueError(
-                            f"`{lags_name}` - `{comp_name}`: must be either a {supported_types}. "
-                            f"Given : {type(comp_lags)}."
-                        ),
-                    )
-
-                # extracting min and max lags va
-                if min_lags is None:
-                    min_lags = tmp_components_lags[comp_name][0]
-                else:
-                    min_lags = min(min_lags, tmp_components_lags[comp_name][0])
-
-                if max_lags is None:
-                    max_lags = tmp_components_lags[comp_name][-1]
-                else:
-                    max_lags = max(max_lags, tmp_components_lags[comp_name][-1])
-
-            # Check if only default lags are provided
-            has_default_lags = list(tmp_components_lags.keys()) == ["default_lags"]
-
-            # revert to shared lags logic when applicable
-            if has_default_lags:
-                processed_lags[lags_abbrev] = tmp_components_lags["default_lags"]
-            else:
-                processed_lags[lags_abbrev] = [min_lags, max_lags]
-                processed_component_lags[lags_abbrev] = tmp_components_lags
-
-            # if output chunk is shifted, shift future covariates lags with it
-            if output_chunk_shift and lags_abbrev == "future":
-                processed_lags[lags_abbrev] = [
-                    lag_ + output_chunk_shift for lag_ in processed_lags[lags_abbrev]
-                ]
-                if processed_component_lags and not has_default_lags:
-                    processed_component_lags[lags_abbrev] = {
-                        comp_: [lag_ + output_chunk_shift for lag_ in lags_]
-                        for comp_, lags_ in processed_component_lags[
-                            lags_abbrev
-                        ].items()
-                    }
-        return processed_lags, processed_component_lags
+    def _warn_on_unsupported_lags(self, lags: LAGS_TYPE | None) -> None:
+        """Hook for subclasses whose target lags cannot preserve categorical values."""
 
     def _get_lags_dict(self) -> dict[str, list[int]]:
         """The extreme lags per type, derived from the forecast config."""
         if self._resolved_config is not None:
             return self._resolved_config.lags.legacy_lags_dict()
-        # Old pickles restore the fitted lag views in `_legacy_lags`; use them
-        # until the model is re-fitted and `_resolved_config` exists again.
-        if "_legacy_lags" in self.__dict__:
-            return self._legacy_lags
-        return self._config.lags.legacy_lags_dict()
+        return self._ensure_config().lags.legacy_lags_dict()
 
     def _get_component_lags_dict(self) -> dict[str, dict[str, list[int]]]:
         """The component-specific lags per type, derived from the forecast config."""
         if self._resolved_config is not None:
             return self._resolved_config.lags.legacy_component_lags_dict()
-        if "_legacy_component_lags" in self.__dict__:
-            return self._legacy_component_lags
-        return self._config.lags.legacy_component_lags_dict()
+        return self._ensure_config().lags.legacy_component_lags_dict()
 
     def _is_component_specific(self, lags_type: str) -> bool:
         """Whether ``lags_type`` uses component-specific lags."""
@@ -571,9 +398,7 @@ class SKLearnModel(GlobalForecastingModel):
             return self._resolved_config.lags.is_component_specific.get(
                 lags_type, False
             )
-        if "_legacy_component_lags" in self.__dict__:
-            return lags_type in self._legacy_component_lags
-        return lags_type in self._config.lags.legacy_component_lags_dict()
+        return lags_type in self._ensure_config().lags.legacy_component_lags_dict()
 
     def _get_extreme_lags(self, lags_type: str) -> list[int] | None:
         """The extreme lags per type; ignores the component-specific mapping."""
@@ -2262,18 +2087,7 @@ class _ClassifierMixin:
             classes = [classes]
         return classes
 
-    def _validate_lags(
-        self,
-        lags: LAGS_TYPE | None,
-        lags_past_covariates: LAGS_TYPE | None,
-        lags_future_covariates: FUTURE_LAGS_TYPE | None,
-    ):
-        super()._validate_lags(
-            lags=lags,
-            lags_past_covariates=lags_past_covariates,
-            lags_future_covariates=lags_future_covariates,
-        )
-
+    def _warn_on_unsupported_lags(self, lags: LAGS_TYPE | None) -> None:
         if lags is not None and not isinstance(
             self, SKLearnModelWithCategoricalFeatures
         ):

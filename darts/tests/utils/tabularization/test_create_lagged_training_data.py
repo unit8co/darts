@@ -1775,7 +1775,7 @@ class TestCreateLaggedTrainingData:
             + 200
         )
 
-        # extremes lags are manually computed, similarly to the model.lags attribute
+        # extreme lags are manually computed from the model's lag config
         feats_times = self.get_feature_times(
             target,
             past,
