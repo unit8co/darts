@@ -2847,6 +2847,9 @@ class TimeSeries:
             self.values(copy=False), how=how
         )
 
+        if first_finite_row is None:
+            return self[:0]
+
         return self.__class__(
             times=self._time_index[first_finite_row : last_finite_row + 1],
             values=self._values[first_finite_row : last_finite_row + 1],
@@ -2882,7 +2885,9 @@ class TimeSeries:
         """
         if not (np.isnan(self._values)).any():
             return self.copy()
-        stripped_series = self.strip()
+        stripped_series = self.strip(how=mode)
+        if len(stripped_series) == 0:
+            return stripped_series
         gaps = stripped_series.gaps(mode=mode)
         if gaps.empty:
             return stripped_series
@@ -6272,6 +6277,9 @@ def _finite_rows_boundaries(
                     f"received {how}"
                 )
             )
+
+    if not finite_rows.any():
+        return None, None
 
     first_finite_row = finite_rows.argmax()
     last_finite_row = len(finite_rows) - finite_rows[::-1].argmax() - 1
