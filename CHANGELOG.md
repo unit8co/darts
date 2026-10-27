@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed `check_seasonality()` using an incorrect significance threshold and omitting the preceding lag from Bartlett's standard error, which caused false seasonality detections. This can change automatically inferred periods in `Theta` and `FourTheta`; set `seasonality_period` when the period is known. [#3286](https://github.com/unit8co/darts/issues/3286) by [Aman Agnihotri](https://github.com/its-amann).
+- Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
 
 **Dependencies**
