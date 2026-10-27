@@ -1094,8 +1094,16 @@ class TestTimeSeries:
         targetDiv = TimeSeries.from_series(
             pd.Series([i / 2 for i in range(10)], index=self.pd_series1.index)
         )
+        targetrDiv = TimeSeries.from_times_and_values(
+            times=self.pd_series1.index,
+            values=2.0 / np.array([i for i in range(10)], dtype=self.series1.dtype),
+        )
         targetPow = TimeSeries.from_series(
             pd.Series([float(i**2) for i in range(10)], index=self.pd_series1.index)
+        )
+        targetnPow = TimeSeries.from_times_and_values(
+            times=self.pd_series1.index,
+            values=np.array([i for i in range(10)], dtype=self.series1.dtype) ** (-2),
         )
 
         assert self.series1 + seriesA == targetAdd
@@ -1108,15 +1116,9 @@ class TestTimeSeries:
         assert 2 * self.series1 == targetMul
         assert self.series1 / seriesA == targetDiv
         assert self.series1 / 2 == targetDiv
+        assert 2 / self.series1 == targetrDiv
         assert self.series1**2 == targetPow
-
-        with pytest.raises(ZeroDivisionError):
-            # Cannot divide by a TimeSeries with a value 0.
-            self.series1 / self.series1
-
-        with pytest.raises(ZeroDivisionError):
-            # Cannot divide by 0.
-            self.series1 / 0
+        assert self.series1 ** (-2) == targetnPow
 
     def test_ops_array(self):
         # can work with xarray directly
@@ -1154,6 +1156,7 @@ class TestTimeSeries:
         seriesMul = TimeSeries(self.times, arrayA * arrayB)
         seriesDiv = TimeSeries(self.times, arrayA / arrayB)
         seriesPow = TimeSeries(self.times, arrayA**arrayB)
+        seriesnPow = TimeSeries(self.times, arrayA ** (-arrayB))
 
         # assert different operations; must be equivalent to operations with scalar
         assert seriesA + seriesB == seriesAdd
@@ -1161,6 +1164,7 @@ class TestTimeSeries:
         assert seriesA * seriesB == seriesMul
         assert seriesA / seriesB == seriesDiv
         assert seriesA**seriesB == seriesPow
+        assert seriesA ** (-seriesB) == seriesnPow
 
         # it also works with numpy arrays directly
         assert seriesA + arrayB == seriesAdd
@@ -1168,6 +1172,7 @@ class TestTimeSeries:
         assert seriesA * arrayB == seriesMul
         assert seriesA / arrayB == seriesDiv
         assert seriesA**arrayB == seriesPow
+        assert seriesA ** (-arrayB) == seriesnPow
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
@@ -1183,7 +1188,29 @@ class TestTimeSeries:
         assert (series - vals).dtype == dt_source
         assert (series * vals).dtype == dt_source
         assert (series / vals).dtype == dt_source
+        assert (2 / series).dtype == dt_source
         assert (series**vals).dtype == dt_source
+        assert (series**2).dtype == dt_source
+        assert (series**-2).dtype == dt_source
+        assert (series**0.5).dtype == dt_source
+
+    def test_zero_truediv(self):
+        series = TimeSeries.from_values(np.array([1.0, 2.0, 3.0]))
+        z_values = np.array([1.0, 0.0, 3.0]).reshape((3, 1, 1))
+        z_series = TimeSeries.from_values(z_values)
+
+        np.testing.assert_array_equal((series / 0.0).values()[:, 0], [np.inf] * 3)
+        np.testing.assert_array_equal(
+            (series / z_values).values()[:, 0], [1.0, np.inf, 1.0]
+        )
+        np.testing.assert_array_equal(
+            (series / z_series).values()[:, 0], [1.0, np.inf, 1.0]
+        )
+
+    def test_zero_rtruediv(self):
+        series = TimeSeries.from_values(np.array([1.0, 0.0, 2.0]))
+        np.testing.assert_array_equal((1.0 / series).values()[:, 0], [1.0, np.inf, 0.5])
+        np.testing.assert_array_equal((0.0 / series).values()[:, 0], [0.0, np.nan, 0.0])
 
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
