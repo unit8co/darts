@@ -213,7 +213,7 @@ class RegressionEnsembleModel(EnsembleModel):
             )
 
         # check lags of the regression model
-        if list(regression_model.lags.keys()) != ["future"]:
+        if list(regression_model._get_lags_dict().keys()) != ["future"]:
             raise_log(
                 ValueError(
                     "`lags` and `lags_past_covariates` of `regression_model` must be `None`."
@@ -222,7 +222,8 @@ class RegressionEnsembleModel(EnsembleModel):
         min_lag, max_lag = 0, regression_model.output_chunk_length - 1
         # adjust model lags by `output_chunk_shift` to get original lags
         lags_observed = [
-            lag - output_chunk_shift for lag in regression_model.lags["future"]
+            lag - output_chunk_shift
+            for lag in regression_model._get_extreme_lags("future")
         ]
         if any([not (min_lag <= lag <= max_lag) for lag in lags_observed]):
             raise_log(

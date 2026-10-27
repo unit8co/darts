@@ -67,18 +67,17 @@ def _optimized_historical_forecasts_regression(
     output_chunk_shift = model.output_chunk_shift
 
     # get target lags and X positions for auto-regression
-    if model._get_lags("target") is not None:
-        if "target" in model.component_lags:
-            target_lags = model.component_lags["target"].values()
+    extreme_target_lags = model._get_extreme_lags("target")
+    if extreme_target_lags is not None:
+        if model._is_component_specific("target"):
+            target_lags = model._get_component_lags_dict()["target"].values()
         else:
-            target_lags = [model.lags["target"]] * get_single_series(
-                series
-            ).n_components
+            target_lags = [extreme_target_lags] * get_single_series(series).n_components
 
         # map which target component lag belongs to which position in X
         counter = 0
         target_lag_positions = [[] for _ in range(len(target_lags))]
-        for lag in range(min(model.lags["target"]), max(model.lags["target"]) + 1):
+        for lag in range(min(extreme_target_lags), max(extreme_target_lags) + 1):
             for comp_idx, comp_lags in enumerate(target_lags):
                 if lag in comp_lags:
                     target_lag_positions[comp_idx].append(counter)
