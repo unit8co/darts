@@ -87,7 +87,7 @@ class TestSKLearnGaussianLikelihood:
         reported_sigma = lkl.predict_likelihood_parameters(model_output)[0, 0, 1]
 
         np.random.seed(0)
-        samples = np.array([lkl.sample(model_output)[0, 0, 0] for _ in range(20000)])
+        samples = lkl.sample(np.repeat(model_output, 5000, axis=0))
         np.testing.assert_allclose(samples.std(), reported_sigma, rtol=0.05)
 
     def test_predict_likelihood_parameters_does_not_mutate_input(self):

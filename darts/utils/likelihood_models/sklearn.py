@@ -161,8 +161,7 @@ class GaussianLikelihood(SKLearnLikelihood):
         # [mu, variance] on the last dimension, grouped by component
         n_samples = model_output.shape[1]
 
-        # the estimator returns the variance; report the standard deviation to
-        # match the `sigma` parameter name and the torch `GaussianLikelihood`
+        # the estimator returns the variance; report the standard deviation `sigma`
         model_output = model_output.copy()
         model_output[:, :, 1] = np.sqrt(model_output[:, :, 1])
 
