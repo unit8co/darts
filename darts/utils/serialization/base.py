@@ -79,9 +79,7 @@ EXACT_ALLOWED_CLASSES: frozenset[str] = frozenset({
     "numpy.ndarray",
     "numpy.random.mtrand.RandomState",
     "numpy.random._mt19937.MT19937",
-    # pandas containers. Arrays, Indexes, Dtypes, Date offsets are safe bases.
-    "pandas.DataFrame",
-    "pandas.Series",
+    # pandas containers. DataFrame, Series, Arrays, Indexes, Dtypes, Date offsets are safe bases.
     "pandas.Timestamp",
     "pandas.Timedelta",
     # stdlib
@@ -245,10 +243,12 @@ def _pandas_allowed_bases() -> type | tuple[type, ...] | None:
         from pandas._libs.tslibs.offsets import BaseOffset
         from pandas.core.arrays.base import ExtensionArray
         from pandas.core.dtypes.base import ExtensionDtype
+        from pandas.core.frame import DataFrame
         from pandas.core.indexes.base import Index
+        from pandas.core.series import Series
     except Exception:  # pragma: no cover
         return None
-    return ExtensionArray, ExtensionDtype, Index, BaseOffset
+    return BaseOffset, ExtensionArray, ExtensionDtype, DataFrame, Index, Series
 
 
 @lru_cache(maxsize=1)
