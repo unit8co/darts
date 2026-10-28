@@ -90,7 +90,9 @@ def extract_subseries(
     """
 
     # Remove null values from the series extremes
-    series = series.strip()
+    series = series.strip(how=mode)
+    if len(series) == 0:
+        return []
     freq = series.freq
 
     if series.to_dataframe().isna().sum().sum() == 0:
