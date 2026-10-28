@@ -1645,6 +1645,52 @@ class TestMetrics:
         self.helper_test_nan(metrics.ope)
         self.helper_test_negative(metrics.ope)
 
+    def test_ope_signed(self):
+        y_true = TimeSeries.from_values(np.array([[1.0], [2.0], [3.0], [4.0]]))
+        over = y_true + 1.0
+        under = y_true - 1.0
+
+        # over-forecasting is negative, under-forecasting is positive
+        assert metrics.ope(y_true, over, signed=True) == pytest.approx(-40.0)
+        assert metrics.ope(y_true, under, signed=True) == pytest.approx(40.0)
+
+        # the default stays the absolute value
+        assert metrics.ope(y_true, over) == pytest.approx(40.0)
+        assert metrics.ope(y_true, over, signed=False) == pytest.approx(40.0)
+
+        # multivariate series, one score per component
+        np.testing.assert_array_almost_equal(
+            metrics.ope(
+                y_true.stack(y_true),
+                over.stack(under),
+                signed=True,
+                component_reduction=None,
+            ),
+            np.array([-40.0, 40.0]),
+        )
+
+        # sequence of series
+        np.testing.assert_array_almost_equal(
+            metrics.ope([y_true, y_true], [over, under], signed=True),
+            np.array([-40.0, 40.0]),
+        )
+
+        # stochastic forecast with samples `y`, `y + 1` and `y + 2`
+        pred_prob = TimeSeries.from_values(
+            np.concatenate([(y_true + k).all_values() for k in range(3)], axis=2)
+        )
+        assert metrics.ope(y_true, pred_prob, signed=True) == pytest.approx(-40.0)
+        np.testing.assert_array_almost_equal(
+            metrics.ope(y_true, pred_prob, q=[0.0, 1.0], signed=True),
+            np.array([0.0, -80.0]),
+        )
+
+        # zero-division handling is the same as for the unsigned metric
+        y_zero = TimeSeries.from_values(np.array([[-1.0], [1.0]]))
+        with pytest.raises(ValueError):
+            metrics.ope(y_zero, y_zero + 1.0, signed=True, zero_division="raise")
+        assert metrics.ope(y_zero, y_zero, signed=True) == pytest.approx(0.0)
+
     def test_rho_risk(self):
         # deterministic not supported
         with pytest.raises(ValueError):
