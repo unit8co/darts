@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+*Info: All issues must be approved by a maintainer (**`contributions-welcome`** tag) before opening pull requests. See [CONTRIBUTING.md](../../CONTRIBUTING.md).*
+
 **Is your feature request related to a current problem? Please describe.**
 A clear and concise description of what the problem is.
 
