@@ -9,7 +9,9 @@ from darts.utils.data.tabularization import (
     create_lagged_training_data,
 )
 from darts.utils.data.tabularization.data import LaggedData
+from darts.utils.data.tabularization.features import ArrayLaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_data_autoregression,
     _create_lagged_data_from_config,
 )
 from darts.utils.forecast_config import ForecastConfig
@@ -191,10 +193,12 @@ def test_prediction_data_from_config_matches_public_wrapper(
 
     assert actual.y is None
     if concatenate:
+        assert isinstance(actual.X, ArrayLaggedFeatures)
         np.testing.assert_array_equal(np.asarray(actual.X), np.asarray(expected_X))
     else:
         assert len(actual.X) == len(expected_X)
         for left, right in zip(actual.X, expected_X):
+            assert isinstance(left, ArrayLaggedFeatures)
             np.testing.assert_array_equal(np.asarray(left), np.asarray(right))
     assert len(actual.times) == len(expected_times)
     for left, right in zip(actual.times, expected_times):
@@ -318,6 +322,96 @@ def test_training_data_from_config_matches_intersection_path():
     )
 
     assert_same_data(actual, expected, len(target))
+
+
+@pytest.mark.parametrize("multi_models,shift", [(True, 0), (False, 1)])
+def test_autoregression_returns_lagged_features(multi_models, shift):
+    n = 12
+    values = np.arange(n, dtype=float).reshape(n, 1)
+    target = TimeSeries.from_values(values)
+    config = ForecastConfig.from_user(
+        lags=3, output_chunk_length=2, multi_models=multi_models
+    )
+    resolved = config.resolve(target_components=target.components)
+
+    actual = _create_lagged_data_autoregression(
+        target_series=[target],
+        t_pred=0,
+        last_step_shift=0,
+        series_matrix=values.reshape(1, n, 1),
+        covariate_matrices={},
+        config=resolved,
+        uses_static_covariates=False,
+        last_static_covariates_shape=None,
+        num_samples=1,
+    )
+
+    expected = np.array([[values[lag - shift, 0] for lag in [-3, -2, -1]]])
+    assert isinstance(actual, ArrayLaggedFeatures)
+    assert actual.shape == (1, 3)
+    assert actual.n_horizons == resolved.strategy.n_horizons
+    assert actual.n_horizons == (2 if multi_models else 1)
+    np.testing.assert_array_equal(np.asarray(actual), expected)
+    assert actual.horizon(0) is actual
+    np.testing.assert_array_equal(np.asarray(actual.horizon(0)), expected)
+
+
+def test_autoregression_component_specific_returns_lagged_features():
+    n = 12
+    values = np.stack([np.arange(n), np.arange(n) * 10], axis=1)
+    target = TimeSeries.from_values(values, columns=["a", "b"])
+    config = ForecastConfig.from_user(
+        lags={"a": [-3, -1], "b": [-2]}, output_chunk_length=2
+    )
+    resolved = config.resolve(target_components=target.components)
+
+    actual = _create_lagged_data_autoregression(
+        target_series=[target],
+        t_pred=0,
+        last_step_shift=0,
+        series_matrix=values.reshape(1, n, 2),
+        covariate_matrices={},
+        config=resolved,
+        uses_static_covariates=False,
+        last_static_covariates_shape=None,
+        num_samples=1,
+    )
+
+    # target columns are reordered lag-major, then component: a[-3], b[-2], a[-1]
+    expected = np.array([
+        [
+            values[-3, 0],
+            values[-2, 1],
+            values[-1, 0],
+        ]
+    ])
+    assert isinstance(actual, ArrayLaggedFeatures)
+    assert actual.shape == (1, 3)
+    np.testing.assert_array_equal(np.asarray(actual), expected)
+
+
+def test_autoregression_adds_static_covariates_and_keeps_container():
+    target, _, _ = make_series(static=True)
+    config = ForecastConfig.from_user(lags=3, output_chunk_length=2)
+    resolved = config.resolve(target_components=target.components)
+
+    actual = _create_lagged_data_autoregression(
+        target_series=[target],
+        t_pred=0,
+        last_step_shift=0,
+        series_matrix=target.values(copy=False).reshape(1, len(target), -1),
+        covariate_matrices={},
+        config=resolved,
+        uses_static_covariates=True,
+        last_static_covariates_shape=None,
+        num_samples=1,
+    )
+
+    assert isinstance(actual, ArrayLaggedFeatures)
+    assert actual.n_horizons == 2
+    assert actual.shape == (1, 2 * 3 + 2)
+    np.testing.assert_array_equal(actual.array[:, -2], np.zeros(1))
+    np.testing.assert_array_equal(actual.array[:, -1], np.ones(1))
 
 
 def test_from_config_expands_default_lags():
