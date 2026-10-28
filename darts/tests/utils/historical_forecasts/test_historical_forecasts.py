@@ -551,22 +551,28 @@ class TestHistoricalforecast:
                     hfc.values(), y_ref.values()[-horizon:]
                 )
 
-    def test_historical_forecasts_does_not_mutate_pipeline(self):
-        pipeline = Pipeline([Scaler()])
+    @pytest.mark.parametrize("as_pipeline", [True, False])
+    def test_historical_forecasts_does_not_mutate_pipeline(self, as_pipeline):
+        transformer = Scaler()
+        if as_pipeline:
+            transformer = Pipeline([transformer])
+
         model = LinearRegressionModel(lags=5)
 
-        assert not pipeline[0]._fit_called
+        def _fit_called(tf):
+            return tf[0]._fit_called if as_pipeline else tf._fit_called
+
+        assert not _fit_called(transformer)
 
         model.historical_forecasts(
             series=self.sine_univariate1,
-            data_transformers={"series": pipeline},
+            data_transformers={"series": transformer},
             retrain=True,
             forecast_horizon=1,
             last_points_only=True,
             verbose=False,
         )
-
-        assert not pipeline[0]._fit_called
+        assert not _fit_called(transformer)
 
     def test_hfc_too_short_input_for_training_with_multiple_samples(self):
         model = LinearRegressionModel(lags=3)

@@ -1407,10 +1407,9 @@ def _convert_data_transformers(
     else:
         res = {}
         for key_, val_ in data_transformers.items():
-            if isinstance(val_, Pipeline):
-                res[key_] = deepcopy(val_) if copy else val_
-            else:
-                res[key_] = Pipeline(transformers=[val_], copy=copy)
+            if not isinstance(val_, Pipeline):
+                val_ = Pipeline(transformers=[val_])
+            res[key_] = deepcopy(val_) if copy else val_
         return res
 
 
