@@ -3,13 +3,38 @@
 ## Picking an Issue on Which to Work
 
 The backlog of issues and ongoing work is tracked here: https://github.com/unit8co/darts/projects/1
-Anyone is welcome to pick an issue from the backlog, work on it and submit a pull request.
-However, it is strongly recommended to first comment on the issue, and discuss the approach
-together with some of the core developers.
 
-If you spot issues or would like to propose new improvements that are not (yet) in the backlog
-of issues above, the best procedure is to open a regular Github issue (https://github.com/unit8co/darts/issues),
-and discuss it with some of the core team.
+**External contributions (fork -> pull request):** work must be tied to a GitHub issue that a maintainer has marked with the **`ok`** label. Without that label, the **contribution-gate** check will fail and the PR cannot merge.
+
+1. Open a new issue or pick an existing one from the backlog.
+2. Comment on the issue and discuss the approach with core developers.
+3. Wait until a maintainer adds the **`ok`** label before you invest in a large change or open a PR for merge.
+4. In your PR description, link the approved issue so automation can find it (sidebar-only links do not satisfy the contribution gate):
+   - **`Fixes #123`**, **`Closes #123`**, or **`Resolves #123`** when this PR **fully** completes the issue (GitHub will auto-close the issue on merge).
+   - **`Addresses #123`**, **`Refs #123`**, or **`Part of #123`** when the PR is **partial** — the issue stays open for follow-up PRs.
+
+If you spot improvements that are not yet in the backlog, open a regular GitHub issue (https://github.com/unit8co/darts/issues) and discuss it with the core team first.
+
+Repository collaborators with write access may open PRs without the label for internal coordination; the gate applies to outside contributors.
+
+AI coding agents should read [AGENTS.md](AGENTS.md) for the same rules in agent-oriented form.
+
+### Maintainer triage
+
+Maintainers (triage/write access) decide when external work is welcome. Label as **`ok`** when the issue is understood, in scope, and you are happy for a contributor (or their PR) to proceed.
+
+### AI-assisted contributions
+
+Use of AI tools (Copilot, Claude, Cursor, etc.) to help write code, tests, or docs is fine when **you** remain in the loop:
+
+- You are responsible for correctness, tests, style, and responding to review feedback.
+- AI coding agents must read [AGENTS.md](AGENTS.md) for general instructions.
+- State in the PR description which tools you used and for what (e.g. “Cursor for unit test scaffolding”).
+- PRs that appear fully automated, without a human who can explain the design, may be closed.
+
+### Security
+
+Do not open public pull requests for undisclosed security vulnerabilities. Discuss sensitive findings with maintainers privately first.
 
 
 ## Main Development Principles
@@ -35,7 +60,7 @@ and discuss it with some of the core team.
 
 ## Technical Procedure
 
-1. Make sure your work is being tracked (and if possible discussed) by an existing issue on the backlog
+1. Make sure your work is tracked by an issue that has the **`ok`** label (see above)
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already: `curl -LsSf https://astral.sh/uv/install.sh | sh`
@@ -54,10 +79,11 @@ and discuss it with some of the core team.
    You can already refer to the pull request. In addition, for tracking contributions we are happy if you provide
    your full name (if you want to) and link to your Github handle. Example:
    ```
-   - Added new feature XYZ. [#001](https://https://github.com/unit8co/darts/pull/001)
-     by [<Your Name>](https://github.com/<your-handle>).
+   - Added new feature XYZ. [#001](https://https://github.com/unit8co/darts/pull/001) by [<Your Name>](https://github.com/<your-handle>).
    ```
-10. Create a pull request from your new branch into the **master** branch.
+10. Create a pull request from your new branch into the **master** branch. Reference at least one approved issue in the PR description:
+    * `Fixes #123`**, **`Closes #123`**, or **`Resolves #123`** when this PR **fully** completes the issue.
+    * `Addresses #123`** or **`Refs #123`** when the PR partially completes the issue.
 11. `Codecov` will add a test coverage report in the pull request. Make sure your test cover all changed lines.
 
 ### Build the Documentation Locally

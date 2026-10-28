@@ -1216,8 +1216,8 @@ class QuantileRegression(TorchLikelihood):
 
         # repeat the model output on the edges
         repeat_count = [1] * n_quantiles
-        repeat_count[0] = 2
-        repeat_count[-1] = 2
+        repeat_count[0] += 1
+        repeat_count[-1] += 1
         repeat_count = torch.tensor(repeat_count).to(device)
         shifted_output = torch.repeat_interleave(model_output, repeat_count, dim=-1)
 
