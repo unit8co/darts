@@ -1,6 +1,7 @@
 # External PRs must link an issue labeled contributions-welcome (maintainer-approved).
 # Does not checkout PR code (pull_request_target). See AGENTS.md and CONTRIBUTING.md.
 # Maintainer testing: Actions -> Contribution gate -> Run workflow (workflow_dispatch).
+# TODO
 
 name: Contribution gate
 
