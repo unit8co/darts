@@ -2050,7 +2050,7 @@ class TimeSeries:
         self._assert_deterministic()
         return self._values[-1, :, 0].copy()
 
-    def values(self, copy: bool = True, sample: int = 0) -> np.ndarray:
+    def values(self, copy: bool = True, sample: int | None = None) -> np.ndarray:
         """Return a 2-D array of shape (time, component), containing the series' values for one `sample`.
 
         Parameters
@@ -2059,13 +2059,24 @@ class TimeSeries:
             Whether to return a copy of the values, otherwise returns a view.
             Leave it to True unless you know what you are doing.
         sample
-            For stochastic series, the sample for which to return values. Default: 0 (first sample).
+            For stochastic series, the sample for which to return values.
+            If omitted, sample 0 is returned with a warning. Default: None
 
         Returns
         -------
         numpy.ndarray
             The values composing the time series.
         """
+        if sample is None:
+            if self.is_stochastic:
+                logger.warning(
+                    "`TimeSeries.values()` on stochastic series only extracts values of a single sample "
+                    "(sample 0 by default). For meaningful results, use `TimeSeries.all_values()` to extract "
+                    "all sample values or any other series statistic / aggregate such as `mean()`, "
+                    "`quantile()`, ..."
+                )
+            sample = 0
+
         if self.is_deterministic and sample != 0:
             raise_log(
                 ValueError(
@@ -2836,6 +2847,9 @@ class TimeSeries:
             self.values(copy=False), how=how
         )
 
+        if first_finite_row is None:
+            return self[:0]
+
         return self.__class__(
             times=self._time_index[first_finite_row : last_finite_row + 1],
             values=self._values[first_finite_row : last_finite_row + 1],
@@ -2871,7 +2885,9 @@ class TimeSeries:
         """
         if not (np.isnan(self._values)).any():
             return self.copy()
-        stripped_series = self.strip()
+        stripped_series = self.strip(how=mode)
+        if len(stripped_series) == 0:
+            return stripped_series
         gaps = stripped_series.gaps(mode=mode)
         if gaps.empty:
             return stripped_series
@@ -6261,6 +6277,9 @@ def _finite_rows_boundaries(
                     f"received {how}"
                 )
             )
+
+    if not finite_rows.any():
+        return None, None
 
     first_finite_row = finite_rows.argmax()
     last_finite_row = len(finite_rows) - finite_rows[::-1].argmax() - 1
