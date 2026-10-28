@@ -74,9 +74,11 @@ from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
     create_lagged_component_names,
-    create_lagged_training_data,
 )
 from darts.utils.data.tabularization.lags import ResolvedLagConfig
+from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_data_from_config,
+)
 from darts.utils.forecast_config import ForecastConfig, ResolvedForecastConfig
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -312,6 +314,16 @@ class SKLearnModel(GlobalForecastingModel):
                 if self.__dict__.get("_fit_called", False)
                 else None
             )
+        elif self._resolved_config is not None and "output_chunk_shift" not in vars(
+            self._resolved_config
+        ):
+            # R5a.1 pickles stored a resolved config without the shift.
+            config = self._ensure_config()
+            self._resolved_config = ResolvedForecastConfig(
+                lags=self._resolved_config.lags,
+                strategy=self._resolved_config.strategy,
+                output_chunk_shift=config.output_chunk_shift,
+            )
 
     def _build_config_from_model_params(self) -> ForecastConfig | None:
         params = getattr(self, "_model_params", None)
@@ -380,7 +392,11 @@ class SKLearnModel(GlobalForecastingModel):
                 kind: tuple(legacy_lags[kind]) for kind in kinds if kind in legacy_lags
             },
         )
-        return ResolvedForecastConfig(lags=resolved_lags, strategy=config.strategy)
+        return ResolvedForecastConfig(
+            lags=resolved_lags,
+            strategy=config.strategy,
+            output_chunk_shift=config.output_chunk_shift,
+        )
 
     def _apply_resolved_config(self, resolved: ResolvedForecastConfig) -> None:
         self._resolved_config = resolved
@@ -717,31 +733,44 @@ class SKLearnModel(GlobalForecastingModel):
         stride: int = 1,
         last_static_covariates_shape: tuple[int, int] | None = None,
     ):
-        strategy = self._strategy
+        resolved_config = self._resolved_config
+        if resolved_config is None:
+            # ``_create_lagged_data`` is also used on unfitted instances (e.g. by
+            # tests). Resolve the config against the components at hand instead of
+            # relying on the state written by ``fit()``.
+            resolved_config = self._ensure_config().resolve(
+                target_components=get_single_series(series).components,
+                past_components=(
+                    get_single_series(past_covariates).components
+                    if past_covariates
+                    else None
+                ),
+                future_components=(
+                    get_single_series(future_covariates).components
+                    if future_covariates
+                    else None
+                ),
+            )
+
+        data = _create_lagged_data_from_config(
+            resolved_config,
+            target_series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            uses_static_covariates=self.uses_static_covariates,
+            last_static_covariates_shape=last_static_covariates_shape,
+            max_samples_per_ts=max_samples_per_ts,
+            concatenate=False,
+            sample_weight=sample_weight,
+            stride=stride,
+        )
         (
             features,
             labels,
             _,
             self._static_covariates_shape,
             sample_weights,
-        ) = create_lagged_training_data(
-            target_series=series,
-            output_chunk_length=strategy.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            lags=self._get_lags("target"),
-            lags_past_covariates=self._get_lags("past"),
-            lags_future_covariates=self._get_lags("future"),
-            uses_static_covariates=self.uses_static_covariates,
-            last_static_covariates_shape=last_static_covariates_shape,
-            max_samples_per_ts=max_samples_per_ts,
-            multi_models=strategy.name == "direct",
-            check_inputs=False,
-            concatenate=False,
-            sample_weight=sample_weight,
-            stride=stride,
-        )
+        ) = data.to_tuple()
 
         expected_nb_feat = (
             features[0].shape[1]

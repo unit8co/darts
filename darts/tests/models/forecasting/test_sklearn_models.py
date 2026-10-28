@@ -39,6 +39,7 @@ from darts.tests.conftest import (
 )
 from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
+from darts.utils.forecast_config import ResolvedForecastConfig
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     MultiQuantileRegression,
@@ -603,6 +604,30 @@ class TestSKLearnModels:
         # the rebuilt config also supports a later refit
         restored.fit(series)
         assert restored._resolved_config is not None
+
+    def test_r5a1_pickle_state_adds_output_chunk_shift(self):
+        series = TimeSeries.from_values(
+            np.random.RandomState(0).randn(40, 2), columns=["a", "b"]
+        )
+        model = LinearRegressionModel(
+            lags=2,
+            output_chunk_length=2,
+            output_chunk_shift=2,
+        ).fit(series)
+        expected_prediction = model.predict(2).values()
+        resolved = model._resolved_config
+
+        # simulate a R5a.1 pickle: the resolved config had no shift
+        legacy_resolved = ResolvedForecastConfig(
+            lags=resolved.lags,
+            strategy=resolved.strategy,
+        )
+        legacy_resolved.__dict__.pop("output_chunk_shift")
+        model.__dict__["_resolved_config"] = legacy_resolved
+        restored = pickle.loads(pickle.dumps(model))
+
+        assert restored._resolved_config.output_chunk_shift == 2
+        np.testing.assert_array_equal(restored.predict(2).values(), expected_prediction)
 
     @pytest.mark.parametrize("config", param_product([True, False], [1, 2]))
     def test_training_data_creation(self, config):
