@@ -1,7 +1,6 @@
 # External PRs must link an issue labeled contributions-welcome (maintainer-approved).
 # Does not checkout PR code (pull_request_target). See AGENTS.md and CONTRIBUTING.md.
-#
-# Maintainer testing: Actions → Contribution gate → Run workflow (workflow_dispatch).
+# Maintainer testing: Actions -> Contribution gate -> Run workflow (workflow_dispatch).
 
 name: Contribution gate
 
@@ -65,6 +64,7 @@ jobs:
               .replace(/```[\s\S]*?```/g, '')
               .replace(/`[^`]*`/g, '');
 
+            // Closing and non-closing link keywords (partial PRs use Addresses/Refs/Part of).
             const refRe =
               /\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?|address(?:es|ed)?|ref(?:s|erences)?|part\s+of|relates?\s+to|see\s+also)\b[\s:,-]*(?:#(\d+)|([\w.-]+)\/([\w.-]+)#(\d+)|https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/issues\/(\d+))/gi;
             const numbers = new Set();
