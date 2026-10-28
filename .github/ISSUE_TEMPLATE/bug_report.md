@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-*Info: All issues must be approved by a maintainer (**`contributions-welcome`** tag) before opening pull requests. See [CONTRIBUTING.md](../../CONTRIBUTING.md).*
+*Info: All issues must be approved by a maintainer (labeled **`ok`**) before opening pull requests. See [CONTRIBUTING.md](../../CONTRIBUTING.md).*
 
 **Describe the bug**
 A clear and concise description of what the bug is.

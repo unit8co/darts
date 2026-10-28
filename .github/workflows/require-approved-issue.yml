@@ -1,4 +1,4 @@
-# External PRs must link an issue labeled contributions-welcome (maintainer-approved).
+# External PRs must link an issue labeled `ok` (maintainer-approved).
 # Does not checkout PR code (pull_request_target). See AGENTS.md and CONTRIBUTING.md.
 # Maintainer testing: Actions -> Contribution gate -> Run workflow (workflow_dispatch).
 
@@ -32,7 +32,7 @@ jobs:
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association) == false
       )
     env:
-      APPROVAL_LABEL: contributions-welcome
+      APPROVAL_LABEL: ok
     steps:
       - name: Verify linked approved issue
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -114,11 +114,11 @@ jobs:
                 typeof l === 'string' ? l : l.name
               );
               if (labels.includes(approvalLabel)) {
-                core.info(`#${number} has label ${approvalLabel} — gate passed.`);
+                core.info(`#${number} has label '${approvalLabel}' — gate passed.`);
                 approved = true;
                 break;
               }
-              core.info(`#${number} does not have label ${approvalLabel}.`);
+              core.info(`#${number} does not have label '${approvalLabel}'.`);
             }
 
             if (approved) {

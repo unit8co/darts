@@ -33,7 +33,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
-- Updated the [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) and added [AGENTS.md](https://github.com/unit8co/darts/blob/master/AGENTS.md): external pull requests must link an issue with the maintainer `contributions-welcome` label (use `Fixes` / `Addresses` in the PR description); AI-assisted work requires human review and disclosure. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
+- Updated the [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) and added [AGENTS.md](https://github.com/unit8co/darts/blob/master/AGENTS.md): external pull requests must link an issue with the maintainer `ok` label (use `Fixes` / `Addresses` in the PR description); AI-assisted work requires human review and disclosure. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
 - Added the **contribution-gate** GitHub Actions check enforcing the approved-issue requirement for pull requests from outside collaborators. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.48.1](https://github.com/unit8co/darts/tree/0.48.1) (2026-10-16)
