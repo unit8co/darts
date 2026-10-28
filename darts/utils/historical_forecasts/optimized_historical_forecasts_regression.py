@@ -14,7 +14,9 @@ from numpy.lib.stride_tricks import sliding_window_view
 from darts import TimeSeries
 from darts.typing import TimeSeriesLike
 from darts.utils import _build_tqdm_iterator
-from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_data_from_config,
+)
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
 from darts.utils.ts_utils import get_single_series
 from darts.utils.utils import generate_index
@@ -62,15 +64,16 @@ def _optimized_historical_forecasts_regression(
         **{k: v for k, v in predict_kwargs.items() if k in super_predict_params},
     )
 
-    multi_models = model.multi_models
-    output_chunk_length = model.output_chunk_length
-    output_chunk_shift = model.output_chunk_shift
+    config = model._resolved_config
+    strategy = config.strategy
+    output_chunk_length = strategy.output_chunk_length
+    output_chunk_shift = config.output_chunk_shift
 
     # get target lags and X positions for auto-regression
     extreme_target_lags = model._get_extreme_lags("target")
     if extreme_target_lags is not None:
         if model._is_component_specific("target"):
-            target_lags = model._get_component_lags_dict()["target"].values()
+            target_lags = list(config.lags.target.values())
         else:
             target_lags = [extreme_target_lags] * get_single_series(series).n_components
 
@@ -87,19 +90,20 @@ def _optimized_historical_forecasts_regression(
 
     # determine the forecast scenario
     is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
+    is_direct = strategy.name == "direct"
 
-    if multi_models:
+    if is_direct:
         # how many steps the model predicts in a single forecast
-        n_output_steps = output_chunk_length
+        n_output_steps = strategy.pred_dim
         # how many steps to adjust the first forecasted step (from a lag perspective)
-        output_step_adjust = 0
+        output_step_adjust = strategy.feature_lag_offset
         # stride can be applied directly before `predict()`
         stride_tabularization = stride
     else:
-        # multi_models=False only predicts one step at a time
-        n_output_steps = 1
+        # recursive strategies only predict one step at a time
+        n_output_steps = strategy.pred_dim
         # the predicted step is `output_chunk_length - 1` ahead of the target end time
-        output_step_adjust = output_chunk_length - 1
+        output_step_adjust = strategy.feature_lag_offset
         # stride can only be applied directly with auto-regression since `forecast_horizon` is
         # generated through multiple forecast iterations.
         # without auto-regression, we apply a trick for efficiency: all rows will be kept since the
@@ -163,7 +167,8 @@ def _optimized_historical_forecasts_regression(
 
         # extract lagged features;
         # X shape: (n_forecasts, n_lagged_features, n_samples = 1)
-        X, _ = create_lagged_prediction_data(
+        data = _create_lagged_data_from_config(
+            config,
             target_series=series_adjusted,
             past_covariates=(
                 None
@@ -175,21 +180,18 @@ def _optimized_historical_forecasts_regression(
                 if future_covariates_ is None
                 else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
             ),
-            lags=model._get_lags("target"),
-            lags_past_covariates=model._get_lags("past"),
-            lags_future_covariates=model._get_lags("future"),
             uses_static_covariates=model.uses_static_covariates,
             last_static_covariates_shape=model._static_covariates_shape,
             max_samples_per_ts=None,
             check_inputs=True,
+            is_training=False,
             use_moving_windows=True,
             concatenate=False,
             show_warnings=False,
         )
 
-        # -> (n_forecasts, n_lags)
-        # use a plain array: the feature matrix is shared across horizons, matching `predict()`
-        X = np.asarray(X[0][:, :, 0])
+        # -> (n_forecasts, n_lags); slicing preserves the LaggedFeatures container
+        X = data.X[0][:, :, 0]
 
         # get forecast iterations and their forecast end times
         if not is_auto_regression:
@@ -228,7 +230,7 @@ def _optimized_historical_forecasts_regression(
 
             # generate `num_samples` examples for probabilistic predictions
             # -> (n_forecasts * n_samples, n_lags)
-            current_X = np.repeat(current_X, num_samples, axis=0)
+            current_X = current_X.repeat(num_samples, axis=0)
 
             if pred_idx > 0:
                 # auto-regression requires updating current X with previous predictions;
@@ -259,8 +261,9 @@ def _optimized_historical_forecasts_regression(
                             take_y_indices.append(y_pos)
 
                     # update X with matched predictions (move around axes for correct reshaping
-                    # of samples)
-                    current_X[:, update_x_indices] = np.moveaxis(
+                    # of samples); the base array holds the target columns, which is also true for
+                    # step-wise feature layouts
+                    current_X.array[:, update_x_indices] = np.moveaxis(
                         predictions[:, take_y_indices, comp_idx], 1, -1
                     ).reshape(len(current_X), -1)
 
@@ -286,7 +289,7 @@ def _optimized_historical_forecasts_regression(
                 -1,
             )
 
-            if not multi_models and not is_auto_regression:
+            if not is_direct and not is_auto_regression:
                 # forecast horizon can include multiple forecasts (of consecutive rows) -> apply
                 # sliding window -> (n_forecasts, 1, 1, forecast_horizon, n_components, n_samples)
                 forecast = sliding_window_view(
