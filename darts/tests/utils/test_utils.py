@@ -142,6 +142,31 @@ class TestUtils:
         assert len(subseries_no_gap) == 1
         assert subseries_no_gap[0] == no_gap_series
 
+        # multivariate series with leading and trailing partial NaNs under mode="any"
+
+        partial_nan_vals = np.array([
+            [np.nan, 1.0, 2.0, np.nan, 4.0, 5.0],
+            [1.0, 1.0, 2.0, 3.0, 4.0, np.nan],
+        ]).T
+        partial_nan_series = TimeSeries.from_values(partial_nan_vals)
+        subseries_partial = extract_subseries(
+            partial_nan_series, min_gap_size=1, mode="any"
+        )
+        assert len(subseries_partial) == 2
+        assert len(subseries_partial[0]) == 2
+        assert not np.isnan(subseries_partial[0].values()).any()
+        assert len(subseries_partial[1]) == 1
+        assert not np.isnan(subseries_partial[1].values()).any()
+
+        # all-NaN series returns an empty list
+        all_nan_series = TimeSeries.from_values(np.full((1, 2), np.nan))
+        assert extract_subseries(all_nan_series) == []
+        assert extract_subseries(all_nan_series, mode="any") == []
+
+        # empty series returns an empty list
+        empty_series = TimeSeries.from_values(np.array([]))
+        assert extract_subseries(empty_series) == []
+
     @pytest.mark.parametrize(
         "start,freq",
         [
