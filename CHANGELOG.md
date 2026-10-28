@@ -28,6 +28,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed `darts.utils.missing_values.extract_subseries()` raising an error on all-NaN series or on multivariate series with leading/trailing NaNs when `mode="any"`. [#3285](https://github.com/unit8co/darts/pull/3285) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 - Fixed `TimeSeries.strip()` and `TimeSeries.longest_contiguous_slice()` returning unstripped NaNs on all-NaN series or series with all-partial-NaNs when `mode="any"`. [#3285](https://github.com/unit8co/darts/pull/3285) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 - Fixed `ConformalNaiveModel` and `ConformalQRModel` accepting classification models (e.g. `SKLearnClassifierModel`), which resulted in meaningless intervals around the predicted class labels. A `ValueError` is now raised, since conformal models only support regression models. [#3282](https://github.com/unit8co/darts/pull/3282) by [Shiven Aggarwal](https://github.com/shivenaggarwal).
+- Fixed `historical_forecasts()` mutating caller-provided `Pipeline` instances when copying data transformers.
 
 **Dependencies**
 

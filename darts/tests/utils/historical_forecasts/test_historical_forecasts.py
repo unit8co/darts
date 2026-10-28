@@ -551,6 +551,23 @@ class TestHistoricalforecast:
                     hfc.values(), y_ref.values()[-horizon:]
                 )
 
+    def test_historical_forecasts_does_not_mutate_pipeline(self):
+        pipeline = Pipeline([Scaler()])
+        model = LinearRegressionModel(lags=5)
+
+        assert not pipeline[0]._fit_called
+
+        model.historical_forecasts(
+            series=self.sine_univariate1,
+            data_transformers={"series": pipeline},
+            retrain=True,
+            forecast_horizon=1,
+            last_points_only=True,
+            verbose=False,
+        )
+
+        assert not pipeline[0]._fit_called
+
     def test_hfc_too_short_input_for_training_with_multiple_samples(self):
         model = LinearRegressionModel(lags=3)
         chunk_lengths = model._target_window_lengths
@@ -4799,6 +4816,23 @@ class TestHistoricalforecast:
                 self.fit_calls = []
                 self.transform_calls = []
                 self.inverse_transform_calls = []
+
+            def __deepcopy__(self, memo=None):
+                if memo is None:
+                    memo = {}
+
+                copied = type(self)(
+                    deepcopy(self._transformers, memo),
+                    copy=False,
+                )
+                memo[id(self)] = copied
+
+                # Share tracking logs so the test can observe calls on the copy.
+                copied.fit_calls = self.fit_calls
+                copied.transform_calls = self.transform_calls
+                copied.inverse_transform_calls = self.inverse_transform_calls
+
+                return copied
 
             def fit(self, data, *args, **kwargs):
                 self.fit_calls.append(data)
