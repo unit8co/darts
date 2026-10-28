@@ -622,6 +622,7 @@ def _create_lagged_data_from_config(
     uses_static_covariates: bool = True,
     last_static_covariates_shape: tuple[int, int] | None = None,
     max_samples_per_ts: int | None = None,
+    check_inputs: bool = False,
     is_training: bool = True,
     concatenate: bool = True,
     sample_weight: str | TimeSeriesLike | None = None,
@@ -644,7 +645,7 @@ def _create_lagged_data_from_config(
         uses_static_covariates=uses_static_covariates,
         last_static_covariates_shape=last_static_covariates_shape,
         max_samples_per_ts=max_samples_per_ts,
-        check_inputs=False,
+        check_inputs=check_inputs,
         use_moving_windows=use_moving_windows,
         is_training=is_training,
         concatenate=concatenate,
@@ -1036,10 +1037,9 @@ def add_static_covariates_to_lagged_data(
             # flatten static covariates along columns -> results in [scov0_comp0, scov0_comp1, scov1_comp0, ...]
             static_covs = ts.static_covariates.values.flatten(order="F")
             feature = features[idx]
+            feature_array = getattr(feature, "array", None)
             feature_array = (
-                feature.array
-                if isinstance(feature, LaggedFeatures)
-                else np.asarray(feature)
+                np.asarray(feature) if feature_array is None else feature_array
             )
             # we stack the static covariates to the right of lagged features
             # the broadcasting repeats the static covariates along axis=0 to match the number of feature rows
@@ -1054,7 +1054,7 @@ def add_static_covariates_to_lagged_data(
             ])
             features[idx] = (
                 feature.with_base(feature_with_static)
-                if isinstance(feature, LaggedFeatures)
+                if hasattr(feature, "with_base")
                 else feature_with_static
             )
 
@@ -1649,21 +1649,39 @@ def _create_lagged_data_by_intersecting_times(
 def _create_lagged_data_autoregression(
     target_series: TimeSeriesLike,
     t_pred: int,
-    shift: int,
     last_step_shift: int,
     series_matrix: np.ndarray,
     covariate_matrices: dict[str, np.ndarray],
-    lags: dict[str, list[int]],
-    component_lags: dict[str, dict[str, list[int]]],
-    relative_cov_lags: dict[str, np.ndarray],
+    config: "ResolvedForecastConfig",
     uses_static_covariates: bool,
     last_static_covariates_shape: tuple[int, int] | None,
     num_samples: int,
-) -> np.ndarray:
+) -> LaggedFeatures:
     """Extract lagged data from target, past covariates and future covariates for auto-regression
     with SKLearnModels.
+
+    The features are returned as a :class:`LaggedFeatures` container so the model wrapper can route
+    them per forecast horizon without knowing whether they were built from a tabular window or from
+    the autoregression matrices.
     """
     series_length = len(target_series)
+    shift = config.strategy.feature_lag_offset
+    lags = {kind: list(values) for kind, values in config.lags.legacy_lags.items()}
+    component_lags = {
+        kind: {
+            component: list(component_lags)
+            for component, component_lags in getattr(config.lags, kind).items()
+        }
+        for kind in ("target", "past", "future")
+        if config.lags.is_component_specific.get(kind, False)
+        and getattr(config.lags, kind) is not None
+    }
+    relative_cov_lags = {
+        kind: np.array(lags[kind]) - lags[kind][0]
+        for kind in ("past", "future")
+        if kind in lags
+    }
+
     X = []
     for series_type in ["target", "past", "future"]:
         if series_type not in lags:
@@ -1704,23 +1722,23 @@ def _create_lagged_data_autoregression(
     # concatenate retrieved lags
     X = np.concatenate(X, axis=1)
 
-    if not uses_static_covariates:
-        return X
+    if uses_static_covariates:
+        # Need to split up `X` into three equally-sized sub-blocks
+        # corresponding to each timeseries in `series`, so that
+        # static covariates can be added to each block; valid since
+        # each block contains same number of observations:
+        X = np.split(X, series_length, axis=0)
+        X, _ = add_static_covariates_to_lagged_data(
+            features=X,
+            target_series=target_series,
+            uses_static_covariates=uses_static_covariates,
+            last_shape=last_static_covariates_shape,
+        )
 
-    # Need to split up `X` into three equally-sized sub-blocks
-    # corresponding to each timeseries in `series`, so that
-    # static covariates can be added to each block; valid since
-    # each block contains same number of observations:
-    X = np.split(X, series_length, axis=0)
-    X, _ = add_static_covariates_to_lagged_data(
-        features=X,
-        target_series=target_series,
-        uses_static_covariates=uses_static_covariates,
-        last_shape=last_static_covariates_shape,
-    )
+        # concatenate retrieved lags
+        X = np.concatenate(X, axis=0)
 
-    # concatenate retrieved lags
-    return np.concatenate(X, axis=0)
+    return ArrayLaggedFeatures.wrap(X, n_horizons=config.strategy.n_horizons)
 
 
 def _extract_component_lags_autoregression(

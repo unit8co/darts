@@ -1255,13 +1255,10 @@ class SKLearnModel(GlobalForecastingModel):
 
         # dictionary containing covariate data over time span required for prediction
         covariate_matrices = {}
-        # dictionary containing covariate lags relative to minimum covariate lag
-        relative_cov_lags = {}
         for cov_type, (covs, lags) in covariates.items():
             if covs is None:
                 continue
 
-            relative_cov_lags[cov_type] = np.array(lags) - lags[0]
             covariate_matrices[cov_type] = []
             for idx, (ts, cov) in enumerate(zip(series, covs)):
                 # how many steps to go back from end of target series for start of covariates
@@ -1345,13 +1342,10 @@ class SKLearnModel(GlobalForecastingModel):
             X = _create_lagged_data_autoregression(
                 target_series=series,
                 t_pred=t_pred,
-                shift=shift,
                 last_step_shift=last_step_shift,
                 series_matrix=series_matrix,
                 covariate_matrices=covariate_matrices,
-                lags=self._get_lags_dict(),
-                component_lags=self._get_component_lags_dict(),
-                relative_cov_lags=relative_cov_lags,
+                config=self._resolved_config,
                 num_samples=num_samples,
                 uses_static_covariates=self.uses_static_covariates,
                 last_static_covariates_shape=self._static_covariates_shape,
