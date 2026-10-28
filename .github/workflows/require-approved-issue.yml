@@ -115,11 +115,11 @@ jobs:
                 typeof l === 'string' ? l : l.name
               );
               if (labels.includes(approvalLabel)) {
-                core.info(`#${number} has label ${approvalLabel} — gate passed.`);
+                core.info(`#${number} has label '${approvalLabel}' — gate passed.`);
                 approved = true;
                 break;
               }
-              core.info(`#${number} does not have label ${approvalLabel}.`);
+              core.info(`#${number} does not have label '${approvalLabel}'.`);
             }
 
             if (approved) {
