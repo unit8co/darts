@@ -282,6 +282,44 @@ def test_training_data_from_config_uses_resolved_output_chunk_shift():
     assert_same_data(actual, expected, len(target))
 
 
+def test_training_data_from_config_matches_intersection_path():
+    target, past, future = make_series()
+    config = config_for(
+        component_specific=False, output_chunk_shift=0, multi_models=True
+    )
+    resolved = config.resolve(
+        target_components=target.components,
+        past_components=past.components,
+        future_components=future.components,
+    )
+
+    expected = create_lagged_training_data(
+        target_series=target,
+        past_covariates=past,
+        future_covariates=future,
+        lags=legacy_lags(config, "target"),
+        lags_past_covariates=legacy_lags(config, "past"),
+        lags_future_covariates=legacy_lags(config, "future"),
+        output_chunk_length=config.strategy.output_chunk_length,
+        output_chunk_shift=config.output_chunk_shift,
+        uses_static_covariates=False,
+        multi_models=True,
+        use_moving_windows=False,
+        concatenate=False,
+    )
+    actual = _create_lagged_data_from_config(
+        resolved,
+        target_series=target,
+        past_covariates=past,
+        future_covariates=future,
+        uses_static_covariates=False,
+        use_moving_windows=False,
+        concatenate=False,
+    )
+
+    assert_same_data(actual, expected, len(target))
+
+
 def test_from_config_expands_default_lags():
     target, past, future = make_series()
     config = ForecastConfig.from_user(
