@@ -145,7 +145,6 @@ def test_training_data_from_config_matches_public_wrapper(
         target_series=target,
         past_covariates=past,
         future_covariates=future,
-        output_chunk_shift=config.output_chunk_shift,
         uses_static_covariates=with_static,
         concatenate=concatenate,
         sample_weight=target,
@@ -236,7 +235,6 @@ def test_prediction_data_from_config_uses_output_chunk_shift():
         target_series=target,
         past_covariates=past,
         future_covariates=future,
-        output_chunk_shift=config.output_chunk_shift,
         uses_static_covariates=False,
         is_training=False,
         concatenate=True,
@@ -246,6 +244,42 @@ def test_prediction_data_from_config_uses_output_chunk_shift():
     assert len(actual.times) == len(expected_times)
     for left, right in zip(actual.times, expected_times):
         assert left.equals(right)
+
+
+def test_training_data_from_config_uses_resolved_output_chunk_shift():
+    target, past, future = make_series()
+    config = config_for(
+        component_specific=False, output_chunk_shift=2, multi_models=True
+    )
+    resolved = config.resolve(
+        target_components=target.components,
+        past_components=past.components,
+        future_components=future.components,
+    )
+
+    expected = create_lagged_training_data(
+        target_series=target,
+        past_covariates=past,
+        future_covariates=future,
+        lags=legacy_lags(config, "target"),
+        lags_past_covariates=legacy_lags(config, "past"),
+        lags_future_covariates=legacy_lags(config, "future"),
+        output_chunk_length=config.strategy.output_chunk_length,
+        output_chunk_shift=config.output_chunk_shift,
+        uses_static_covariates=False,
+        multi_models=True,
+        concatenate=False,
+    )
+    actual = _create_lagged_data_from_config(
+        resolved,
+        target_series=target,
+        past_covariates=past,
+        future_covariates=future,
+        uses_static_covariates=False,
+        concatenate=False,
+    )
+
+    assert_same_data(actual, expected, len(target))
 
 
 def test_from_config_expands_default_lags():

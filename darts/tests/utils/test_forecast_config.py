@@ -40,6 +40,8 @@ def test_resolve_uses_the_same_strategy_and_resolves_lags():
 
     assert isinstance(resolved, ResolvedForecastConfig)
     assert resolved.strategy is config.strategy
+    assert resolved.output_chunk_length == 4
+    assert resolved.output_chunk_shift == 2
     assert resolved.lags.legacy_lags_dict() == {
         "target": [-3, -1],
         "future": [2, 4],

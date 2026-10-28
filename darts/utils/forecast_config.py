@@ -68,6 +68,7 @@ class ForecastConfig:
                 future_components,
             ),
             strategy=self.strategy,
+            output_chunk_shift=self.output_chunk_shift,
         )
 
     @property
@@ -85,6 +86,11 @@ class ResolvedForecastConfig:
 
     lags: ResolvedLagConfig
     strategy: OutputChunkStrategy
+    output_chunk_shift: int = 0
+
+    @property
+    def output_chunk_length(self) -> int:
+        return self.strategy.output_chunk_length
 
 
 __all__ = ["ForecastConfig", "ResolvedForecastConfig"]
