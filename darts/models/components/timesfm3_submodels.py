@@ -1104,7 +1104,7 @@ def _cpm_iterative_revin_refine(
         offset_onehot = torch.eq(
             torch.arange(rolls, device=device).unsqueeze(0),
             block_offset.unsqueeze(1),
-        ).float()
+        ).to(dtype=dtype)
         predicted_values_step = torch.einsum(
             "br,bvrp->bvp", offset_onehot, anchor_predicted_values
         )

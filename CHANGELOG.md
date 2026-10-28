@@ -5,23 +5,46 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.48.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.48.1...master)
 
 ### For users of the library:
 
 **Improved**
 
+- Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
+- Improvements to `TimeSeries` :
+  - `__pow__` now supports raising to negative powers (as series, arrays or scalars). E.g. `series ** (-2)`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
+  - `__truediv__` now supports dividing by zeros (as series, arrays or scalars). E.g. `series / 0.`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
+  - Added a warning when calling `values()` on stochastic series without specifying a sample. [#3307](https://github.com/unit8co/darts/pull/3307) by [Pallav Biyala](https://github.com/Pallav-Biyala).
+
 **Fixed**
 
+- Fixed `MIDAS` failing on short multivariate or probabilistic series when padding to a complete low-frequency period. [#3304](https://github.com/unit8co/darts/pull/3304) by [Aryan R. Ganjoo](https://github.com/AryanRG).
+- Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).
 - Fixed quantile regression sampling with `quantiles=[0.5]` raising an index error for both scikit-learn and Torch models.
-- Fixed safe-loading for multi-output `SKLearnModel` where Darts' `MultiOutputMixin` was not recognized as a safe-global. [#3261](https://github.com/unit8co/darts/pull/3261) by [Miral Amin](https://github.com/aminmiral).
-- Fixed `ForecastingModel.backtest()` ignoring `val_length` when no `historical_forecasts` are passed. [#3204](https://github.com/unit8co/darts/pull/3204) by [Dennis Bader](https://github.com/dennisbader) and [#3264](https://github.com/unit8co/darts/pull/3264) by [Nathan Chandrasekar](https://github.com/vera-rubin).
-- Fixed `NegativeBinomialLikelihood` returning the distribution parameters in the wrong order with `predict_likelihood_parameters=True` on multivariate series; parameters are now grouped by component, as with all other likelihood models. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
-- 🔴 Fixed `NegativeBinomialLikelihood` mapping the network outputs to a distribution whose mean was not the predicted mean `mu`. The model now outputs the mean `mu` and dispersion `alpha` (variance `mu + alpha * mu**2`) as intended. Models trained with this likelihood in earlier versions will produce different forecasts and should be retrained. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
+- Fixed scalar division by a `TimeSeries` raising an error for nonzero values. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
+- Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
+- Fixed `darts.utils.missing_values.extract_subseries()` raising an error on all-NaN series or on multivariate series with leading/trailing NaNs when `mode="any"`. [#3285](https://github.com/unit8co/darts/pull/3285) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
+- Fixed `TimeSeries.strip()` and `TimeSeries.longest_contiguous_slice()` returning unstripped NaNs on all-NaN series or series with all-partial-NaNs when `mode="any"`. [#3285](https://github.com/unit8co/darts/pull/3285) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
+- Fixed `ConformalNaiveModel` and `ConformalQRModel` accepting classification models (e.g. `SKLearnClassifierModel`), which resulted in meaningless intervals around the predicted class labels. A `ValueError` is now raised, since conformal models only support regression models. [#3282](https://github.com/unit8co/darts/pull/3282) by [Shiven Aggarwal](https://github.com/shivenaggarwal).
 
 **Dependencies**
 
 ### For developers of the library:
+
+## [0.48.1](https://github.com/unit8co/darts/tree/0.48.1) (2026-10-16)
+
+### For users of the library:
+
+**Fixed**
+
+- Fixed `NegativeBinomialLikelihood` returning the distribution parameters in the wrong order with `predict_likelihood_parameters=True` on multivariate series; parameters are now grouped by component, as with all other likelihood models. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
+- 🔴 Fixed `NegativeBinomialLikelihood` mapping the network outputs to a distribution whose mean was not the predicted mean `mu`. The model now outputs the mean `mu` and dispersion `alpha` (variance `mu + alpha * mu**2`) as intended. Models trained with this likelihood in earlier versions will produce different forecasts and should be retrained. [#3243](https://github.com/unit8co/darts/pull/3243) by [Abhay Juloori](https://github.com/AbhayJuloori).
+- Fixed a bug when generating probabilistic forecasting (num_samples > 1) with `CatBoostModel` that uses a "gaussian" likelihood. The samples where drawn from `numpy.random.normal` using the variance as scale instead of the standard deviation. Prediction intervals should now be narrower. [#3272](https://github.com/unit8co/darts/pull/3272) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed `ForecastingModel.backtest()` ignoring `val_length` when no `historical_forecasts` are passed. [#3264](https://github.com/unit8co/darts/pull/3264) by [Nathan Chandrasekar](https://github.com/vera-rubin).
+- Fixed a bug in `TimesFM3Model` which prevented running the model on float64 precision. [#3272](https://github.com/unit8co/darts/pull/3272) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed safe-loading for multi-output `SKLearnModel` where Darts' `MultiOutputMixin` was not recognized as a safe-global. [#3261](https://github.com/unit8co/darts/pull/3261) by [Miral Amin](https://github.com/aminmiral).
+- Fixed safe-loading for `pandas<3.0.0` where `pandas.DataFrame` and `Series` were not recognized as safe-globals. [#3272](https://github.com/unit8co/darts/pull/3272) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.48.0](https://github.com/unit8co/darts/tree/0.48.0) (2026-10-15)
 

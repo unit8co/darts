@@ -788,6 +788,14 @@ class TestProbabilisticModels:
             of the predictions contain the proper elements for univariate input.
             """
             lkl, lkl_params = lkl_config
+            lkl_params = tuple(
+                torch.as_tensor(
+                    p,
+                    device=torch.device("cpu"),
+                    dtype=torch.float32,
+                )
+                for p in lkl_params
+            )
             # fix seed to avoid values outside of distribution's support
             seed = 142857
             torch.manual_seed(seed=seed)
@@ -876,6 +884,14 @@ class TestProbabilisticModels:
             of the predictions contain the proper elements for multivariate inputs.
             """
             lkl, lkl_params, comp_names = lkl_config
+            lkl_params = tuple(
+                torch.as_tensor(
+                    p,
+                    device=torch.device("cpu"),
+                    dtype=torch.float32,
+                )
+                for p in lkl_params
+            )
             # fix seed to avoid values outside of distribution's support
 
             seed = 142857
