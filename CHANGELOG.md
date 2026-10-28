@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
+- Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#3319](https://github.com/unit8co/darts/pull/3319) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 - Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
 - Improvements to `TimeSeries` :
   - `__pow__` now supports raising to negative powers (as series, arrays or scalars). E.g. `series ** (-2)`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
