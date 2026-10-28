@@ -4,11 +4,11 @@
 
 The backlog of issues and ongoing work is tracked here: https://github.com/unit8co/darts/projects/1
 
-**External contributions (fork -> pull request):** work must be tied to a GitHub issue that a maintainer has marked with the **`contributions-welcome`** label. Without that label, the **contribution-gate** check will fail and the PR cannot merge.
+**External contributions (fork -> pull request):** work must be tied to a GitHub issue that a maintainer has marked with the **`ok`** label. Without that label, the **contribution-gate** check will fail and the PR cannot merge.
 
 1. Open a new issue or pick an existing one from the backlog.
 2. Comment on the issue and discuss the approach with core developers.
-3. Wait until a maintainer adds **`contributions-welcome`** before you invest in a large change or open a PR for merge.
+3. Wait until a maintainer adds the **`ok`** label before you invest in a large change or open a PR for merge.
 4. In your PR description, link the approved issue so automation can find it (sidebar-only links do not satisfy the contribution gate):
    - **`Fixes #123`**, **`Closes #123`**, or **`Resolves #123`** when this PR **fully** completes the issue (GitHub will auto-close the issue on merge).
    - **`Addresses #123`**, **`Refs #123`**, or **`Part of #123`** when the PR is **partial** — the issue stays open for follow-up PRs.
@@ -21,7 +21,7 @@ AI coding agents should read [AGENTS.md](AGENTS.md) for the same rules in agent-
 
 ### Maintainer triage
 
-Maintainers (triage/write access) decide when external work is welcome. Apply **`contributions-welcome`** when the issue is understood, in scope, and you are happy for a contributor (or their PR) to proceed.
+Maintainers (triage/write access) decide when external work is welcome. Label as **`ok`** when the issue is understood, in scope, and you are happy for a contributor (or their PR) to proceed.
 
 ### AI-assisted contributions
 
@@ -60,7 +60,7 @@ Do not open public pull requests for undisclosed security vulnerabilities. Discu
 
 ## Technical Procedure
 
-1. Make sure your work is tracked by an issue that has the **`contributions-welcome`** label (see above)
+1. Make sure your work is tracked by an issue that has the **`ok`** label (see above)
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already: `curl -LsSf https://astral.sh/uv/install.sh | sh`

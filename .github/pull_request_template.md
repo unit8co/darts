@@ -1,10 +1,10 @@
 Checklist before merging this PR:
-- [ ] Linked at least one approved issue below (`Fixes #123` if this PR completes the issue or `Addresses #123` / `Refs #123` if partial) and that issue has **`contributions-welcome`**.
+- [ ] Linked at least one approved issue below (`Fixes #123` if this PR completes the issue or `Addresses #123` / `Refs #123` if partial) and that issue is labeled **`ok`**.
 - [ ] Summarized the updates of this PR under **Summary**.
 - [ ] Added an entry under **Unreleased** in the [Changelog](../CHANGELOG.md).
 - [ ] If AI tools helped with this PR, disclosed which tools and how in **Other Information** below.
 
-*Info: PR checks only fully run when the PR references an approved issue with a **`contributions-welcome`** tag. See [CONTRIBUTING.md](../../CONTRIBUTING.md).*
+*Info: PR checks only fully run when the PR references an approved issue labeled as **`ok`**. See [CONTRIBUTING.md](../../CONTRIBUTING.md).*
 
 <!-- Link the issue: Fixes #123, fixes #234 (complete) or Addresses # / Refs # (partial). -->
 Fixes #.
