@@ -340,6 +340,23 @@ def test_legacy_path_without_strategy_still_works():
     assert predictions.shape == (4, 2)
 
 
+def test_legacy_classifier_without_strategy_predict_proba_still_works():
+    X = np.arange(12, dtype=float).reshape(4, 3)
+    y = np.column_stack([np.array([0, 1, 0, 1]), np.array([1, 0, 1, 0])])
+    RecordingClassifier.reset()
+
+    wrapper = MultiOutputClassifier(RecordingClassifier())
+    wrapper.fit(X, y)
+
+    assert wrapper.strategy_ is None
+    probabilities = wrapper.predict_proba(X)
+    assert len(probabilities) == 2
+    assert all(probability.shape == (4, 2) for probability in probabilities)
+    assert len(RecordingClassifier.predict_proba_records) == 2
+    for record in RecordingClassifier.predict_proba_records:
+        assert np.array_equal(record, X)
+
+
 def test_legacy_pickle_without_strategy_can_be_refitted():
     X = np.arange(12, dtype=float).reshape(4, 3)
     y = np.column_stack([np.arange(4), np.arange(4) + 10])

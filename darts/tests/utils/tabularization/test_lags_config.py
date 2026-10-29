@@ -183,6 +183,17 @@ class TestLagsFromUser:
                 "target",
                 "`lags` - `a`: list must contain at least one lag.",
             ),
+            (
+                [],
+                "future",
+                "`lags_future_covariates` - `default_lags`: list must contain at "
+                "least one lag.",
+            ),
+            (
+                {"f": []},
+                "future",
+                "`lags_future_covariates` - `f`: list must contain at least one lag.",
+            ),
         ],
     )
     def test_invalid_lags(self, value, kind, message):
