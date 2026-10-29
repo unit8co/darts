@@ -53,6 +53,13 @@ class MultiOutputMixin:
             self.eval_samples_name, self.eval_labels_name = self.eval_set_name
         self.strategy = strategy
 
+    def __setstate__(self, state):
+        # wrappers pickled before the output-chunk strategies stored the unused
+        # `output_chunk_length` instead of `strategy`; they keep the legacy path
+        state.pop("output_chunk_length", None)
+        state.setdefault("strategy", None)
+        super().__setstate__(state)
+
     def fit(self, X, y, sample_weight=None, **fit_params):
         """Fit the model to data, separately for each output variable.
 
