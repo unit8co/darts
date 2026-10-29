@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#3319](https://github.com/unit8co/darts/pull/3319) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 - Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
 - Improvements to `TimeSeries` :
   - `__pow__` now supports raising to negative powers (as series, arrays or scalars). E.g. `series ** (-2)`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
@@ -22,15 +23,22 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed `MIDAS` failing on short multivariate or probabilistic series when padding to a complete low-frequency period. [#3304](https://github.com/unit8co/darts/pull/3304) by [Aryan R. Ganjoo](https://github.com/AryanRG).
 - Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).
+- Fixed `SKLearnClassifierModel` models skipping class-label validation when fitting a series with more target components than `output_chunk_length`. Downstream probability prediction could then fail unexpectedly. [#3271](https://github.com/unit8co/darts/pull/3271) by [Zhe Chen](https://github.com/zhechen-cs).
+- Fixed sampled predictions for forecasting models that use quantile regression with `quantiles=[0.5]` which failed before. [#3269](https://github.com/unit8co/darts/pull/3269) by [Zhe Chen](https://github.com/zhechen-cs).
 - Fixed scalar division by a `TimeSeries` raising an error for nonzero values. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
 - Fixed compatibility with pandas 3.1: fitting and predicting models on series with a daily frequency failed with a `TypeError`, and `MIDAS` accepted a series whose frequency was already the target low frequency. [#3289](https://github.com/unit8co/darts/pull/3289) by [Nicolò Angileri](https://github.com/nicoloangileri).
 - Fixed `darts.utils.missing_values.extract_subseries()` raising an error on all-NaN series or on multivariate series with leading/trailing NaNs when `mode="any"`. [#3285](https://github.com/unit8co/darts/pull/3285) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 - Fixed `TimeSeries.strip()` and `TimeSeries.longest_contiguous_slice()` returning unstripped NaNs on all-NaN series or series with all-partial-NaNs when `mode="any"`. [#3285](https://github.com/unit8co/darts/pull/3285) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 - Fixed `ConformalNaiveModel` and `ConformalQRModel` accepting classification models (e.g. `SKLearnClassifierModel`), which resulted in meaningless intervals around the predicted class labels. A `ValueError` is now raised, since conformal models only support regression models. [#3282](https://github.com/unit8co/darts/pull/3282) by [Shiven Aggarwal](https://github.com/shivenaggarwal).
+- Fixed `ForecastingModel.historical_forecasts()` with `retrain=True` mutating caller-provided `Pipeline` instances under `data_transformers`. [#3312](https://github.com/unit8co/darts/pull/3312) by [Pallav Biyala](https://github.com/Pallav-Biyala).
+- Fixed `darts.logging.SuppressStdoutStderr` (used to suppress `Prophet` fit output) permanently redirecting the process-level stdout and stderr to `devnull` when contexts were used at the same time, and crashing in interpreters without usable standard streams (e.g. `pythonw` on Windows). [#3290](https://github.com/unit8co/darts/pull/3290) by [Manas Choksi](https://github.com/choksi2212).
 
 **Dependencies**
 
 ### For developers of the library:
+
+- Updated the [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) and added [AGENTS.md](https://github.com/unit8co/darts/blob/master/AGENTS.md): external pull requests must link an issue with the maintainer `ok` label (use `Fixes` / `Addresses` in the PR description); AI-assisted work requires human review and disclosure. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
+- Added the **contribution-gate** GitHub Actions check enforcing the approved-issue requirement for pull requests from outside collaborators. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.48.1](https://github.com/unit8co/darts/tree/0.48.1) (2026-10-16)
 

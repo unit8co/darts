@@ -1,0 +1,166 @@
+# External PRs must link an issue labeled `ok` (maintainer-approved).
+# Does not checkout PR code (pull_request_target). See AGENTS.md and CONTRIBUTING.md.
+# Maintainer testing: Actions -> Contribution gate -> Run workflow (workflow_dispatch).
+
+name: Contribution gate
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: Pull request number to evaluate
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: read
+
+jobs:
+  contribution-gate:
+    name: contribution-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.pull_request.draft == false &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association) == false
+      )
+    env:
+      APPROVAL_LABEL: ok
+    steps:
+      - name: Verify linked approved issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const approvalLabel = process.env.APPROVAL_LABEL;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const docsUrl = `https://github.com/${owner}/${repo}/blob/master/CONTRIBUTING.md#picking-an-issue-on-which-to-work`;
+
+            let pr;
+
+            if (context.eventName === 'workflow_dispatch') {
+              const pullNumber = Number(context.payload.inputs.pull_request_number);
+              const { data } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pullNumber,
+              });
+              pr = data;
+              core.info(`Manual workflow_dispatch: evaluating PR #${pullNumber}.`);
+            } else {
+              pr = context.payload.pull_request;
+            }
+
+            const body = pr.body || '';
+
+            const scanBody = body
+              .replace(/```[\s\S]*?```/g, '')
+              .replace(/`[^`]*`/g, '');
+
+            // Closing and non-closing link keywords (partial PRs use Addresses/Refs/Part of).
+            const refRe =
+              /\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?|address(?:es|ed)?|ref(?:s|erences)?|part\s+of|relates?\s+to|see\s+also)\b[\s:,-]*(?:#(\d+)|([\w.-]+)\/([\w.-]+)#(\d+)|https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/issues\/(\d+))/gi;
+            const numbers = new Set();
+            for (const m of scanBody.matchAll(refRe)) {
+              if (m[1]) {
+                numbers.add(Number(m[1]));
+              } else if (
+                m[2] &&
+                m[2].toLowerCase() === owner.toLowerCase() &&
+                m[3].toLowerCase() === repo.toLowerCase()
+              ) {
+                numbers.add(Number(m[4]));
+              } else if (
+                m[5] &&
+                m[5].toLowerCase() === owner.toLowerCase() &&
+                m[6].toLowerCase() === repo.toLowerCase()
+              ) {
+                numbers.add(Number(m[7]));
+              }
+            }
+
+            const MAX_ISSUE_CHECKS = 20;
+            let approved = false;
+            for (const number of [...numbers].slice(0, MAX_ISSUE_CHECKS)) {
+              let issue;
+              try {
+                issue = await github.rest.issues.get({
+                  owner,
+                  repo,
+                  issue_number: number,
+                });
+              } catch (err) {
+                if (err.status === 404) {
+                  core.info(`Referenced #${number} not found — ignoring.`);
+                  continue;
+                }
+                core.setFailed(
+                  `Could not verify issue #${number} (${err.status || err.message}); leaving PR #${pr.number} unchecked. Re-run the workflow when GitHub API is available.`
+                );
+                return;
+              }
+              if (issue.data.pull_request) {
+                core.info(`#${number} is a pull request, not an issue — ignoring.`);
+                continue;
+              }
+              const labels = (issue.data.labels || []).map((l) =>
+                typeof l === 'string' ? l : l.name
+              );
+              if (labels.includes(approvalLabel)) {
+                core.info(`#${number} has label '${approvalLabel}' — gate passed.`);
+                approved = true;
+                break;
+              }
+              core.info(`#${number} does not have label '${approvalLabel}'.`);
+            }
+
+            if (approved) {
+              return;
+            }
+
+            const reason =
+              numbers.size === 0
+                ? 'The PR description does not link an issue (e.g. `Fixes #123` or `Addresses #123`).'
+                : `None of the linked issues have the \`${approvalLabel}\` label applied by a maintainer.`;
+
+            const marker = '<!-- contribution-gate -->';
+            const commentBody = [
+              marker,
+              '## Contribution gate — action required',
+              '',
+              'This check failed because ' + reason,
+              '',
+              '**Before this PR can merge:**',
+              '1. Open or use an existing GitHub issue and discuss the approach with maintainers.',
+              `2. Wait for a maintainer to add the \`${approvalLabel}\` label on that issue.`,
+              '3. Link the issue in **this PR description** (not only the sidebar), e.g. `Fixes #<issue>` when the PR completes the issue, or `Addresses #<issue>` / `Refs #<issue>` for partial work.',
+              '',
+              `See [CONTRIBUTING.md](${docsUrl}) and [AGENTS.md](https://github.com/${owner}/${repo}/blob/master/AGENTS.md).`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: pr.number,
+              per_page: 100,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (!existing) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: pr.number,
+                body: commentBody,
+              });
+            }
+
+            core.setFailed(
+              `Contribution gate failed: ${reason} See CONTRIBUTING.md and AGENTS.md.`
+            );
