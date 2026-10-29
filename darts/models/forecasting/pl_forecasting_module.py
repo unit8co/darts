@@ -400,11 +400,21 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 loss = (loss * sample_weight).mean()
         return loss
 
+    def _metrics_prediction(self, output: PLModuleOutput) -> torch.Tensor:
+        """Returns the prediction tensor that the metrics should be computed on.
+
+        By default this is simply the model output. Subclasses can override it when the
+        output used for the training loss differs from the output users expect in their
+        metrics (e.g. foundation models that return all pre-trained quantiles during
+        fine-tuning, but should report metrics only on the user-selected quantiles).
+        """
+        return output.prediction
+
     def _update_metrics(self, output: PLModuleOutput, target: torch.Tensor, metrics):
         if not len(metrics):
             return
 
-        prediction = output.prediction
+        prediction = self._metrics_prediction(output)
         if self.likelihood:
             prediction = self.likelihood.sample(prediction)
         else:
