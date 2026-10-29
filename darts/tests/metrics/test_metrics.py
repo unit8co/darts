@@ -45,10 +45,11 @@ def metric_smape(y_true, y_pred, **kwargs):
     )
 
 
-def metric_ope(y_true, y_pred, **kwargs):
+def metric_ope(y_true, y_pred, signed: bool = False):
     y_true = y_true[:, 0]
     y_pred = y_pred[:, 0]
-    return 100.0 * np.abs((np.sum(y_true) - np.sum(y_pred)) / np.sum(y_true))
+    ope_ = 100.0 * (np.sum(y_true) - np.sum(y_pred)) / np.sum(y_true)
+    return ope_ if signed else np.abs(ope_)
 
 
 def metric_cov(y_true, y_pred, **kwargs):
@@ -1953,7 +1954,8 @@ class TestMetrics:
             (metrics.mape, sklearn_mape, {}, {}),
             (metrics.wmape, metric_wmape, {}, {}),
             (metrics.smape, metric_smape, {}, {}),
-            (metrics.ope, metric_ope, {}, {}),
+            (metrics.ope, metric_ope, {"signed": False}, {"signed": False}),
+            (metrics.ope, metric_ope, {"signed": True}, {"signed": True}),
             (metrics.marre, metric_marre, {}, {}),
             (metrics.autc, metric_autc, {}, {}),
             (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
