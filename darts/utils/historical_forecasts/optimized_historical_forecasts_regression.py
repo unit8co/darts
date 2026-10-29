@@ -131,7 +131,7 @@ def _optimized_historical_forecasts_regression(
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
         (
             hist_fct_start,
-            hist_fct_end,
+            _,
             hist_fct_tgt_start,
             hist_fct_tgt_end,
             hist_fct_pc_start,

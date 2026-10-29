@@ -2,9 +2,10 @@
 Lagged feature containers.
 --------------------------
 
-Containers that represent the lagged features matrix as a function of the forecast horizon. They
-are independent from the lag semantics and from the tabularization code, so the model and the
-multi-output wrapper can consume them without branching on the container type.
+Internal containers that represent the lagged features matrix as a function of the forecast
+horizon. They are independent from the lag semantics and from the tabularization code, so the
+model and the multi-output wrapper can consume them without branching on the container type.
+This module is not part of the public Darts API.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ from darts.logging import raise_log
 
 
 class LaggedFeatures(ABC):
-    """A feature matrix that can be materialized for each forecast horizon."""
+    """Internal feature matrix that can be materialized for each forecast horizon."""
 
     n_horizons: int
 
@@ -328,11 +329,6 @@ class StepwiseLaggedFeatures(LaggedFeatures):
             features = self._array.copy()
             features[:, self.step_cols] = self.step_values[h]
         return self.format_fn(features) if self.format_fn is not None else features
-
-    def horizons(self):
-        """Yield the features array of every horizon, in order."""
-        for h in range(self.n_horizons):
-            yield self.horizon(h)
 
     def with_base(self, array: np.ndarray) -> StepwiseLaggedFeatures:
         return self.__class__(

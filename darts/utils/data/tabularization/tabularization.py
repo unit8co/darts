@@ -2,7 +2,8 @@
 Data Tabularization Methods
 ---------------------------
 
-Tabularization methods to convert time series data into tabular format for usage with SKLearn-like models.
+Internal tabularization methods to convert time series data into tabular format for usage with
+SKLearn-like models. This module is not part of the public Darts API.
 """
 
 import warnings
@@ -172,18 +173,9 @@ def _create_lagged_data(
 
     Notes
     -----
-    Instead of calling `_create_lagged_data` directly, it is instead recommended that:
-
-    - `_create_lagged_training_data` be called if one wishes to create the `X` and `y` arrays
-      to train an `SKLearnModel`.
-    - `_create_lagged_prediction_data` be called if one wishes to create the `X` array required
-      to generate a prediction from an already-trained `SKLearnModel`.
-
-    This is because even though both of these functions are merely wrappers around `_create_lagged_data`, their
-    call signatures are more easily interpreted than `_create_lagged_data`. For example,
-    `_create_lagged_prediction_data` does not accept `output_chunk_length` nor `multi_models` as inputs, since
-    these inputs are not used when constructing prediction data. Similarly, `_create_lagged_prediction_data`
-    returns only `X` and `times` as outputs, as opposed to returning `y` as `None` along with `X` and `times`.
+    Internal compatibility adapter that accepts the pre-refactor argument names and builds a
+    :class:`ResolvedForecastConfig` from them. New call sites should build the config once and
+    use :func:`_create_lagged_data_from_config` directly.
 
     The `X` array is constructed from the lagged values of up to three separate timeseries:
 

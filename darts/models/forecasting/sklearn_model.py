@@ -298,8 +298,6 @@ class SKLearnModel(GlobalForecastingModel):
         # fitted models, recover the resolved lag state so predictions stay unchanged.
         legacy_lags = state.pop("lags", None)
         legacy_component_lags = state.pop("component_lags", None)
-        state.pop("_legacy_lags", None)
-        state.pop("_legacy_component_lags", None)
         self.__dict__.update(state)
 
         if "_config" not in self.__dict__:
@@ -311,16 +309,6 @@ class SKLearnModel(GlobalForecastingModel):
                 )
                 if self.__dict__.get("_fit_called", False)
                 else None
-            )
-        elif self._resolved_config is not None and "output_chunk_shift" not in vars(
-            self._resolved_config
-        ):
-            # R5a.1 pickles stored a resolved config without the shift.
-            config = self._ensure_config()
-            self._resolved_config = ResolvedForecastConfig(
-                lags=self._resolved_config.lags,
-                strategy=self._resolved_config.strategy,
-                output_chunk_shift=config.output_chunk_shift,
             )
 
     def _build_config_from_model_params(self) -> ForecastConfig | None:
@@ -609,6 +597,12 @@ class SKLearnModel(GlobalForecastingModel):
             abstraction layer, grouping the estimators by ``quantile``. Models using a single native multi-quantile
             estimator (``likelihood="multiquantile"``) do not use this extra quantile grouping, and ``quantile``
             must be set to ``None`` to obtain the correct estimator.
+
+        .. note::
+            The estimator index is resolved through the model's output-chunk strategy. With
+            ``multi_models=True`` (direct), every ``horizon`` and target component has its own
+            estimator. With ``multi_models=False`` (recursive), a single estimator per component is
+            reused for every horizon, so passing different horizons returns the same estimator.
 
         Parameters
         ----------
@@ -1384,7 +1378,7 @@ class SKLearnModel(GlobalForecastingModel):
                 pred_start=input_tgt.end_time()
                 + (1 + self.output_chunk_shift) * input_tgt.freq,
             )
-            for idx_ts, (row, input_tgt) in enumerate(zip(predictions, series))
+            for row, input_tgt in zip(predictions, series)
         ]
 
         return predictions[0] if called_with_single_series else predictions
@@ -1422,6 +1416,11 @@ class SKLearnModel(GlobalForecastingModel):
     @property
     def lagged_feature_names(self) -> list[str] | None:
         """The lagged feature names the model has been trained on.
+
+        .. note::
+            The names describe the feature columns shared by all forecast horizons; they do not
+            include a horizon suffix. With step-wise future covariates, different horizons can
+            receive different values for the same named column.
 
         The naming convention for target, past and future covariates is: ``"{name}_{type}_lag{i}"``, where:
 

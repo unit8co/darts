@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🔴 Removed the public `SKLearnModel.lags` and `SKLearnModel.component_lags` properties. The resolved lag state is internal now; use the constructor arguments (`lags`, `lags_past_covariates`, `lags_future_covariates`) to recreate a model. [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [JuanCruzC97](https://github.com/JuanCruzC97).
+- 🔴 Removed the public tabularization helpers from `darts.utils.data.tabularization` (`create_lagged_data`, `create_lagged_training_data`, `create_lagged_prediction_data`, `create_lagged_component_names`, `add_static_covariates_to_lagged_data`, `get_shared_times`, `get_shared_times_bounds`, `strided_moving_window`). Tabularization is an internal implementation detail; use `SKLearnModel` and its public forecasting API instead. [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [JuanCruzC97](https://github.com/JuanCruzC97).
 - Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#3319](https://github.com/unit8co/darts/pull/3319) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 - Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
 - Improvements to `TimeSeries` :
@@ -36,6 +38,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+- Refactored `SKLearnModel` around an internal `ForecastConfig`/`ResolvedForecastConfig`, lagged feature containers (`LaggedData`, `LaggedFeatures`) and output-chunk strategies. `fit`, `predict` and optimized historical forecasts now share a single resolved configuration, and tabularization no longer exposes a public API. Forecast results are unchanged. [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [JuanCruzC97](https://github.com/JuanCruzC97).
 - Updated the [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) and added [AGENTS.md](https://github.com/unit8co/darts/blob/master/AGENTS.md): external pull requests must link an issue with the maintainer `ok` label (use `Fixes` / `Addresses` in the PR description); AI-assisted work requires human review and disclosure. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
 - Added the **contribution-gate** GitHub Actions check enforcing the approved-issue requirement for pull requests from outside collaborators. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
 

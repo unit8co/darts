@@ -2,9 +2,11 @@
 Forecast configuration.
 -----------------------
 
-High-level configuration shared by the tabularization, model and historical-forecast layers. It
-combines the unresolved lag configuration with the output-chunk strategy. The resolved variant
-adds the component mapping produced by :meth:`LagConfig.resolve`.
+Internal high-level configuration shared by the tabularization, model and historical-forecast
+layers. It combines the unresolved lag configuration with the output-chunk strategy. The resolved
+variant adds the component mapping produced by :meth:`LagConfig.resolve`.
+
+This module is not part of the public Darts API.
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ from darts.utils.output_chunk import (
 
 @dataclass(frozen=True)
 class ForecastConfig:
-    """Unresolved configuration of a tabularized forecasting model."""
+    """Internal, unresolved configuration of a tabularized forecasting model."""
 
     lags: LagConfig
     strategy: OutputChunkStrategy
@@ -82,7 +84,7 @@ class ForecastConfig:
 
 @dataclass(frozen=True)
 class ResolvedForecastConfig:
-    """Forecast configuration resolved against the training components."""
+    """Internal forecast configuration resolved against the training components."""
 
     lags: ResolvedLagConfig
     strategy: OutputChunkStrategy
