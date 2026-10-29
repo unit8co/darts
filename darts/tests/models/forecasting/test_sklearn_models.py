@@ -602,6 +602,25 @@ class TestSKLearnModels:
         restored.fit(series)
         assert restored._resolved_config is not None
 
+    def test_legacy_pickle_multioutput_wrapper_supports_refit(self):
+        # sample weights force the multi-output wrapper
+        model = LinearRegressionModel(lags=3, output_chunk_length=2)
+        model.fit(self.sine_univariate1, sample_weight="linear")
+        assert isinstance(model.model, MultiOutputRegressor)
+        expected_prediction = model.predict(3).values()
+
+        # simulate the state of a wrapper pickled before the output-chunk strategies existed
+        wrapper = model.model
+        for key in ("strategy", "strategy_", "n_components_"):
+            wrapper.__dict__.pop(key, None)
+        wrapper.__dict__["output_chunk_length"] = 2
+
+        restored = pickle.loads(pickle.dumps(model))
+        np.testing.assert_array_equal(restored.predict(3).values(), expected_prediction)
+
+        restored.fit(self.sine_univariate1, sample_weight="linear")
+        np.testing.assert_array_equal(restored.predict(3).values(), expected_prediction)
+
     @pytest.mark.parametrize("config", param_product([True, False], [1, 2]))
     def test_training_data_creation(self, config):
         """testing _get_training_data function"""
