@@ -2,9 +2,9 @@
 Lag configuration for tabularization.
 -------------------------------------
 
-This module contains the semantic layer for the lags of a tabularized model: parsing and
-validating user-provided lags, handling ``output_chunk_shift`` and resolving component-specific
-lags against the components of the actual series.
+Internal semantic layer for the lags of a tabularized model: parsing and validating user-provided
+lags, handling ``output_chunk_shift`` and resolving component-specific lags against the components
+of the actual series. This module is not part of the public Darts API.
 
 The classes are intentionally independent from the tabularization and model layers. This keeps
 the validation in a single place while the call sites are migrated incrementally.
@@ -378,7 +378,7 @@ class FutureLags:
 
 @dataclass(frozen=True)
 class ResolvedLagConfig:
-    """Lag configuration resolved against the components of the training series."""
+    """Internal lag configuration resolved against the components of the training series."""
 
     target: Mapping[str, tuple[int, ...]] | None
     past: Mapping[str, tuple[int, ...]] | None
@@ -433,7 +433,7 @@ class ResolvedLagConfig:
 
 @dataclass(frozen=True)
 class LagConfig:
-    """Unresolved lag configuration of a forecast model."""
+    """Internal, unresolved lag configuration of a forecast model."""
 
     target: Lags | None = None
     past: Lags | None = None

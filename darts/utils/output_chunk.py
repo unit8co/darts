@@ -2,9 +2,10 @@
 Output-chunk strategies.
 ------------------------
 
-Strategies that define how a forecast horizon and target components map to the estimators of a
-multi-output model. They are independent from the feature containers and from the model so they
-can be reused by the wrapper, ``get_estimator()`` and the optimized historical forecasts.
+Internal strategies that define how a forecast horizon and target components map to the estimators
+of a multi-output model. They are independent from the feature containers and from the model so
+they can be reused by the wrapper, ``get_estimator()`` and the optimized historical forecasts.
+This module is not part of the public Darts API.
 """
 
 from __future__ import annotations
@@ -15,7 +16,11 @@ from darts.logging import raise_log
 
 
 class OutputChunkStrategy(ABC):
-    """How output positions are assigned to estimators."""
+    """How output positions are assigned to estimators.
+
+    Internal API shared by ``SKLearnModel``, the multi-output wrapper and the optimized
+    historical forecasts. It is not part of the public Darts API.
+    """
 
     name: str
     n_horizons: int

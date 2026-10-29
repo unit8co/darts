@@ -29,6 +29,9 @@ class MultiOutputMixin:
     """
     Mixin for :class:`sklearn.utils.multioutput._MultiOutputEstimator` with a modified ``fit()`` method that also slices
     validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
+
+    When an :class:`OutputChunkStrategy` is passed, it controls how outputs are grouped, how features
+    are materialized per horizon, and the order in which estimators are fitted and predicted.
     """
 
     def __init__(
@@ -36,7 +39,6 @@ class MultiOutputMixin:
         estimator,
         eval_set_name: str | tuple[str, str] | None = None,
         eval_weight_name: str | None = None,
-        output_chunk_length: int | None = None,
         strategy: OutputChunkStrategy | None = None,
         **kwargs,
     ):
@@ -49,7 +51,6 @@ class MultiOutputMixin:
         self.eval_samples_name, self.eval_labels_name = None, None
         if isinstance(self.eval_set_name, tuple):
             self.eval_samples_name, self.eval_labels_name = self.eval_set_name
-        self.output_chunk_length = output_chunk_length
         self.strategy = strategy
 
     def fit(self, X, y, sample_weight=None, **fit_params):

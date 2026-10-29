@@ -73,10 +73,12 @@ generate-api:
         ../darts/utils/data/torch_datasets/dataset.py \
         ../darts/utils/data/torch_datasets/utils.py \
         ../darts/utils/data/utils.py \
+        ../darts/utils/forecast_config.py \
         ../darts/utils/historical_forecasts/* \
         ../darts/utils/likelihood_models/base.py \
         ../darts/utils/multioutput.py \
         ../darts/utils/onnx/export.py \
+        ../darts/utils/output_chunk.py \
         ../darts/utils/serialization/base.py \
         ../darts/utils/serialization/torch.py \
         ../darts/utils/ts_utils.py \
