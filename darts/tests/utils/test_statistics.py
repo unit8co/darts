@@ -20,6 +20,7 @@ from darts.utils.statistics import (
     remove_from_series,
     remove_seasonality,
     remove_trend,
+    seasonality_and_trend_strength,
     stationarity_test_adf,
     stationarity_test_kpss,
     stationarity_tests,
@@ -237,6 +238,48 @@ class TestSeasonalDecompose:
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
             )
 
+    @pytest.mark.parametrize(
+        "method,kwargs",
+        [("STL", {}), ("STL", {"low_pass": 9}), ("naive", {})],
+    )
+    def test_seasonality_and_trend_strength(self, method, kwargs):
+        series_copy = self.ts.copy()
+        trend_strength, seasonal_strength = seasonality_and_trend_strength(
+            self.ts, freq=6, method=method, **kwargs
+        )
+        assert type(trend_strength) is float
+        assert type(seasonal_strength) is float
+        assert trend_strength > 0.99
+        assert seasonal_strength > 0.99
+        assert self.ts == series_copy
+
+    def test_seasonality_and_trend_strength_noise(self):
+        np.random.seed(42)
+        trend_strength, seasonal_strength = seasonality_and_trend_strength(
+            gaussian_timeseries(length=240), freq=12
+        )
+        # STL fits some structure to pure noise (seasonal strength is ~0.4), but far
+        # below the > 0.99 of a series with an actual trend and seasonality
+        assert trend_strength < 0.4
+        assert seasonal_strength < 0.7
+
+    def test_seasonality_and_trend_strength_constant(self):
+        with np.errstate(divide="raise", invalid="raise"):
+            strengths = seasonality_and_trend_strength(
+                constant_timeseries(value=2, length=100), freq=6
+            )
+        assert strengths == (0.0, 0.0)
+
+    def test_seasonality_and_trend_strength_multiplicative(self):
+        ts_mult = self.trend * (self.season * 0.5 + 1)
+        kwargs = {"freq": 6, "model": ModelMode.MULTIPLICATIVE, "method": "naive"}
+        strengths = seasonality_and_trend_strength(ts_mult, **kwargs)
+        assert strengths[0] > 0.95
+        assert strengths[1] > 0.95
+        # strengths are computed on the log scale and do not depend on the series scale
+        rescaled = seasonality_and_trend_strength(ts_mult * 1000, **kwargs)
+        assert rescaled == pytest.approx(strengths)
+
 
 class TestPlot:
     series = AirPassengersDataset().load()
@@ -369,6 +412,50 @@ class TestStatisticsInputValidation:
             ValueError, match="The model must be either MULTIPLICATIVE or ADDITIVE"
         ):
             remove_seasonality(self.ts, freq=6, model=SeasonalityMode.NONE)
+
+    def test_seasonality_and_trend_strength_univariate(self):
+        with pytest.raises(AssertionError):
+            seasonality_and_trend_strength(self.ts.stack(self.ts_other), freq=6)
+
+    def test_seasonality_and_trend_strength_deterministic(self):
+        stochastic = TimeSeries.from_values(np.random.uniform(1, 2, (100, 1, 5)))
+        with pytest.raises(AssertionError):
+            seasonality_and_trend_strength(stochastic, freq=6)
+
+    def test_seasonality_and_trend_strength_missing_values(self):
+        values = np.arange(1.0, 101.0)
+        values[10] = np.nan
+        with pytest.raises(ValueError, match="must not contain missing values"):
+            seasonality_and_trend_strength(TimeSeries.from_values(values), freq=6)
+
+    def test_seasonality_and_trend_strength_multiplicative_stl(self):
+        with pytest.raises(
+            ValueError, match="Only ADDITIVE model is compatible with the STL method"
+        ):
+            seasonality_and_trend_strength(
+                self.ts, freq=6, model=ModelMode.MULTIPLICATIVE
+            )
+
+    def test_seasonality_and_trend_strength_multiplicative_non_positive_values(self):
+        index = pd.date_range("20130101", periods=50)
+        series = TimeSeries.from_series(pd.Series(np.arange(-4.0, 46.0), index=index))
+        with pytest.raises(ValueError):
+            seasonality_and_trend_strength(
+                series, freq=6, model=ModelMode.MULTIPLICATIVE, method="naive"
+            )
+
+    def test_seasonality_and_trend_strength_multiplicative_non_positive_trend(self):
+        # positive values whose extrapolated trend at the edge of the series is negative
+        series = TimeSeries.from_series(
+            pd.Series(
+                np.exp(-0.5 * np.arange(40)),
+                index=pd.date_range("20130101", periods=40),
+            )
+        )
+        with pytest.raises(ValueError, match="strictly positive"):
+            seasonality_and_trend_strength(
+                series, freq=6, model=ModelMode.MULTIPLICATIVE, method="naive"
+            )
 
     @pytest.mark.parametrize(
         "plot_fn,extra_kwargs",

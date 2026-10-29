@@ -305,6 +305,96 @@ def remove_from_series(
     return new_ts
 
 
+def seasonality_and_trend_strength(
+    ts: TimeSeries,
+    freq: int | None = None,
+    model: SeasonalityMode | ModelMode = ModelMode.ADDITIVE,
+    method: str = "STL",
+    **kwargs,
+) -> tuple[float, float]:
+    """
+    Computes the strength of the trend and of the seasonality of a TimeSeries instance as defined in [1]_.
+
+    The series is decomposed into a trend `T`, a seasonal component `S` and a remainder `R` with
+    :func:`extract_trend_and_seasonality`. The strengths are then given by:
+
+    - trend strength: ``max(0, 1 - Var(R) / Var(T + R))``
+    - seasonal strength: ``max(0, 1 - Var(R) / Var(S + R))``
+
+    A strength close to 0 means that the series has (almost) no trend / seasonality, a strength close to 1 that
+    the trend / seasonality explains almost all the variation left after removing the other component.
+
+    If the variance in the denominator is zero up to numerical precision (e.g. for a constant series), the
+    corresponding strength is 0.
+
+    Parameters
+    ----------
+    ts
+        The deterministic univariate series to compute the strengths for. Must not contain missing values.
+    freq
+        The seasonality period to use.
+    model
+        The type of decomposition to use.
+        Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enum member.
+        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
+        With ``MULTIPLICATIVE``, the strengths are computed on the logarithm of the components (which turns
+        ``T * S * R`` into ``log(T) + log(S) + log(R)``), so they do not depend on the scale of the series.
+        This requires strictly positive values and is not compatible with the "STL" method.
+        Defaults ``ModelMode.ADDITIVE``.
+    method
+        The method to be used to decompose the series.
+        - "STL" : Season-Trend decomposition using LOESS.
+        - "naive" : Seasonal decomposition using moving averages.
+        See :func:`extract_trend_and_seasonality` for details.
+    kwargs
+        Other keyword arguments are passed down to the decomposition method.
+
+    Returns
+    -------
+    Tuple[float, float]
+        A tuple of (trend strength, seasonal strength), each between 0 and 1.
+
+    References
+    ----------
+    .. [1] Hyndman, R.J., & Athanasopoulos, G. (2021) Forecasting: principles and practice, 3rd edition,
+       OTexts: Melbourne, Australia. https://otexts.com/fpp3/stlfeatures.html
+    """
+
+    ts._assert_univariate()
+    ts._assert_deterministic()
+    if np.isnan(ts.univariate_values(copy=False)).any():
+        raise_log(ValueError("`ts` must not contain missing values."))
+
+    trend, season = extract_trend_and_seasonality(ts, freq, model, method, **kwargs)
+    resid = remove_from_series(remove_from_series(ts, trend, model), season, model)
+    t, s, r = (x.univariate_values(copy=False) for x in (trend, season, resid))
+
+    if model.value == "multiplicative":
+        if not all((x > 0).all() for x in (t, s, r)):
+            raise_log(
+                ValueError(
+                    "A MULTIPLICATIVE model requires strictly positive values, trend and seasonality."
+                ),
+            )
+        t, s, r = np.log(t), np.log(s), np.log(r)
+
+    scale = np.mean((t + s + r) ** 2)
+    return _strength(t, r, scale), _strength(s, r, scale)
+
+
+def _strength(component: np.ndarray, resid: np.ndarray, scale: float) -> float:
+    """
+    Computes ``max(0, 1 - Var(resid) / Var(component + resid))``.
+
+    Returns 0 if ``Var(component + resid)`` is negligible with respect to `scale` (the mean square of the series),
+    as floating point noise would otherwise produce an arbitrary ratio.
+    """
+    total_var = np.var(component + resid)
+    if total_var <= 1e-24 * scale:
+        return 0.0
+    return max(0.0, 1.0 - float(np.var(resid) / total_var))
+
+
 def remove_seasonality(
     ts: TimeSeries,
     freq: int | None = None,
