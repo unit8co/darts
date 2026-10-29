@@ -149,6 +149,23 @@ def test_direct_strategy_routes_stepwise_horizons():
     )
 
 
+def test_features_for_output_use_zero_copy_base_arrays():
+    base = np.arange(12, dtype=float).reshape(4, 3)
+    X = ArrayLaggedFeatures.wrap(base, n_horizons=2)
+    strategy = DirectOutputStrategy(output_chunk_length=2)
+
+    features = MultiOutputRegressor._features_for_output(X, 0, strategy, 1)
+    assert type(features) is np.ndarray
+    assert np.shares_memory(features, base)
+    assert np.array_equal(features, base)
+
+    assert MultiOutputRegressor._features_for_output(X, 0, None, None) is not X
+    assert np.shares_memory(
+        MultiOutputRegressor._features_for_output(X, 0, None, None), base
+    )
+    assert MultiOutputRegressor._features_for_output(base, 0, strategy, 1) is base
+
+
 def test_recursive_strategy_uses_the_same_features_for_all_outputs():
     X = np.arange(12, dtype=float).reshape(4, 3)
     y = np.column_stack([np.arange(4), np.arange(4) + 10])

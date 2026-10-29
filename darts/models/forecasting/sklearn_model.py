@@ -71,11 +71,13 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_deprecation_warning, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.lags import ResolvedLagConfig
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_component_names,
     _create_lagged_data_autoregression,
     _create_lagged_data_from_config,
+    _resolve_autoregression_lags,
 )
 from darts.utils.forecast_config import ForecastConfig, ResolvedForecastConfig
 from darts.utils.historical_forecasts import (
@@ -1316,6 +1318,7 @@ class SKLearnModel(GlobalForecastingModel):
         # prediction
         predictions = []
         last_step_shift = 0
+        lag_data = _resolve_autoregression_lags(self._resolved_config)
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
@@ -1341,6 +1344,7 @@ class SKLearnModel(GlobalForecastingModel):
                 num_samples=num_samples,
                 uses_static_covariates=self.uses_static_covariates,
                 last_static_covariates_shape=self._static_covariates_shape,
+                lag_data=lag_data,
             )
 
             # X has shape (n_series * n_samples, n_regression_features)
@@ -1400,6 +1404,12 @@ class SKLearnModel(GlobalForecastingModel):
         or the predicted distribution parameters directly.
         """
         x, _ = self._format_samples(x)
+        if isinstance(x, LaggedFeatures) and not isinstance(
+            self.model, MultiOutputMixin
+        ):
+            # the wrapper needs the container for horizon routing; the native path can
+            # hand scikit-learn a zero-copy base view and skip subclass validation
+            x = x.array
         if self.likelihood is not None:
             return self.likelihood.predict(
                 model=self,

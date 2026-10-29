@@ -1638,26 +1638,19 @@ def _create_lagged_data_by_intersecting_times(
     return X, y, shared_times, weights
 
 
-def _create_lagged_data_autoregression(
-    target_series: TimeSeriesLike,
-    t_pred: int,
-    last_step_shift: int,
-    series_matrix: np.ndarray,
-    covariate_matrices: dict[str, np.ndarray],
+def _resolve_autoregression_lags(
     config: "ResolvedForecastConfig",
-    uses_static_covariates: bool,
-    last_static_covariates_shape: tuple[int, int] | None,
-    num_samples: int,
-) -> LaggedFeatures:
-    """Extract lagged data from target, past covariates and future covariates for auto-regression
-    with SKLearnModels.
+) -> tuple[
+    dict[str, list[int]],
+    dict[str, dict[str, list[int]]],
+    dict[str, np.ndarray],
+]:
+    """Materialize the lag views used by autoregressive prediction.
 
-    The features are returned as a :class:`LaggedFeatures` container so the model wrapper can route
-    them per forecast horizon without knowing whether they were built from a tabular window or from
-    the autoregression matrices.
+    The config is constant across the steps of a forecast, so callers that iterate
+    over ``t_pred`` can resolve this once and pass it to
+    :func:`_create_lagged_data_autoregression`.
     """
-    series_length = len(target_series)
-    shift = config.strategy.feature_lag_offset
     lags = {kind: list(values) for kind, values in config.lags.legacy_lags.items()}
     component_lags = {
         kind: {
@@ -1673,6 +1666,38 @@ def _create_lagged_data_autoregression(
         for kind in ("past", "future")
         if kind in lags
     }
+    return lags, component_lags, relative_cov_lags
+
+
+def _create_lagged_data_autoregression(
+    target_series: TimeSeriesLike,
+    t_pred: int,
+    last_step_shift: int,
+    series_matrix: np.ndarray,
+    covariate_matrices: dict[str, np.ndarray],
+    config: "ResolvedForecastConfig",
+    uses_static_covariates: bool,
+    last_static_covariates_shape: tuple[int, int] | None,
+    num_samples: int,
+    lag_data: tuple[
+        dict[str, list[int]],
+        dict[str, dict[str, list[int]]],
+        dict[str, np.ndarray],
+    ]
+    | None = None,
+) -> LaggedFeatures:
+    """Extract lagged data from target, past covariates and future covariates for auto-regression
+    with SKLearnModels.
+
+    The features are returned as a :class:`LaggedFeatures` container so the model wrapper can route
+    them per forecast horizon without knowing whether they were built from a tabular window or from
+    the autoregression matrices.
+    """
+    series_length = len(target_series)
+    shift = config.strategy.feature_lag_offset
+    lags, component_lags, relative_cov_lags = (
+        lag_data if lag_data is not None else _resolve_autoregression_lags(config)
+    )
 
     X = []
     for series_type in ["target", "past", "future"]:
