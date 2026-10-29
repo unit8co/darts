@@ -1,4 +1,6 @@
+import logging
 import sys
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -81,6 +83,59 @@ class TestTimeSeries:
         assert tests[1][0]["ssr_ftest"][1] > 0.99
         tests = granger_causality_tests(series_cause_2, series_effect_2, 10)
         assert tests[1][0]["ssr_ftest"][1] > 0.01
+
+    def test_granger_causality_check_stationarity(self, caplog):
+        np.random.seed(42)
+        non_stat_series = linear_timeseries(start=0, end=500)
+        stat_series = gaussian_timeseries(start=0, end=500)
+
+        # Default check_stationarity=True logs warning for non-stationary ts_cause
+        with caplog.at_level(logging.WARNING):
+            res_default = granger_causality_tests(
+                non_stat_series, stat_series, maxlag=2
+            )
+            assert "ts_cause doesn't seem to be stationary" in caplog.text
+        caplog.clear()
+
+        # check_stationarity=False does not log stationarity warning
+        with caplog.at_level(logging.WARNING):
+            res_no_check = granger_causality_tests(
+                non_stat_series, stat_series, maxlag=2, check_stationarity=False
+            )
+            assert "ts_cause doesn't seem to be stationary" not in caplog.text
+            assert "ts_effect doesn't seem to be stationary" not in caplog.text
+        caplog.clear()
+
+        # Both return identical test statistics
+        assert res_default.keys() == res_no_check.keys()
+        for lag in res_default:
+            assert np.isclose(
+                res_default[lag][0]["ssr_ftest"][0],
+                res_no_check[lag][0]["ssr_ftest"][0],
+            )
+            assert np.isclose(
+                res_default[lag][0]["ssr_ftest"][1],
+                res_no_check[lag][0]["ssr_ftest"][1],
+            )
+
+        # Supports iterable maxlag
+        res_iterable_lag = granger_causality_tests(
+            stat_series, stat_series, maxlag=[1, 2], check_stationarity=False
+        )
+        assert list(res_iterable_lag.keys()) == [1, 2]
+
+        # check_stationarity=False avoids InterpolationWarning from KPSS
+        with warnings.catch_warnings(record=True) as recorded_warnings:
+            warnings.simplefilter("always")
+            granger_causality_tests(
+                stat_series, stat_series, maxlag=2, check_stationarity=False
+            )
+            interp_warns = [
+                w
+                for w in recorded_warnings
+                if "InterpolationWarning" in str(w.category.__name__)
+            ]
+            assert len(interp_warns) == 0
 
     def test_stationarity_tests(self):
         np.random.seed(42)
