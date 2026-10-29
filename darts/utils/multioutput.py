@@ -25,6 +25,18 @@ from darts.utils.output_chunk import OutputChunkStrategy
 from darts.utils.utils import ModelType
 
 
+def _as_base_array(features):
+    """Return a zero-copy base ``np.ndarray`` view for scikit-learn estimators.
+
+    Feature containers are ``np.ndarray`` subclasses that carry horizon metadata. Once the
+    horizon is materialized the metadata is no longer needed, and scikit-learn's validation
+    has measurable overhead on subclasses.
+    """
+    if isinstance(features, np.ndarray) and type(features) is not np.ndarray:
+        return features.view(np.ndarray)
+    return features
+
+
 class MultiOutputMixin:
     """
     Mixin for :class:`sklearn.utils.multioutput._MultiOutputEstimator` with a modified ``fit()`` method that also slices
@@ -215,10 +227,11 @@ class MultiOutputMixin:
         n_components: int | None,
     ):
         if strategy is None:
-            return features
+            return _as_base_array(features)
         horizon = strategy.horizon_of(output_idx, n_components)
         horizon_fn = getattr(features, "horizon", None)
-        return horizon_fn(horizon) if callable(horizon_fn) else features
+        features = horizon_fn(horizon) if callable(horizon_fn) else features
+        return _as_base_array(features)
 
     def _predict(self, X):
         """Predict multi-output targets using the estimator of each horizon."""
@@ -230,7 +243,7 @@ class MultiOutputMixin:
 
         strategy = getattr(self, "strategy_", None)
         if strategy is None:
-            return super().predict(X)
+            return super().predict(_as_base_array(X))
         return self._predict_per_output(X, method="predict", stack=True)
 
     def _predict_per_output(self, X, *, method: str, stack: bool):
@@ -289,7 +302,7 @@ class MultiOutputClassifier(MultiOutputMixin, sk_MultiOutputClassifier):
         check_is_fitted(self)
         strategy = getattr(self, "strategy_", None)
         if strategy is None:
-            return super().predict_proba(X)
+            return super().predict_proba(_as_base_array(X))
         return self._predict_per_output(X, method="predict_proba", stack=False)
 
 

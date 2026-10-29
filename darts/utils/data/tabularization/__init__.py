@@ -19,6 +19,7 @@ from darts.utils.data.tabularization.tabularization import (
     _get_feature_times,
     _get_shared_times,
     _get_shared_times_bounds,
+    _resolve_autoregression_lags,
     _strided_moving_window,
 )
 
@@ -34,5 +35,6 @@ __all__ = [
     "_get_feature_times",
     "_get_shared_times",
     "_get_shared_times_bounds",
+    "_resolve_autoregression_lags",
     "_strided_moving_window",
 ]
