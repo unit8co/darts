@@ -22,6 +22,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `SKLearnModel` raising an uninformative `IndexError` at creation when `lags`, `lags_past_covariates` or `lags_future_covariates` (or one of their component-specific entries) was an empty list. A `ValueError` explaining that at least one lag is required is now raised. [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [JuanCruzC97](https://github.com/JuanCruzC97).
 - Fixed `MIDAS` failing on short multivariate or probabilistic series when padding to a complete low-frequency period. [#3304](https://github.com/unit8co/darts/pull/3304) by [Aryan R. Ganjoo](https://github.com/AryanRG).
 - Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).
 - Fixed `SKLearnClassifierModel` models skipping class-label validation when fitting a series with more target components than `output_chunk_length`. Downstream probability prediction could then fail unexpectedly. [#3271](https://github.com/unit8co/darts/pull/3271) by [Zhe Chen](https://github.com/zhechen-cs).

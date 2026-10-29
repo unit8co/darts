@@ -359,9 +359,9 @@ class SKLearnModel(GlobalForecastingModel):
         legacy_lags: dict[str, list[int]] | None,
         legacy_component_lags: dict[str, dict[str, list[int]]] | None,
     ) -> ResolvedForecastConfig | None:
-        """Recover the resolved lags stored by a pre-R pickle.
+        """Recover the resolved lags of a model pickled with an earlier Darts version.
 
-        Older pickles stored ``lags``/``component_lags`` as instance state. The
+        Earlier versions stored ``lags``/``component_lags`` as instance state. The
         public views are gone now, so the fitted component mapping is converted
         into the resolved config that the rest of the model consumes.
         """
