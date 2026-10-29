@@ -200,6 +200,23 @@ class TestTorchLikelihoodModel:
         target = torch.tensor([0.0, 3.0, 60.0, 2e4], dtype=torch.float64)
         assert torch.isfinite(distr.log_prob(target)).all()
 
+    @pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+    @pytest.mark.parametrize(
+        "raw_mu,raw_alpha", [(-1000.0, 1.0), (1.0, -1000.0), (-1000.0, -1000.0)]
+    )
+    def test_negative_binomial_softplus_underflow(self, dtype, raw_mu, raw_alpha):
+        # softplus underflows to 0 for raw outputs this negative; training must not get a NaN loss or gradient
+        likelihood = NegativeBinomialLikelihood()
+        model_output = torch.tensor([raw_mu, raw_alpha], dtype=dtype).repeat(1, 3, 1, 1)
+        model_output.requires_grad_()
+        target = torch.tensor([0.0, 1.0, 3000.0], dtype=dtype).reshape(1, 3, 1)
+
+        loss = likelihood.compute_loss(model_output, target, None)
+        loss.backward()
+        assert torch.isfinite(loss)
+        assert torch.isfinite(model_output.grad).all()
+        assert torch.isfinite(likelihood.sample(model_output.detach())).all()
+
 
 class TestTorchLikelihoodInputValidation:
     def test_gaussian_negative_prior_mu(self):
