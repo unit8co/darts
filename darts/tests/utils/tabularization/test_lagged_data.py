@@ -3,16 +3,14 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.utils.data.tabularization import (
-    create_lagged_data,
-    create_lagged_prediction_data,
-    create_lagged_training_data,
-)
 from darts.utils.data.tabularization.data import LaggedData
 from darts.utils.data.tabularization.features import ArrayLaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_data,
     _create_lagged_data_autoregression,
     _create_lagged_data_from_config,
+    _create_lagged_prediction_data,
+    _create_lagged_training_data,
 )
 from darts.utils.forecast_config import ForecastConfig
 
@@ -115,7 +113,7 @@ def config_for(
 @pytest.mark.parametrize("output_chunk_shift", [0, 2])
 @pytest.mark.parametrize("concatenate", [True, False])
 @pytest.mark.parametrize("with_static", [False, True])
-def test_training_data_from_config_matches_public_wrapper(
+def test_training_data_from_config_matches_legacy_wrapper(
     multi_models, component_specific, output_chunk_shift, concatenate, with_static
 ):
     target, past, future = make_series(static=with_static)
@@ -126,7 +124,7 @@ def test_training_data_from_config_matches_public_wrapper(
         future_components=future.components,
     )
 
-    expected = create_lagged_training_data(
+    expected = _create_lagged_training_data(
         target_series=target,
         past_covariates=past,
         future_covariates=future,
@@ -160,7 +158,7 @@ def test_training_data_from_config_matches_public_wrapper(
 
 @pytest.mark.parametrize("component_specific", [False, True])
 @pytest.mark.parametrize("concatenate", [True, False])
-def test_prediction_data_from_config_matches_public_wrapper(
+def test_prediction_data_from_config_matches_legacy_wrapper(
     component_specific, concatenate
 ):
     target, past, future = make_series()
@@ -171,7 +169,7 @@ def test_prediction_data_from_config_matches_public_wrapper(
         future_components=future.components,
     )
 
-    expected_X, expected_times = create_lagged_prediction_data(
+    expected_X, expected_times = _create_lagged_prediction_data(
         target_series=target,
         past_covariates=past,
         future_covariates=future,
@@ -219,7 +217,7 @@ def test_prediction_data_from_config_uses_output_chunk_shift():
         future_components=future.components,
     )
 
-    expected_X, _, expected_times, _, _ = create_lagged_data(
+    expected_X, _, expected_times, _, _ = _create_lagged_data(
         target_series=target,
         past_covariates=past,
         future_covariates=future,
@@ -261,7 +259,7 @@ def test_training_data_from_config_uses_resolved_output_chunk_shift():
         future_components=future.components,
     )
 
-    expected = create_lagged_training_data(
+    expected = _create_lagged_training_data(
         target_series=target,
         past_covariates=past,
         future_covariates=future,
@@ -297,7 +295,7 @@ def test_training_data_from_config_matches_intersection_path():
         future_components=future.components,
     )
 
-    expected = create_lagged_training_data(
+    expected = _create_lagged_training_data(
         target_series=target,
         past_covariates=past,
         future_covariates=future,
@@ -432,7 +430,7 @@ def test_from_config_expands_default_lags():
         future_components=future.components,
     )
 
-    expected = create_lagged_training_data(
+    expected = _create_lagged_training_data(
         target_series=target,
         past_covariates=past,
         future_covariates=future,

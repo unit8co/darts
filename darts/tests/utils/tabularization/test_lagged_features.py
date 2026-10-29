@@ -2,13 +2,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.utils.data.tabularization import (
+from darts.utils.data.tabularization.features import (
     ArrayLaggedFeatures,
-    add_static_covariates_to_lagged_data,
-    create_lagged_prediction_data,
-    create_lagged_training_data,
+    StepwiseLaggedFeatures,
 )
-from darts.utils.data.tabularization.features import StepwiseLaggedFeatures
+from darts.utils.data.tabularization.tabularization import (
+    _add_static_covariates_to_lagged_data,
+    _create_lagged_prediction_data,
+    _create_lagged_training_data,
+)
 from darts.utils.timeseries_generation import linear_timeseries
 
 
@@ -339,7 +341,7 @@ class TestTabularizationContainers:
 
     def test_training_data_returns_container(self):
         target = self.target()
-        features, labels, _, _, _ = create_lagged_training_data(
+        features, labels, _, _, _ = _create_lagged_training_data(
             target_series=target,
             output_chunk_length=4,
             output_chunk_shift=0,
@@ -357,7 +359,7 @@ class TestTabularizationContainers:
 
     def test_recursive_training_data_has_one_horizon(self):
         target = self.target()
-        features, _, _, _, _ = create_lagged_training_data(
+        features, _, _, _, _ = _create_lagged_training_data(
             target_series=target,
             output_chunk_length=4,
             output_chunk_shift=0,
@@ -371,7 +373,7 @@ class TestTabularizationContainers:
 
     def test_sequence_without_concatenation(self):
         target = self.target()
-        features, _, _, _, _ = create_lagged_training_data(
+        features, _, _, _, _ = _create_lagged_training_data(
             target_series=[target, target],
             output_chunk_length=3,
             output_chunk_shift=0,
@@ -387,7 +389,7 @@ class TestTabularizationContainers:
 
     def test_prediction_data_returns_container(self):
         target = self.target()
-        features, _ = create_lagged_prediction_data(
+        features, _ = _create_lagged_prediction_data(
             target_series=target,
             lags=[-2, -1],
             uses_static_covariates=False,
@@ -402,7 +404,7 @@ class TestTabularizationContainers:
         static = pd.DataFrame({"sc1": [1.0], "sc2": [2.0]}, index=target.columns)
         target = target.with_static_covariates(static)
 
-        features, _, _, static_shape, _ = create_lagged_training_data(
+        features, _, _, static_shape, _ = _create_lagged_training_data(
             target_series=target,
             output_chunk_length=2,
             output_chunk_shift=0,
@@ -420,7 +422,7 @@ class TestTabularizationContainers:
 
     def test_add_static_covariates_preserves_container(self):
         target = self.target()
-        features, _, _, _, _ = create_lagged_training_data(
+        features, _, _, _, _ = _create_lagged_training_data(
             target_series=target,
             output_chunk_length=3,
             output_chunk_shift=0,
@@ -430,7 +432,7 @@ class TestTabularizationContainers:
         static = pd.DataFrame({"sc": [5.0]}, index=target.columns)
         target = target.with_static_covariates(static)
 
-        features_with_static, static_shape = add_static_covariates_to_lagged_data(
+        features_with_static, static_shape = _add_static_covariates_to_lagged_data(
             features=features,
             target_series=target,
             uses_static_covariates=True,
@@ -451,7 +453,7 @@ class TestTabularizationContainers:
         static = pd.DataFrame({"sc": [5.0]}, index=target.columns)
         target = target.with_static_covariates(static)
 
-        features_with_static, static_shape = add_static_covariates_to_lagged_data(
+        features_with_static, static_shape = _add_static_covariates_to_lagged_data(
             features=features,
             target_series=target,
             uses_static_covariates=True,
@@ -474,7 +476,7 @@ class TestTabularizationContainers:
         static = pd.DataFrame({"sc": [5.0]}, index=target.columns)
         target = target.with_static_covariates(static)
 
-        features_with_static, _ = add_static_covariates_to_lagged_data(
+        features_with_static, _ = _add_static_covariates_to_lagged_data(
             features=features,
             target_series=target,
             uses_static_covariates=True,
@@ -487,7 +489,7 @@ class TestTabularizationContainers:
         features = ArrayLaggedFeatures(np.zeros((4, 2)), n_horizons=2)
         target = self.target()
 
-        returned, _ = add_static_covariates_to_lagged_data(
+        returned, _ = _add_static_covariates_to_lagged_data(
             features=features,
             target_series=target,
             uses_static_covariates=False,

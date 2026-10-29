@@ -37,7 +37,7 @@ class LaggedData:
     last_static_covariates_shape: tuple[int, int] | None = None
 
     def to_tuple(self):
-        """Return the historical positional tuple used by the public wrappers."""
+        """Return the historical positional tuple used by the private wrappers."""
         return (
             self.X,
             self.y,

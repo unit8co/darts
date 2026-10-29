@@ -15,7 +15,9 @@ from darts.explainability.shap_adapters.shap_adapter import (
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
-from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_prediction_data,
+)
 from darts.utils.multioutput import MultiOutputMixin
 
 logger = get_logger(__name__)
@@ -164,7 +166,7 @@ class SKLearnShapAdapter(ShapAdapter):
         lags_past_covariates_list = self.model._get_lags("past")
         lags_future_covariates_list = self.model._get_lags("future")
 
-        X, indexes = create_lagged_prediction_data(
+        X, indexes = _create_lagged_prediction_data(
             target_series=series if lags_list else None,
             past_covariates=past_covariates if lags_past_covariates_list else None,
             future_covariates=(
