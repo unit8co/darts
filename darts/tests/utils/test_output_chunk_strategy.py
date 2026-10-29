@@ -179,6 +179,23 @@ class TestRecursiveOutputStrategy:
             strategy.fit_order(4, 3)
 
 
+@pytest.mark.parametrize(
+    "strategy_cls", [DirectOutputStrategy, RecursiveOutputStrategy]
+)
+@pytest.mark.parametrize("bad_value", [1.5, True, "1"])
+def test_invalid_index_types(strategy_cls, bad_value):
+    strategy = strategy_cls(output_chunk_length=4)
+
+    with pytest.raises(ValueError):
+        strategy.n_outputs(bad_value)
+    with pytest.raises(ValueError):
+        strategy.estimator_index(bad_value, 0, 3)
+    with pytest.raises(ValueError):
+        strategy.estimator_index(0, bad_value, 3)
+    with pytest.raises(ValueError):
+        strategy.horizon_of(bad_value, 3)
+
+
 class TestDirRecOutputStrategy:
     def test_reserved_attributes(self):
         strategy = DirRecOutputStrategy(output_chunk_length=4)
