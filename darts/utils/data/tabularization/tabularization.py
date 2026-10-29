@@ -137,7 +137,7 @@ def _resolved_config_from_normalized_lags(
     )
 
 
-def create_lagged_data(
+def _create_lagged_data(
     target_series: TimeSeriesLike | None = None,
     past_covariates: TimeSeriesLike | None = None,
     future_covariates: TimeSeriesLike | None = None,
@@ -172,17 +172,17 @@ def create_lagged_data(
 
     Notes
     -----
-    Instead of calling `create_lagged_data` directly, it is instead recommended that:
+    Instead of calling `_create_lagged_data` directly, it is instead recommended that:
 
-    - `create_lagged_training_data` be called if one wishes to create the `X` and `y` arrays
+    - `_create_lagged_training_data` be called if one wishes to create the `X` and `y` arrays
       to train an `SKLearnModel`.
-    - `create_lagged_prediction_data` be called if one wishes to create the `X` array required
+    - `_create_lagged_prediction_data` be called if one wishes to create the `X` array required
       to generate a prediction from an already-trained `SKLearnModel`.
 
-    This is because even though both of these functions are merely wrappers around `create_lagged_data`, their
-    call signatures are more easily interpreted than `create_lagged_data`. For example,
-    `create_lagged_prediction_data` does not accept `output_chunk_length` nor `multi_models` as inputs, since
-    these inputs are not used when constructing prediction data. Similarly, `create_lagged_prediction_data`
+    This is because even though both of these functions are merely wrappers around `_create_lagged_data`, their
+    call signatures are more easily interpreted than `_create_lagged_data`. For example,
+    `_create_lagged_prediction_data` does not accept `output_chunk_length` nor `multi_models` as inputs, since
+    these inputs are not used when constructing prediction data. Similarly, `_create_lagged_prediction_data`
     returns only `X` and `times` as outputs, as opposed to returning `y` as `None` along with `X` and `times`.
 
     The `X` array is constructed from the lagged values of up to three separate timeseries:
@@ -239,9 +239,9 @@ def create_lagged_data(
     The exact method used to construct `X` and `y` depends on whether all specified timeseries are
     of the same frequency or not:
 
-    - If all specified timeseries are of the same frequency, `strided_moving_window` is used to extract
+    - If all specified timeseries are of the same frequency, `_strided_moving_window` is used to extract
       contiguous time blocks from each timeseries; the lagged variables are then extracted from each window.
-    - If all specified timeseries are *not* of the same frequency, then `find_shared_times` is first used
+    - If all specified timeseries are *not* of the same frequency, then `_get_shared_times` is first used
       to find those times common to all three timeseries, after which the lagged features are extracted by
       offsetting the time indices of these common times by the requested lags.
 
@@ -258,9 +258,9 @@ def create_lagged_data(
 
     If the provided series are stochastic (i.e. `series.n_components > 1`), then an `X` and `y` array will be
     constructed for each sample; the arrays corresponding to each sample are concatenated together along the `2`nd
-    axis of `X` and `y`. In other words, `create_lagged_data` is vectorized over the sample axis of the `target_series`,
-    `past_covariates`, and `future_covariates` inputs. Importantly, if stochastic series are provided, each series must
-    have the same number of samples, otherwise an error will be thrown.
+    axis of `X` and `y`. In other words, `_create_lagged_data` is vectorized over the sample axis of the
+    `target_series`, `past_covariates`, and `future_covariates` inputs. Importantly, if stochastic series are
+    provided, each series must have the same number of samples, otherwise an error will be thrown.
 
     Each series input (i.e. `target_series`, `past_covariates`, and `future_covariates`) can be specified either as
     a single `TimeSeries`, or as a `Sequence` of `TimeSeries`; the specified series must all be of the same type,
@@ -409,7 +409,7 @@ def create_lagged_data(
 
     See Also
     --------
-        tabularization.create_lagged_component_names : return the lagged features names as a list of strings.
+        tabularization._create_lagged_component_names : return the lagged features names as a list of strings.
 
     """
     if is_training and (target_series is None):
@@ -473,7 +473,7 @@ def _create_lagged_data_core(
     tuple[int, int] | None,
     ArrayOrArraySequence | None,
 ]:
-    """Config-driven implementation of :func:`create_lagged_data`."""
+    """Config-driven implementation of :func:`_create_lagged_data`."""
     if is_training and (target_series is None):
         raise_log(
             ValueError("Must specify `target_series` if `is_training = True`."),
@@ -574,7 +574,7 @@ def _create_lagged_data_core(
                 show_warnings=show_warnings,
             )
         X_i = ArrayLaggedFeatures.wrap(X_i, n_horizons=n_horizons)
-        X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
+        X_i, last_static_covariates_shape = _add_static_covariates_to_lagged_data(
             features=X_i,
             target_series=target_i,
             uses_static_covariates=uses_static_covariates,
@@ -665,7 +665,7 @@ def _create_lagged_data_from_config(
     )
 
 
-def create_lagged_training_data(
+def _create_lagged_training_data(
     target_series: TimeSeriesLike,
     output_chunk_length: int,
     output_chunk_shift: int,
@@ -696,8 +696,8 @@ def create_lagged_training_data(
 
     Notes
     -----
-    This function is simply a wrapper around `create_lagged_data`; for further details on the structure of `X`, please
-    refer to `help(create_lagged_data)`.
+    This function is simply a wrapper around `_create_lagged_data`; for further details on the structure of `X`, please
+    refer to `help(_create_lagged_data)`.
 
     Parameters
     ----------
@@ -809,7 +809,7 @@ def create_lagged_training_data(
         If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
         pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
     """
-    return create_lagged_data(
+    return _create_lagged_data(
         target_series=target_series,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
@@ -831,7 +831,7 @@ def create_lagged_training_data(
     )
 
 
-def create_lagged_prediction_data(
+def _create_lagged_prediction_data(
     target_series: TimeSeriesLike | None = None,
     past_covariates: TimeSeriesLike | None = None,
     future_covariates: TimeSeriesLike | None = None,
@@ -853,8 +853,8 @@ def create_lagged_prediction_data(
 
     Notes
     -----
-    This function is simply a wrapper around `create_lagged_data`; for further details on the structure of `X`, please
-    refer to `help(create_lagged_data)`.
+    This function is simply a wrapper around `_create_lagged_data`; for further details on the structure of `X`, please
+    refer to `help(_create_lagged_data)`.
 
     Parameters
     ----------
@@ -941,7 +941,7 @@ def create_lagged_prediction_data(
         If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
         pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
     """
-    X, _, times, _, _ = create_lagged_data(
+    X, _, times, _, _ = _create_lagged_data(
         target_series=target_series,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
@@ -961,7 +961,7 @@ def create_lagged_prediction_data(
     return X, times
 
 
-def add_static_covariates_to_lagged_data(
+def _add_static_covariates_to_lagged_data(
     features: np.ndarray | Sequence[np.ndarray],
     target_series: TimeSeriesLike,
     uses_static_covariates: bool = True,
@@ -1063,7 +1063,7 @@ def add_static_covariates_to_lagged_data(
     return features, last_shape
 
 
-def create_lagged_component_names(
+def _create_lagged_component_names(
     target_series: TimeSeriesLike | None = None,
     past_covariates: TimeSeriesLike | None = None,
     future_covariates: TimeSeriesLike | None = None,
@@ -1076,7 +1076,7 @@ def create_lagged_component_names(
 ) -> tuple[list[str], list[str]]:
     """
     Helper function called to retrieve the name of the features and labels arrays created with
-    `create_lagged_data()`. The order of the features is the following:
+    `_create_lagged_data()`. The order of the features is the following:
 
     Along the `n_lagged_features` axis, `X` has the following structure:
 
@@ -1144,16 +1144,16 @@ def create_lagged_component_names(
     Returns
     -------
     features_cols_name
-        The names of the lagged features in the `X` array generated by `create_lagged_data()`
+        The names of the lagged features in the `X` array generated by `_create_lagged_data()`
         as a `List[str]`. If `concatenate=True`, also contains the columns names for
         the `y` array (on the right).
     labels_cols_name
-        The names of the lagged features in the `y` array generated by `create_lagged_data()`
+        The names of the lagged features in the `y` array generated by `_create_lagged_data()`
          as a `List[str]`.
 
     See Also
     --------
-        tabularization.create_lagged_data : generate the lagged features and labels as (list of) Arrays.
+        tabularization._create_lagged_data : generate the lagged features and labels as (list of) Arrays.
     """
     target_series = series2seq(target_series)
     past_covariates = series2seq(past_covariates)
@@ -1281,8 +1281,8 @@ def _create_lagged_data_by_moving_window(
     show_warnings: bool = True,
 ) -> tuple[np.ndarray, np.ndarray | None, pd.Index, np.ndarray | None]:
     """
-    Helper function called by `create_lagged_data` that computes `X`, `y`, and `times` by
-    extracting 'moving windows' from each series using the `strided_moving_window`
+    Helper function called by `_create_lagged_data` that computes `X`, `y`, and `times` by
+    extracting 'moving windows' from each series using the `_strided_moving_window`
     function. More specifically, to extract the features of a particular series for an
     arbitrary time `t`, a 'window' between times `t - max_lag` and `t - min_lag` is
     extracted, where `max_lag` and `min_lag` are the largest and smallest magnitude lags
@@ -1328,7 +1328,7 @@ def _create_lagged_data_by_moving_window(
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
 
-    time_bounds = get_shared_times_bounds(*feature_times)
+    time_bounds = _get_shared_times_bounds(*feature_times)
     if time_bounds is None:
         raise_log(
             ValueError(
@@ -1389,7 +1389,7 @@ def _create_lagged_data_by_moving_window(
                 :,
                 :,
             ]
-            windows = strided_moving_window(
+            windows = _strided_moving_window(
                 x=vals, window_len=window_len, stride=stride, axis=0, check_inputs=False
             )
 
@@ -1433,7 +1433,7 @@ def _create_lagged_data_by_moving_window(
                 :,
                 :,
             ]
-            windows = strided_moving_window(
+            windows = _strided_moving_window(
                 x=vals,
                 window_len=output_chunk_length,
                 stride=stride,
@@ -1457,11 +1457,11 @@ def _extract_lagged_vals_from_windows(
 ) -> np.ndarray:
     """
     Helper function called by `_create_lagged_data_by_moving_window` that
-    reshapes the `windows` formed by `strided_moving_window` from the
+    reshapes the `windows` formed by `_strided_moving_window` from the
     shape `(num_windows, num_components, num_series, window_len)` to the
     shape `(num_windows, num_components * window_len, num_series)`. This reshaping
     is done such that the order of elements along axis 1 matches the pattern
-    described in the docstring of `create_lagged_data`.
+    described in the docstring of `_create_lagged_data`.
 
     If `lags_to_extract` is not specified, all values within each window is extracted.
     If `lags_to_extract` is specified as an np.ndarray, then only those values within each window that
@@ -1552,7 +1552,7 @@ def _create_lagged_data_by_intersecting_times(
                 ValueError("`stride` must be a positive integer greater than 0."),
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
-    shared_times = get_shared_times(*feature_times, sort=True)
+    shared_times = _get_shared_times(*feature_times, sort=True)
     if shared_times is None:
         raise_log(
             ValueError(
@@ -1728,7 +1728,7 @@ def _create_lagged_data_autoregression(
         # static covariates can be added to each block; valid since
         # each block contains same number of observations:
         X = np.split(X, series_length, axis=0)
-        X, _ = add_static_covariates_to_lagged_data(
+        X, _ = _add_static_covariates_to_lagged_data(
             features=X,
             target_series=target_series,
             uses_static_covariates=uses_static_covariates,
@@ -1805,7 +1805,7 @@ def _get_feature_times(
     """
     Returns a tuple containing the times in `target_series`, the times in `past_covariates`, and the times in
     `future_covariates` that *could* be used to create features. The returned tuple of times can then be passed
-    to `get_shared_times` to compute the 'eligible time points' shared by all specified series.
+    to `_get_shared_times` to compute the 'eligible time points' shared by all specified series.
 
     Notes
     -----
@@ -2040,7 +2040,7 @@ def _get_feature_times(
     )
 
 
-def get_shared_times(
+def _get_shared_times(
     *series_or_times: TimeSeries | pd.Index | None, sort: bool = True
 ) -> pd.Index:
     """
@@ -2113,7 +2113,7 @@ def get_shared_times(
     return shared_times
 
 
-def get_shared_times_bounds(
+def _get_shared_times_bounds(
     *series_or_times: Sequence[TimeSeries | pd.Index | None],
 ) -> tuple[pd.Index, pd.Index] | None:
     """
@@ -2123,7 +2123,7 @@ def get_shared_times_bounds(
 
     Notes
     -----
-    If all specified `series_or_times` are of the same frequency, then `get_shared_times_bounds`
+    If all specified `series_or_times` are of the same frequency, then `_get_shared_times_bounds`
     returns tight `bounds` (i.e. the earliest and latest time within the intersection of all the timeseries
     is returned). To see this, suppose we have three equal-frequency series with observations made at different
     times:
@@ -2199,7 +2199,7 @@ def get_shared_times_bounds(
     return bounds
 
 
-def strided_moving_window(
+def _strided_moving_window(
     x: np.ndarray,
     window_len: int,
     stride: int = 1,
@@ -2215,12 +2215,12 @@ def strided_moving_window(
     -----
     This function is similar to `sliding_window_view` in `np.lib.stride_tricks`, except that:
 
-    - `strided_moving_window` allows for consecutive windows to be separated by a specified `stride`,
+    - `_strided_moving_window` allows for consecutive windows to be separated by a specified `stride`,
       whilst `sliding_window_view` does not.
-    - `strided_moving_window` can only operate along a single axis, whereas `sliding_window_view` can
+    - `_strided_moving_window` can only operate along a single axis, whereas `sliding_window_view` can
       operate along multiple axes.
 
-    Additionally, unlike `sliding_window_view`, using `strided_moving_window` doesn't require `numpy >= 1.20.0`.
+    Additionally, unlike `sliding_window_view`, using `_strided_moving_window` doesn't require `numpy >= 1.20.0`.
 
     Parameters
     ----------

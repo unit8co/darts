@@ -8,7 +8,7 @@ import pytest
 from darts import TimeSeries
 from darts.logging import raise_log
 from darts.tests.parametrize_helpers import param_product
-from darts.utils.data.tabularization import _get_feature_times
+from darts.utils.data.tabularization.tabularization import _get_feature_times
 from darts.utils.timeseries_generation import linear_timeseries
 
 
@@ -23,7 +23,7 @@ class TestGetFeatureTimes:
         values to be effortlessly tested. The drawback of this, however, is that the correctness of these tests
         assumes that the simplified functions have been implemented correctly - if this isn't the case, then these
         tests are not to be trusted. In saying this, these simplified functions are significantly easier to
-        understand and debug than the `create_lagged_prediction_data` function they're helping to test.
+        understand and debug than the `_create_lagged_prediction_data` function they're helping to test.
         2. 'Specified Test Cases': these test that `_get_feature_times` returns an exactly specified output; these
         specified outputs are *not* 'generated' by another function. Although these 'specified' test cases tend to
         be simpler and less extensive than the 'generated' test cases, their correctness does not assume the correct

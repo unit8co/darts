@@ -71,12 +71,10 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_deprecation_warning, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike
-from darts.utils.data.tabularization import (
-    _create_lagged_data_autoregression,
-    create_lagged_component_names,
-)
 from darts.utils.data.tabularization.lags import ResolvedLagConfig
 from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_component_names,
+    _create_lagged_data_autoregression,
     _create_lagged_data_from_config,
 )
 from darts.utils.forecast_config import ForecastConfig, ResolvedForecastConfig
@@ -892,7 +890,7 @@ class SKLearnModel(GlobalForecastingModel):
 
         # generate and store the lagged components names (for feature importance analysis)
         self._lagged_feature_names, self._lagged_label_names = (
-            create_lagged_component_names(
+            _create_lagged_component_names(
                 target_series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
@@ -1755,7 +1753,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
 
         Steps:
         1. Get the list of features used in the model. We keep the creation order of the different lags/features
-            in create_lagged_data.
+            in the tabularization core.
         2. Get the indices of the categorical features in the list of features.
         """
         target_ts = get_single_series(series)
