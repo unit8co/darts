@@ -310,17 +310,15 @@ class TestZeroInflatedDistribution:
 
     def test_sample_zero_fraction(self):
         torch.manual_seed(42)
-        rate = torch.full((20000,), 3.0)
+        p_0, lmbda = 0.5, 3.0
+        rate = torch.full((20000,), lmbda)
         distr = _ZeroInflatedDistribution(
-            torch.distributions.Poisson(rate), torch.full((20000,), 0.5)
+            torch.distributions.Poisson(rate), torch.full((20000,), p_0)
         )
         zero_fraction = (distr.sample() == 0).float().mean()
-        expected = 0.5 + 0.5 * torch.exp(torch.tensor(-3.0))
+        # ZI-poisson: zero probability = p_0 + (1 - p_0) e**(-lamdba)
+        expected = p_0 + p_0 * torch.exp(torch.tensor(-lmbda))
         assert abs(zero_fraction - expected) < 0.01
-
-    def test_accepts_python_float_gate(self):
-        distr = _ZeroInflatedDistribution(torch.distributions.Poisson(5.0), 0.5)
-        assert distr.sample((3, 2)).shape == (3, 2)
 
 
 class TestZeroInflatedLikelihood:

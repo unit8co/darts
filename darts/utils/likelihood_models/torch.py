@@ -1322,7 +1322,7 @@ class _ZeroInflatedDistribution(torch.distributions.Distribution):
     def __init__(
         self,
         base_distr: torch.distributions.Distribution,
-        gate: torch.Tensor | float,
+        gate: torch.Tensor,
     ):
         """Zero-inflated version of a univariate distribution `base_distr`.
 
@@ -1330,9 +1330,6 @@ class _ZeroInflatedDistribution(torch.distributions.Distribution):
         distributions, zeros can come from both components. For continuous distributions, zeros only come from
         the gate (hurdle model), and `log_prob()` combines the probability mass at zero with the density elsewhere.
         """
-        gate = torch.as_tensor(gate, device=base_distr.mean.device)
-        if not gate.is_floating_point():
-            gate = gate.to(torch.get_default_dtype())
         eps = torch.finfo(gate.dtype).eps
         self.base_distr = base_distr
         self.gate = gate.clamp(eps, 1.0 - eps)
