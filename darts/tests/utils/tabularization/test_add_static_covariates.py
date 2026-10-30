@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.utils.data.tabularization import add_static_covariates_to_lagged_data
+from darts.utils.data.tabularization.tabularization import (
+    _add_static_covariates_to_lagged_data,
+)
 from darts.utils.timeseries_generation import linear_timeseries
 
 
@@ -24,7 +26,7 @@ class TestAddStaticToLaggedData:
         # training when `last_shape=None`
 
         # does not use static covariates -> input = output
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             copy.deepcopy(self.features),
             self.series,
             uses_static_covariates=False,
@@ -35,7 +37,7 @@ class TestAddStaticToLaggedData:
 
         with pytest.raises(ValueError):
             # use static covariates enforces that series have matching static covs
-            add_static_covariates_to_lagged_data(
+            _add_static_covariates_to_lagged_data(
                 copy.deepcopy(self.features),
                 self.series,
                 uses_static_covariates=True,
@@ -44,7 +46,7 @@ class TestAddStaticToLaggedData:
 
         with pytest.raises(ValueError):
             # some series with static covs, other without should raise an error
-            add_static_covariates_to_lagged_data(
+            _add_static_covariates_to_lagged_data(
                 [copy.deepcopy(self.features), copy.deepcopy(self.features)],
                 [self.series, self.series_stcov_single],
                 uses_static_covariates=True,
@@ -53,7 +55,7 @@ class TestAddStaticToLaggedData:
 
         with pytest.raises(ValueError):
             # mismatching static covs should raise an error
-            add_static_covariates_to_lagged_data(
+            _add_static_covariates_to_lagged_data(
                 [copy.deepcopy(self.features), copy.deepcopy(self.features)],
                 [self.series_stcov_single, self.series_stcov_multi],
                 uses_static_covariates=True,
@@ -62,7 +64,7 @@ class TestAddStaticToLaggedData:
 
         # single static cov should yield one added column
         expected_shape = (self.features.shape[0], self.features.shape[1] + 1)
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             copy.deepcopy(self.features),
             self.series_stcov_single,
             uses_static_covariates=True,
@@ -73,7 +75,7 @@ class TestAddStaticToLaggedData:
 
         # multi static cov should yield two added columns
         expected_shape = (self.features.shape[0], self.features.shape[1] + 2)
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             copy.deepcopy(self.features),
             self.series_stcov_multi,
             uses_static_covariates=True,
@@ -84,7 +86,7 @@ class TestAddStaticToLaggedData:
 
         # multivariate static cov should yield four added columns
         expected_shape = (self.features.shape[0], self.features.shape[1] + 4)
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             copy.deepcopy(self.features),
             self.series_stcov_multivar,
             uses_static_covariates=True,
@@ -95,7 +97,7 @@ class TestAddStaticToLaggedData:
 
         # multi series with multivariate static cov should yield four added columns per series
         expected_shape = (self.features.shape[0], self.features.shape[1] + 4)
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             [copy.deepcopy(self.features), copy.deepcopy(self.features)],
             [self.series_stcov_multivar, self.series_stcov_multivar],
             uses_static_covariates=True,
@@ -111,7 +113,7 @@ class TestAddStaticToLaggedData:
         # predicting when `last_shape` other than `None`
 
         # does not use static covariates -> input = output
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             copy.deepcopy(self.features),
             self.series,
             uses_static_covariates=False,
@@ -122,7 +124,7 @@ class TestAddStaticToLaggedData:
 
         with pytest.raises(ValueError):
             # last static cov shape is given, but no covariates are available
-            add_static_covariates_to_lagged_data(
+            _add_static_covariates_to_lagged_data(
                 copy.deepcopy(self.features),
                 self.series,
                 uses_static_covariates=True,
@@ -131,7 +133,7 @@ class TestAddStaticToLaggedData:
 
         with pytest.raises(ValueError):
             # when last static cov shape is other than current one, raise an error
-            add_static_covariates_to_lagged_data(
+            _add_static_covariates_to_lagged_data(
                 copy.deepcopy(self.features),
                 self.series_stcov_single,
                 uses_static_covariates=True,
@@ -140,7 +142,7 @@ class TestAddStaticToLaggedData:
 
         # single static cov should yield one added column
         expected_shape = (self.features.shape[0], self.features.shape[1] + 1)
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             copy.deepcopy(self.features),
             self.series_stcov_single,
             uses_static_covariates=True,
@@ -151,7 +153,7 @@ class TestAddStaticToLaggedData:
 
         # multi static cov should yield two added columns
         expected_shape = (self.features.shape[0], self.features.shape[1] + 2)
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             copy.deepcopy(self.features),
             self.series_stcov_multi,
             uses_static_covariates=True,
@@ -162,7 +164,7 @@ class TestAddStaticToLaggedData:
 
         # multivariate static cov should yield four added columns
         expected_shape = (self.features.shape[0], self.features.shape[1] + 4)
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             copy.deepcopy(self.features),
             self.series_stcov_multivar,
             uses_static_covariates=True,
@@ -173,7 +175,7 @@ class TestAddStaticToLaggedData:
 
         # multi series with multivariate static cov should yield four added columns per series
         expected_shape = (self.features.shape[0], self.features.shape[1] + 4)
-        features, last_shape = add_static_covariates_to_lagged_data(
+        features, last_shape = _add_static_covariates_to_lagged_data(
             [copy.deepcopy(self.features), copy.deepcopy(self.features)],
             [self.series_stcov_multivar, self.series_stcov_multivar],
             uses_static_covariates=True,
