@@ -32,6 +32,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed `ConformalNaiveModel` and `ConformalQRModel` accepting classification models (e.g. `SKLearnClassifierModel`), which resulted in meaningless intervals around the predicted class labels. A `ValueError` is now raised, since conformal models only support regression models. [#3282](https://github.com/unit8co/darts/pull/3282) by [Shiven Aggarwal](https://github.com/shivenaggarwal).
 - Fixed `ForecastingModel.historical_forecasts()` with `retrain=True` mutating caller-provided `Pipeline` instances under `data_transformers`. [#3312](https://github.com/unit8co/darts/pull/3312) by [Pallav Biyala](https://github.com/Pallav-Biyala).
 - Fixed `darts.logging.SuppressStdoutStderr` (used to suppress `Prophet` fit output) permanently redirecting the process-level stdout and stderr to `devnull` when contexts were used at the same time, and crashing in interpreters without usable standard streams (e.g. `pythonw` on Windows). [#3290](https://github.com/unit8co/darts/pull/3290) by [Manas Choksi](https://github.com/choksi2212).
+- Fixed two error messages that showed raw placeholders: `generate_index()` printed `Observed parameters: {constructors}` instead of the parameters it received, and the fallback in `darts.utils.likelihood_models.sklearn` printed `{likelihood}`. [#3211](https://github.com/unit8co/darts/pull/3211) by [Yanze (David) Wu](https://github.com/David-Wu1119).
 
 **Dependencies**
 
