@@ -143,9 +143,9 @@ def extract_trend_and_seasonality(
     model: SeasonalityMode | ModelMode = ModelMode.MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
-) -> tuple[TimeSeries, TimeSeries]:
+) -> tuple[TimeSeries, TimeSeries, TimeSeries]:
     """
-    Extracts trend and seasonality from a TimeSeries instance using `statsmodels.tsa`.
+    Extracts trend, seasonality and residual from a TimeSeries instance using `statsmodels.tsa`.
 
     Parameters
     ----------
@@ -169,8 +169,8 @@ def extract_trend_and_seasonality(
 
     Returns
     -------
-    Tuple[TimeSeries, TimeSeries]
-        A tuple of (trend, seasonal) time series.
+    Tuple[TimeSeries, TimeSeries, TimeSeries]
+        A tuple of (trend, seasonal, residual) time series.
 
     References
     ----------
@@ -260,7 +260,14 @@ def extract_trend_and_seasonality(
         copy=False,
         **ts._attrs,
     )
-    return trend, season
+    residual = TimeSeries(
+        times=ts.time_index,
+        values=decomp.trend,
+        components=ts.components,
+        copy=False,
+        **ts._attrs,
+    )
+    return trend, season, residual
 
 
 def remove_from_series(
@@ -356,7 +363,7 @@ def remove_seasonality(
             ),
         )
 
-    _, seasonality = extract_trend_and_seasonality(ts, freq, model, method, **kwargs)
+    _, seasonality, _ = extract_trend_and_seasonality(ts, freq, model, method, **kwargs)
     new_ts = remove_from_series(ts, seasonality, model)
     return new_ts
 
@@ -406,7 +413,7 @@ def remove_trend(
                 f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}."
             ),
         )
-    trend, _ = extract_trend_and_seasonality(ts, model=model, method=method, **kwargs)
+    trend, *_ = extract_trend_and_seasonality(ts, model=model, method=method, **kwargs)
     new_ts = remove_from_series(ts, trend, model)
     return new_ts
 

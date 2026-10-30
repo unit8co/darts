@@ -128,7 +128,7 @@ class Theta(LocalForecastingModel):
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(
+            _, self.seasonality, _ = extract_trend_and_seasonality(
                 ts, self.season_period, model=self.season_mode
             )
             new_ts = remove_from_series(ts, self.seasonality, model=self.season_mode)
@@ -351,7 +351,7 @@ class FourTheta(LocalForecastingModel):
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(
+            _, self.seasonality, _ = extract_trend_and_seasonality(
                 new_ts, self.season_period, model=self.season_mode
             )
             new_ts = remove_from_series(

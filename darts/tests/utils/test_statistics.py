@@ -125,26 +125,26 @@ class TestSeasonalDecompose:
     def test_extract(self):
         series_copy = self.ts.copy()
         # test default (naive) method
-        calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6)
+        calc_trend, *_ = extract_trend_and_seasonality(self.ts, freq=6)
         diff = self.trend - calc_trend
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test default (naive) method additive
-        calc_trend, _ = extract_trend_and_seasonality(
+        calc_trend, *_ = extract_trend_and_seasonality(
             self.ts, freq=6, model=ModelMode.ADDITIVE
         )
         diff = self.trend - calc_trend
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test STL method
-        calc_trend, _ = extract_trend_and_seasonality(
+        calc_trend, *_ = extract_trend_and_seasonality(
             self.ts, freq=6, method="STL", model=ModelMode.ADDITIVE
         )
         diff = self.trend - calc_trend
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test MSTL method
-        calc_trend, calc_seasonality = extract_trend_and_seasonality(
+        calc_trend, calc_seasonality, _ = extract_trend_and_seasonality(
             self.ts, freq=[3, 6], method="MSTL", model=ModelMode.ADDITIVE
         )
         assert len(calc_seasonality.components) == 2
@@ -155,7 +155,7 @@ class TestSeasonalDecompose:
         assert np.isclose(np.mean(diff.values() ** 2), 0.0, atol=1e-5)
 
         # test MSTL method with single freq
-        calc_trend, calc_seasonality = extract_trend_and_seasonality(
+        calc_trend, calc_seasonality, _ = extract_trend_and_seasonality(
             self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
         )
         assert len(calc_seasonality.components) == 1
@@ -164,18 +164,18 @@ class TestSeasonalDecompose:
 
         # make sure non MSTL methods fail with multiple freqs
         with pytest.raises(ValueError):
-            calc_trend, calc_seasonality = extract_trend_and_seasonality(
+            calc_trend, calc_seasonality, _ = extract_trend_and_seasonality(
                 self.ts, freq=[1, 4, 6], method="STL", model=ModelMode.ADDITIVE
             )
 
         # check if error is raised when using multiplicative model
         with pytest.raises(ValueError):
-            calc_trend, _ = extract_trend_and_seasonality(
+            calc_trend, *_ = extract_trend_and_seasonality(
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
             )
 
         with pytest.raises(ValueError):
-            calc_trend, _ = extract_trend_and_seasonality(
+            calc_trend, *_ = extract_trend_and_seasonality(
                 self.ts, freq=[3, 6], method="MSTL", model=ModelMode.MULTIPLICATIVE
             )
 
