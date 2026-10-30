@@ -17,6 +17,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `__pow__` now supports raising to negative powers (as series, arrays or scalars). E.g. `series ** (-2)`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
   - `__truediv__` now supports dividing by zeros (as series, arrays or scalars). E.g. `series / 0.`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
   - Added a warning when calling `values()` on stochastic series without specifying a sample. [#3307](https://github.com/unit8co/darts/pull/3307) by [Pallav Biyala](https://github.com/Pallav-Biyala).
+- Added parameter `return_residual` to `darts.utils.statistics.extract_trend_and_seasonality()` to optionally return the residual component as a third time series. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
+- 🔴 Removed enums ``ModelMode``, ``SeasonalityMode``, and ``TrendMode`` from `darts.utils.utils` in favor of string literals. E.g. pass `seasonal="additive` instead of `seasonal=SeasonalityMode.ADDITIVE`. Affected parts are listed below. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
+  - ExponentialSmoothing parameters `trend` and `seasonal`.
+  - Theta and FourTheta parameters `season_mode`, `model_mode`, `trend_mode`.
+  - `darts.utils.statistics` parameter `model`.
 
 **Fixed**
 

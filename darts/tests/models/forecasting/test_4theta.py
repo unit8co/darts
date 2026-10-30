@@ -1,48 +1,46 @@
+import json
 import random
-import sys
 
 import numpy as np
 import pytest
 
 from darts.metrics import mape
 from darts.models import FourTheta, Theta
+from darts.utils._modes import ADDITIVE, EXPONENTIAL, LINEAR, MULTIPLICATIVE
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
 from darts.utils.timeseries_generation import sine_timeseries as st
-from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
-
-py_312_or_higher = sys.version_info >= (3, 12, 0)
 
 
 class TestFourTheta:
     def test_input(self):
         with pytest.raises(ValueError):
-            FourTheta(model_mode=SeasonalityMode.ADDITIVE)
+            FourTheta(model_mode=LINEAR)
         with pytest.raises(ValueError):
-            FourTheta(season_mode=ModelMode.ADDITIVE)
-        with pytest.raises((ValueError, TypeError)):
-            FourTheta(trend_mode="linear")
+            FourTheta(season_mode=EXPONENTIAL)
+        with pytest.raises(ValueError):
+            FourTheta(trend_mode="invalid")
+
+    def test_model_params_json_serializable(self):
+        model = Theta(2, 12, season_mode=ADDITIVE)
+        params = json.loads(json.dumps(dict(model.model_params)))
+        assert Theta(**params).model_params == model.model_params
 
     def test_negative_series(self):
         sine_series = st(length=50)
         model = FourTheta(
-            model_mode=ModelMode.MULTIPLICATIVE,
-            trend_mode=TrendMode.EXPONENTIAL,
-            season_mode=SeasonalityMode.ADDITIVE,
+            model_mode=MULTIPLICATIVE,
+            trend_mode=EXPONENTIAL,
+            season_mode=ADDITIVE,
             normalization=False,
         )
         model.fit(sine_series)
-        assert (
-            model.model_mode is ModelMode.ADDITIVE
-            and model.trend_mode is TrendMode.LINEAR
-        )
+        assert model.model_mode == ADDITIVE and model.trend_mode == LINEAR
 
     def test_zero_mean(self):
         sine_series = st(length=50)
         with pytest.raises(ValueError):
-            model = FourTheta(
-                model_mode=ModelMode.MULTIPLICATIVE, trend_mode=TrendMode.EXPONENTIAL
-            )
+            model = FourTheta(model_mode=MULTIPLICATIVE, trend_mode=EXPONENTIAL)
             model.fit(sine_series)
 
     def test_theta(self):
@@ -68,9 +66,9 @@ class TestFourTheta:
         best_model, _, _ = FourTheta.select_best_model(train_series, thetas)
         model = FourTheta(
             random.choice(thetas),
-            model_mode=random.choice(list(ModelMode)),
-            trend_mode=random.choice(list(TrendMode)),
-            season_mode=random.choice(list(SeasonalityMode)),
+            model_mode=random.choice([ADDITIVE, MULTIPLICATIVE]),
+            trend_mode=random.choice([LINEAR, EXPONENTIAL]),
+            season_mode=random.choice([ADDITIVE, MULTIPLICATIVE, None]),
         )
         model.fit(train_series)
         best_model.fit(train_series)
@@ -81,14 +79,14 @@ class TestFourTheta:
     def test_min_train_series_length_with_seasonality(self):
         seasonality_period = 12
         fourtheta = FourTheta(
-            model_mode=ModelMode.MULTIPLICATIVE,
-            trend_mode=TrendMode.EXPONENTIAL,
-            season_mode=SeasonalityMode.ADDITIVE,
+            model_mode=MULTIPLICATIVE,
+            trend_mode=EXPONENTIAL,
+            season_mode=ADDITIVE,
             seasonality_period=seasonality_period,
             normalization=False,
         )
         theta = Theta(
-            season_mode=SeasonalityMode.ADDITIVE,
+            season_mode=ADDITIVE,
             seasonality_period=seasonality_period,
         )
         assert fourtheta.min_train_series_length == 2 * seasonality_period
@@ -96,14 +94,14 @@ class TestFourTheta:
 
     def test_min_train_series_length_without_seasonality(self):
         fourtheta = FourTheta(
-            model_mode=ModelMode.MULTIPLICATIVE,
-            trend_mode=TrendMode.EXPONENTIAL,
-            season_mode=SeasonalityMode.ADDITIVE,
+            model_mode=MULTIPLICATIVE,
+            trend_mode=EXPONENTIAL,
+            season_mode=ADDITIVE,
             seasonality_period=None,
             normalization=False,
         )
         theta = Theta(
-            season_mode=SeasonalityMode.ADDITIVE,
+            season_mode=ADDITIVE,
             seasonality_period=None,
         )
         assert fourtheta.min_train_series_length == 3
@@ -113,15 +111,15 @@ class TestFourTheta:
         sine_series = st(length=21, freq="MS")
         with pytest.raises(ValueError):
             fourtheta = FourTheta(
-                model_mode=ModelMode.MULTIPLICATIVE,
-                trend_mode=TrendMode.EXPONENTIAL,
-                season_mode=SeasonalityMode.ADDITIVE,
+                model_mode=MULTIPLICATIVE,
+                trend_mode=EXPONENTIAL,
+                season_mode=ADDITIVE,
                 seasonality_period=12,
             )
             fourtheta.fit(sine_series)
         with pytest.raises(ValueError):
             theta = Theta(
-                season_mode=SeasonalityMode.ADDITIVE,
+                season_mode=ADDITIVE,
                 seasonality_period=12,
             )
             theta.fit(sine_series)
@@ -129,13 +127,7 @@ class TestFourTheta:
 
 class TestThetaInputValidation:
     def test_invalid_season_mode(self):
-        if py_312_or_higher:
-            exc = ValueError
-            msg = "Unknown value for season_mode"
-        else:
-            exc = TypeError
-            msg = None
-        with pytest.raises(exc, match=msg):
+        with pytest.raises(ValueError, match="Unknown value for `season_mode`"):
             Theta(season_mode="invalid")
 
     def test_zero_theta(self):

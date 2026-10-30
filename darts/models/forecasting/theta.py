@@ -4,6 +4,7 @@ Theta Method
 """
 
 import math
+from typing import Literal
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -11,12 +12,18 @@ import statsmodels.tsa.holtwinters as hw
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
+from darts.utils._modes import (
+    ADDITIVE,
+    EXPONENTIAL,
+    LINEAR,
+    MULTIPLICATIVE,
+    validate_mode,
+)
 from darts.utils.statistics import (
     check_seasonality,
     extract_trend_and_seasonality,
     remove_from_series,
 )
-from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 logger = get_logger(__name__)
 ALPHA_START = 0.2
@@ -29,7 +36,7 @@ class Theta(LocalForecastingModel):
         self,
         theta: int = 2,
         seasonality_period: int | None = None,
-        season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
+        season_mode: Literal["additive", "multiplicative"] | None = MULTIPLICATIVE,
         min_train_length: int | None = None,
     ):
         """
@@ -37,10 +44,6 @@ class Theta(LocalForecastingModel):
 
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
-
-        `season_mode` must be a ``SeasonalityMode`` Enum member.
-
-        You can access the Enum with ``from darts.utils.utils import SeasonalityMode``.
 
         Parameters
         ----------
@@ -51,9 +54,8 @@ class Theta(LocalForecastingModel):
             User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
             calling :func:`fit()`.
         season_mode
-            Type of seasonality.
-            Either ``SeasonalityMode.MULTIPLICATIVE``, ``SeasonalityMode.ADDITIVE`` or ``SeasonalityMode.NONE``.
-            Defaults to ``SeasonalityMode.MULTIPLICATIVE``.
+            Type of seasonality: ``"additive"``, ``"multiplicative"``, or ``None`` to disable seasonality.
+            Defaults to ``"multiplicative"``.
         min_train_length
             Optionally, set a custom minimum required training series length for this model to allow training on
             shorter input series. By default, Darts sets a conservative minimum length to avoid downstream issues.
@@ -92,12 +94,11 @@ class Theta(LocalForecastingModel):
         self.seasonality = None
         self.seasonality_period = seasonality_period
         self.season_period = None
-        self.season_mode = season_mode
-
-        if season_mode not in SeasonalityMode:  # pragma: no cover
-            raise_log(
-                ValueError(f"Unknown value for season_mode: {season_mode}."),
-            )
+        self.season_mode = validate_mode(
+            season_mode,
+            param="season_mode",
+            allowed={ADDITIVE, MULTIPLICATIVE, None},
+        )
 
         if self.theta == 0:
             raise_log(ValueError("The parameter theta cannot be equal to 0."))
@@ -105,44 +106,45 @@ class Theta(LocalForecastingModel):
     def fit(self, series: TimeSeries, verbose: bool | None = False):
         super().fit(series, verbose=verbose)
         self._assert_univariate(series)
-        ts = self.training_series
 
-        self.length = len(ts)
+        self.length = len(series)
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
-        if self.season_mode is SeasonalityMode.NONE:
+        if self.season_mode is None:
             self.season_period = 1
         else:
             self.season_period = self.seasonality_period
         if self.season_period is None:
-            max_lag = len(ts) // 2
+            max_lag = len(series) // 2
             self.is_seasonal, self.season_period = check_seasonality(
-                ts, self.season_period, max_lag=max_lag
+                series, self.season_period, max_lag=max_lag
             )
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.
             self.is_seasonal = self.season_period > 1
 
-        new_ts = ts
+        new_series = series
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality, _ = extract_trend_and_seasonality(
-                ts, self.season_period, model=self.season_mode
+            _, self.seasonality = extract_trend_and_seasonality(
+                series, self.season_period, model=self.season_mode
             )
-            new_ts = remove_from_series(ts, self.seasonality, model=self.season_mode)
+            new_series = remove_from_series(
+                series, self.seasonality, model=self.season_mode
+            )
 
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(
-            endog=new_ts.values(copy=False),
+            endog=new_series.values(copy=False),
             initialization_method="estimated",
         ).fit()
 
         # Linear Regression part of the decomposition. We select the degree one coefficient.
         b_theta = np.polyfit(
             np.array([i for i in range(0, self.length)]),
-            (1.0 - self.theta) * new_ts.values(copy=False),
+            (1.0 - self.theta) * new_series.values(copy=False),
             1,
         )[0]
 
@@ -151,7 +153,7 @@ class Theta(LocalForecastingModel):
 
         self.alpha = self.model.params["smoothing_level"]
         if self.alpha == 0.0:
-            self.model = hw.SimpleExpSmoothing(new_ts.values(copy=False)).fit(
+            self.model = hw.SimpleExpSmoothing(new_series.values(copy=False)).fit(
                 initial_level=ALPHA_START
             )
             self.alpha = self.model.params["smoothing_level"]
@@ -185,9 +187,9 @@ class Theta(LocalForecastingModel):
                 self.seasonality.to_series()[-self.season_period :],
                 math.ceil(n / self.season_period),
             )[:n]
-            if self.season_mode is SeasonalityMode.MULTIPLICATIVE:
+            if self.season_mode == MULTIPLICATIVE:
                 forecast *= replicated_seasonality
-            elif self.season_mode is SeasonalityMode.ADDITIVE:
+            elif self.season_mode == ADDITIVE:
                 forecast += replicated_seasonality
 
         return self._build_forecast_series(forecast)
@@ -199,7 +201,7 @@ class Theta(LocalForecastingModel):
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
         if (
-            self.season_mode != SeasonalityMode.NONE
+            self.season_mode is not None
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
@@ -214,9 +216,9 @@ class FourTheta(LocalForecastingModel):
         self,
         theta: int = 2,
         seasonality_period: int | None = None,
-        season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
-        model_mode: ModelMode = ModelMode.ADDITIVE,
-        trend_mode: TrendMode = TrendMode.LINEAR,
+        season_mode: Literal["additive", "multiplicative"] | None = MULTIPLICATIVE,
+        model_mode: Literal["additive", "multiplicative"] = ADDITIVE,
+        trend_mode: Literal["linear", "exponential"] = LINEAR,
         normalization: bool = True,
         min_train_length: int | None = None,
     ):
@@ -228,13 +230,7 @@ class FourTheta(LocalForecastingModel):
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
 
-        `season_mode` must be a ``SeasonalityMode`` Enum member.
-        `model_mode` must be a ``ModelMode`` Enum member.
-        `trend_mode` must be a ``TrendMode`` Enum member.
-
-        You can access the different Enums with ``from darts import SeasonalityMode, TrendMode, ModelMode``.
-
-        When called with `theta = X`, `model_mode = Model.ADDITIVE` and `trend_mode = Trend.LINEAR`,
+        When called with `theta = X`, `model_mode = "additive"` and `trend_mode = "linear"`,
         this model is equivalent to calling `Theta(theta=X)`.
 
         Parameters
@@ -247,15 +243,14 @@ class FourTheta(LocalForecastingModel):
             User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
             calling `fit()`.
         model_mode
-            Type of model combining the Theta lines. Either ModelMode.ADDITIVE or ModelMode.MULTIPLICATIVE.
-            Defaults to `ModelMode.ADDITIVE`.
+            Type of model combining the Theta lines: ``"additive"`` or ``"multiplicative"``.
+            Defaults to ``"additive"``.
         season_mode
-            Type of seasonality.
-            Either SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.ADDITIVE or SeasonalityMode.NONE.
-            Defaults to `SeasonalityMode.MULTIPLICATIVE`.
+            Type of seasonality: ``"additive"``, ``"multiplicative"``, or ``None`` to disable seasonality.
+            Defaults to ``"multiplicative"``.
         trend_mode
-            Type of trend to fit. Either TrendMode.LINEAR or TrendMode.EXPONENTIAL.
-            Defaults to `TrendMode.LINEAR`.
+            Type of trend to fit: ``"linear"`` or ``"exponential"``.
+            Defaults to ``"linear"``.
         normalization
             If `True`, the data is normalized so that the mean is 1. Defaults to `True`.
         min_train_length
@@ -296,26 +291,25 @@ class FourTheta(LocalForecastingModel):
         self.seasonality = None
         self.seasonality_period = seasonality_period
         self.season_period = None
-        self.model_mode = model_mode
-        self.season_mode = season_mode
-        self.trend_mode = trend_mode
+        self.model_mode = validate_mode(
+            model_mode,
+            param="model_mode",
+            allowed={ADDITIVE, MULTIPLICATIVE},
+        )
+        self.season_mode = validate_mode(
+            season_mode,
+            param="season_mode",
+            allowed={ADDITIVE, MULTIPLICATIVE, None},
+        )
+        self.trend_mode = validate_mode(
+            trend_mode,
+            param="trend_mode",
+            allowed={LINEAR, EXPONENTIAL},
+        )
         self.wses = 0 if self.theta == 0 else (1 / theta)
         self.wdrift = 1 - self.wses
         self.fitted_values = None
         self.normalization = normalization
-
-        if not isinstance(model_mode, ModelMode):
-            raise_log(
-                ValueError(f"Unknown value for model_mode: {model_mode}."),
-            )
-        if not isinstance(trend_mode, TrendMode):
-            raise_log(
-                ValueError(f"Unknown value for trend_mode: {trend_mode}."),
-            )
-        if not isinstance(season_mode, SeasonalityMode):
-            raise_log(
-                ValueError(f"Unknown value for season_mode: {season_mode}."),
-            )
 
     def fit(self, series, verbose: bool | None = False):
         super().fit(series, verbose=verbose)
@@ -336,7 +330,7 @@ class FourTheta(LocalForecastingModel):
 
         # Check for statistical significance of user-defined season period
         # or infers season_period from the TimeSeries itself.
-        if self.season_mode is SeasonalityMode.NONE:
+        if self.season_mode is None:
             self.season_period = 1
         else:
             self.season_period = self.seasonality_period
@@ -351,7 +345,7 @@ class FourTheta(LocalForecastingModel):
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality, _ = extract_trend_and_seasonality(
+            _, self.seasonality = extract_trend_and_seasonality(
                 new_ts, self.season_period, model=self.season_mode
             )
             new_ts = remove_from_series(
@@ -360,28 +354,28 @@ class FourTheta(LocalForecastingModel):
 
         ts_values = new_ts.univariate_values()
         if (ts_values <= 0).any():
-            self.model_mode = ModelMode.ADDITIVE
-            self.trend_mode = TrendMode.LINEAR
+            self.model_mode = ADDITIVE
+            self.trend_mode = LINEAR
             logger.warning(
                 "Time series has negative values. Fallback to additive and linear model"
             )
 
         # Drift part of the decomposition
-        if self.trend_mode is TrendMode.LINEAR:
+        if self.trend_mode == LINEAR:
             linreg = ts_values
         else:
             linreg = np.log(ts_values)
         self.drift = np.poly1d(np.polyfit(np.arange(self.length), linreg, 1))
         theta0_in = self.drift(np.arange(self.length))
-        if self.trend_mode is TrendMode.EXPONENTIAL:
+        if self.trend_mode == EXPONENTIAL:
             theta0_in = np.exp(theta0_in)
 
-        if (theta0_in > 0).all() and self.model_mode is ModelMode.MULTIPLICATIVE:
+        if (theta0_in > 0).all() and self.model_mode == MULTIPLICATIVE:
             theta_t = (ts_values**self.theta) * (theta0_in ** (1 - self.theta))
         else:
-            if self.model_mode is ModelMode.MULTIPLICATIVE:
+            if self.model_mode == MULTIPLICATIVE:
                 logger.warning("Negative Theta line. Fallback to additive model")
-                self.model_mode = ModelMode.ADDITIVE
+                self.model_mode = ADDITIVE
             theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
 
         # SES part of the decomposition.
@@ -391,20 +385,20 @@ class FourTheta(LocalForecastingModel):
         ).fit()
         theta2_in = self.model.fittedvalues
 
-        if (theta2_in > 0).all() and self.model_mode is ModelMode.MULTIPLICATIVE:
+        if (theta2_in > 0).all() and self.model_mode == MULTIPLICATIVE:
             self.fitted_values = theta2_in**self.wses * theta0_in**self.wdrift
         else:
-            if self.model_mode is ModelMode.MULTIPLICATIVE:
-                self.model_mode = ModelMode.ADDITIVE
+            if self.model_mode == MULTIPLICATIVE:
+                self.model_mode = ADDITIVE
                 logger.warning("Negative Theta line. Fallback to additive model")
                 theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
                 self.model = hw.SimpleExpSmoothing(theta_t).fit()
                 theta2_in = self.model.fittedvalues
             self.fitted_values = self.wses * theta2_in + self.wdrift * theta0_in
         if self.is_seasonal:
-            if self.season_mode is SeasonalityMode.ADDITIVE:
+            if self.season_mode == ADDITIVE:
                 self.fitted_values += self.seasonality.univariate_values(copy=False)
-            elif self.season_mode is SeasonalityMode.MULTIPLICATIVE:
+            elif self.season_mode == MULTIPLICATIVE:
                 self.fitted_values *= self.seasonality.univariate_values(copy=False)
         # Fitted values are the results of the fit of the model on the train series. A good fit of the model
         # will lead to fitted_values similar to ts. But one cannot see if it overfits.
@@ -417,10 +411,10 @@ class FourTheta(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: bool | None = None,
         show_warnings: bool = True,
         random_state: int | None = None,
-    ) -> "TimeSeries":
+    ) -> TimeSeries:
         super().predict(n, num_samples, verbose=verbose)
 
         # Forecast of the SES part.
@@ -428,10 +422,10 @@ class FourTheta(LocalForecastingModel):
 
         # Forecast of the Linear Regression part.
         drift = self.drift(np.arange(self.length, self.length + n))
-        if self.trend_mode is TrendMode.EXPONENTIAL:
+        if self.trend_mode == EXPONENTIAL:
             drift = np.exp(drift)
 
-        if self.model_mode is ModelMode.ADDITIVE:
+        if self.model_mode == ADDITIVE:
             forecast = self.wses * forecast + self.wdrift * drift
         else:
             forecast = forecast**self.wses * drift**self.wdrift
@@ -442,7 +436,7 @@ class FourTheta(LocalForecastingModel):
                 self.seasonality.to_series()[-self.season_period :],
                 math.ceil(n / self.season_period),
             )[:n]
-            if self.season_mode is SeasonalityMode.MULTIPLICATIVE:
+            if self.season_mode == MULTIPLICATIVE:
                 forecast *= replicated_seasonality
             else:
                 forecast += replicated_seasonality
@@ -493,17 +487,17 @@ class FourTheta(LocalForecastingModel):
         if thetas is None:
             thetas = [1, 2, 3]
         if (ts.values(copy=False) <= 0).any():
-            drift_mode = [TrendMode.LINEAR]
-            model_mode = [ModelMode.ADDITIVE]
-            season_mode = [SeasonalityMode.ADDITIVE]
+            drift_mode = [LINEAR]
+            model_mode = [ADDITIVE]
+            season_mode = [ADDITIVE]
             logger.warning(
                 "The given TimeSeries has negative values. The method will only test "
                 "linear trend and additive modes."
             )
         else:
-            season_mode = [season for season in SeasonalityMode]
-            model_mode = [model for model in ModelMode]
-            drift_mode = [trend for trend in TrendMode]
+            season_mode = [ADDITIVE, MULTIPLICATIVE, None]
+            model_mode = [ADDITIVE, MULTIPLICATIVE]
+            drift_mode = [LINEAR, EXPONENTIAL]
 
         theta = FourTheta.gridsearch(
             {
@@ -528,7 +522,7 @@ class FourTheta(LocalForecastingModel):
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
         if (
-            self.season_mode != SeasonalityMode.NONE
+            self.season_mode is not None
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
