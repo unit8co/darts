@@ -5,6 +5,7 @@ Optimized Historical Forecasts Utils
 
 import inspect
 from collections.abc import Callable, Sequence
+from copy import deepcopy
 from types import SimpleNamespace
 from typing import Any, Literal, TypeAlias, TypeVar
 
@@ -1404,12 +1405,12 @@ def _convert_data_transformers(
     if data_transformers is None:
         return dict()
     else:
-        return {
-            key_: val_
-            if isinstance(val_, Pipeline)
-            else Pipeline(transformers=[val_], copy=copy)
-            for key_, val_ in data_transformers.items()
-        }
+        res = {}
+        for key_, val_ in data_transformers.items():
+            if not isinstance(val_, Pipeline):
+                val_ = Pipeline(transformers=[val_])
+            res[key_] = deepcopy(val_) if copy else val_
+        return res
 
 
 def _apply_data_transformers(
