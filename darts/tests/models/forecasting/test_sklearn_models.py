@@ -1891,6 +1891,13 @@ class TestSKLearnModels:
             "Model supports multi-output; a single estimator "
             "forecasts all the horizons and components."
         )
+        # invalid indices are rejected also for native multi-output models
+        with pytest.raises(ValueError, match="`horizon` must be"):
+            m.get_estimator(horizon=2, target_dim=0)
+        with pytest.raises(ValueError, match="`horizon` must be"):
+            m.get_estimator(horizon=-1, target_dim=0)
+        with pytest.raises(ValueError, match="`target_dim` must be"):
+            m.get_estimator(horizon=0, target_dim=1)
 
         # univariate, deterministic, ocl > 2
         m = SKLearnModel(
