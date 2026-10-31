@@ -21,6 +21,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `check_seasonality()` using an incorrect significance threshold and omitting the preceding lag from Bartlett's standard error, which caused false seasonality detections. This can change automatically inferred periods in `Theta` and `FourTheta`; set `seasonality_period` when the period is known. [#3286](https://github.com/unit8co/darts/issues/3286) by [Aman Agnihotri](https://github.com/its-amann).
 - Fixed `MIDAS` failing on short multivariate or probabilistic series when padding to a complete low-frequency period. [#3304](https://github.com/unit8co/darts/pull/3304) by [Aryan R. Ganjoo](https://github.com/AryanRG).
 - Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).
 - Fixed `SKLearnClassifierModel` models skipping class-label validation when fitting a series with more target components than `output_chunk_length`. Downstream probability prediction could then fail unexpectedly. [#3271](https://github.com/unit8co/darts/pull/3271) by [Zhe Chen](https://github.com/zhechen-cs).

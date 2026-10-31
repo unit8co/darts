@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
+from statsmodels.tsa.stattools import acf
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset
@@ -45,6 +46,42 @@ class TestTimeSeries:
 
         with pytest.raises(AssertionError):
             check_seasonality(series.stack(series))
+
+    @pytest.mark.parametrize("m", [None, 4])
+    def test_check_seasonality_white_noise(self, m):
+        series = TimeSeries.from_values(np.random.default_rng(0).normal(size=100))
+
+        assert check_seasonality(series, m=m) == (False, 0)
+
+    @pytest.mark.parametrize("m", [None, 2])
+    @pytest.mark.parametrize(
+        "alpha,expected", [(0.01, (False, 0)), (0.05, (False, 0)), (0.1, (True, 2))]
+    )
+    def test_check_seasonality_bartlett_confidence_interval(self, m, alpha, expected):
+        values = np.random.default_rng(13).normal(size=40)
+        for i in range(1, len(values)):
+            values[i] -= 0.4 * values[i - 1]
+
+        r, confint = acf(values, nlags=24, fft=False, alpha=alpha)
+        # Lag 2 is a local peak; its interval must include the strong lag-1 correlation.
+        assert r[2] > max(r[1], r[3])
+        assert (confint[2, 0] > 0) == expected[0]
+        assert (
+            check_seasonality(TimeSeries.from_values(values), m=m, alpha=alpha)
+            == expected
+        )
+
+    @pytest.mark.parametrize("period", [2, 6, 12])
+    @pytest.mark.parametrize("fixed_period", [False, True])
+    def test_check_seasonality_noisy_periodic_series(self, period, fixed_period):
+        values = np.cos(2 * np.pi * np.arange(240) / period)
+        values += np.random.default_rng(0).normal(scale=0.1, size=len(values))
+        series = TimeSeries.from_values(values)
+
+        assert check_seasonality(series, m=period if fixed_period else None) == (
+            True,
+            period,
+        )
 
     def test_granger_causality(self):
         series_cause_1 = constant_timeseries(start=0, end=9999).stack(

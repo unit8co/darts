@@ -56,7 +56,8 @@ def check_seasonality(
     max_lag
         The maximal lag allowed in the ACF.
     alpha
-        The desired confidence level (default 5%).
+        The significance level for each tested lag (default 5%). No multiple-testing correction is applied
+        when `m` is None.
 
     Returns
     -------
@@ -100,13 +101,12 @@ def check_seasonality(
     # Remove r[0], the auto-correlation at lag order 0, that introduces bias.
     r = r[1:]
 
-    # The non-adjusted upper limit of the significance interval.
-    band_upper = r.mean() + norm.ppf(1 - alpha / 2) * r.var()
+    # Normal critical value; Bartlett's formula supplies the standard error.
+    band_upper = norm.ppf(1 - alpha / 2)
 
-    # Significance test, stops at first admissible value. The two '-1' below
-    # compensate for the index change due to the restriction of the original r to r[1:].
+    # Test each lag using all preceding nonzero-lag autocorrelations.
     for candidate in candidates:
-        stat = _bartlett_formula(r, candidate - 1, len(ts))
+        stat = _bartlett_formula(r, candidate, len(ts))
         if r[candidate - 1] > stat * band_upper:
             return True, candidate
     return False, 0
@@ -119,7 +119,7 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
     Parameters
     ----------
     r
-        The array whose standard error is to be computed.
+        The autocorrelations at lags 1, 2, ... (excluding lag 0).
     m
         The order of the standard error.
     length
