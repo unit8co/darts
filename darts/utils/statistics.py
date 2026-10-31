@@ -4,7 +4,7 @@ TimeSeries Statistics
 """
 
 import math
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
@@ -547,8 +547,9 @@ def stationarity_test_adf(
 def granger_causality_tests(
     ts_cause: TimeSeries,
     ts_effect: TimeSeries,
-    maxlag: int,
+    maxlag: int | Iterable[int],
     addconst: bool = True,
+    check_stationarity: bool = True,
 ) -> dict:
     """
     Provides four tests for granger non causality of 2 time series using
@@ -569,6 +570,10 @@ def granger_causality_tests(
         If an iterable, computes the tests only for the lags in maxlag.
     addconst
         Include a constant in the model.
+    check_stationarity
+        Whether to perform stationarity tests on `ts_cause` and `ts_effect` before running the
+        Granger causality test. If set to ``False``, the stationarity checks and any associated
+        warnings are skipped.
 
     Returns
     -------
@@ -603,14 +608,17 @@ def granger_causality_tests(
     ts_cause = ts_cause.slice_intersect(ts_effect)
     ts_effect = ts_effect.slice_intersect(ts_cause)
 
-    if not stationarity_tests(ts_cause):
-        logger.warning(
-            "ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context."
-        )
-    if not stationarity_tests(ts_effect):
-        logger.warning(
-            "ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context."
-        )
+    if check_stationarity:
+        if not stationarity_tests(ts_cause):
+            logger.warning(
+                "ts_cause doesn't seem to be stationary. Please review "
+                "granger causality validity in your problem context."
+            )
+        if not stationarity_tests(ts_effect):
+            logger.warning(
+                "ts_effect doesn't seem to be stationary. Please review "
+                "granger causality validity in your problem context."
+            )
 
     return grangercausalitytests(
         np.concatenate(
