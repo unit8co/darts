@@ -1701,7 +1701,7 @@ def _get_feature_times(
         if isinstance(lags_i, dict):
             lags_i = list(set(chain(*lags_i.values())))
 
-        if check_inputs and (series_i is not None):
+        if series_i is not None:
             _check_series_length(
                 series=series_i,
                 lags=lags_i,
@@ -2132,7 +2132,7 @@ def _check_series_length(
         lags_name = "lags" if name == "target_series" else f"lags_{name}"
         minimum_len_str = f"-min({lags_name}) + max({lags_name}) + 1"
         minimum_len = -min(lags) + max(lags) + 1
-    if lags_specified:
+    if is_label_series or lags_specified:
         if series.n_timesteps < minimum_len:
             raise_log(
                 ValueError(

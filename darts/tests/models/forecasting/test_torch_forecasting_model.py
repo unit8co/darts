@@ -2252,6 +2252,23 @@ class TestTorchForecastingModel:
         )
         assert str(err.value) == msg_expected
 
+        # check that an error is raised when validation series is too short
+        fit_kwargs_short = {
+            "series": series,
+            "val_series": series[:2],
+        }
+        if model.supports_past_covariates:
+            fit_kwargs_short["past_covariates"] = pc
+            fit_kwargs_short["val_past_covariates"] = pc
+        if model.supports_future_covariates:
+            fit_kwargs_short["future_covariates"] = fc
+            fit_kwargs_short["val_future_covariates"] = fc
+        with pytest.raises(
+            ValueError,
+            match=r"^Invalid validation set: The input `series` are too short to extract even a single sample\.",
+        ):
+            model.fit(**fit_kwargs_short)
+
         fit_kwargs = {"series": series, "val_series": series}
         if model.supports_past_covariates:
             fit_kwargs["past_covariates"] = pc
