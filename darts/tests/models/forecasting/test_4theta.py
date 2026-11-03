@@ -1,11 +1,17 @@
 import json
+import logging
 import random
+from typing import Literal
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 
+from darts import TimeSeries
+from darts.datasets import AirPassengersDataset
 from darts.metrics import mape
 from darts.models import FourTheta, Theta
+from darts.tests.parametrize_helpers import param_product
 from darts.utils._modes import ADDITIVE, EXPONENTIAL, LINEAR, MULTIPLICATIVE
 from darts.utils.timeseries_generation import linear_timeseries as lt
 from darts.utils.timeseries_generation import random_walk_timeseries as rt
@@ -13,6 +19,8 @@ from darts.utils.timeseries_generation import sine_timeseries as st
 
 
 class TestFourTheta:
+    series = AirPassengersDataset().load()
+
     def test_input(self):
         with pytest.raises(ValueError):
             FourTheta(model_mode=LINEAR)
@@ -20,6 +28,18 @@ class TestFourTheta:
             FourTheta(season_mode=EXPONENTIAL)
         with pytest.raises(ValueError):
             FourTheta(trend_mode="invalid")
+
+    @pytest.mark.parametrize(
+        "model_cls,season_mode",
+        param_product([Theta, FourTheta], [ADDITIVE, MULTIPLICATIVE, None]),
+    )
+    def test_season_modes(
+        self, model_cls, season_mode: Literal["additive", "multiplicative"] | None
+    ):
+        model = model_cls(theta=2, seasonality_period=12, season_mode=season_mode)
+        model.fit(self.series)
+        predictions = model.predict(n=12)
+        assert np.isfinite(predictions.values()).all()
 
     def test_model_params_json_serializable(self):
         model = Theta(2, 12, season_mode=ADDITIVE)
@@ -36,6 +56,72 @@ class TestFourTheta:
         )
         model.fit(sine_series)
         assert model.model_mode == ADDITIVE and model.trend_mode == LINEAR
+
+    def test_fallback_when_drift_is_non_positive(self, caplog):
+        # Positive values, but the fitted linear drift crosses zero.
+        values = np.array([10.0] * 6 + [0.2] * 4)
+        series = TimeSeries.from_values(values.reshape(-1, 1))
+        model = FourTheta(
+            theta=2,
+            model_mode=MULTIPLICATIVE,
+            trend_mode=LINEAR,
+            season_mode=None,
+            normalization=False,
+            seasonality_period=1,
+        )
+        with caplog.at_level(logging.WARNING):
+            model.fit(series)
+            assert "Negative Theta line" in caplog.text
+        caplog.clear()
+        assert model.model_mode == ADDITIVE
+        assert model.trend_mode == LINEAR
+        assert np.isfinite(model.predict(3).values()).all()
+
+    def test_fallback_when_ses_theta_line_is_non_positive(self):
+        # A strictly positive series keeps the multiplicative theta line positive,
+        # so force the first SES fit to return a non-positive line.
+        import statsmodels.tsa.holtwinters as hw
+
+        series = lt(length=24, start_value=10, end_value=20)
+        calls = {"n": 0}
+
+        class _NonPositiveFirstFit(hw.SimpleExpSmoothing):
+            def fit(self, *args, **kwargs):
+                result = super().fit(*args, **kwargs)
+                calls["n"] += 1
+                if calls["n"] == 1:
+                    result.fittedvalues = np.full(len(result.fittedvalues), -1.0)
+                return result
+
+        with patch(
+            "darts.models.forecasting.theta.hw.SimpleExpSmoothing",
+            _NonPositiveFirstFit,
+        ):
+            model = FourTheta(
+                theta=2,
+                model_mode=MULTIPLICATIVE,
+                trend_mode=LINEAR,
+                season_mode=None,
+                normalization=False,
+                seasonality_period=1,
+            )
+            model.fit(series)
+
+        assert calls["n"] == 2
+        assert model.model_mode == ADDITIVE
+        assert np.isfinite(model.predict(3).values()).all()
+
+    def test_select_best_model_negative_series(self):
+        series = st(length=24)
+        best_model, _, _ = FourTheta.select_best_model(
+            series,
+            thetas=[2],
+            m=1,
+            normalization=False,
+        )
+        assert best_model.model_mode == ADDITIVE
+        assert best_model.trend_mode == LINEAR
+        assert best_model.season_mode == ADDITIVE
 
     def test_zero_mean(self):
         sine_series = st(length=50)

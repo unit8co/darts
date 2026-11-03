@@ -4,7 +4,7 @@ Theta Method
 """
 
 import math
-from typing import Literal
+from typing import Any, Literal, Self
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -152,10 +152,12 @@ class Theta(LocalForecastingModel):
         self.coef = b_theta / (-self.theta)
 
         self.alpha = self.model.params["smoothing_level"]
-        if self.alpha == 0.0:
-            self.model = hw.SimpleExpSmoothing(new_series.values(copy=False)).fit(
-                initial_level=ALPHA_START
-            )
+        if self.alpha == 0.0:  # pragma: no cover
+            self.model = hw.SimpleExpSmoothing(
+                endog=new_series.values(copy=False),
+                initialization_method="known",
+                initial_level=ALPHA_START,
+            ).fit()
             self.alpha = self.model.params["smoothing_level"]
 
         return self
@@ -392,7 +394,10 @@ class FourTheta(LocalForecastingModel):
                 self.model_mode = ADDITIVE
                 logger.warning("Negative Theta line. Fallback to additive model")
                 theta_t = self.theta * ts_values + (1 - self.theta) * theta0_in
-                self.model = hw.SimpleExpSmoothing(theta_t).fit()
+                self.model = hw.SimpleExpSmoothing(
+                    endog=theta_t,
+                    initialization_method="estimated",
+                ).fit()
                 theta2_in = self.model.fittedvalues
             self.fitted_values = self.wses * theta2_in + self.wdrift * theta0_in
         if self.is_seasonal:
@@ -446,14 +451,15 @@ class FourTheta(LocalForecastingModel):
 
         return self._build_forecast_series(forecast)
 
-    @staticmethod
+    @classmethod
     def select_best_model(
+        cls,
         ts: TimeSeries,
         thetas: list[int] | None = None,
         m: int | None = None,
         normalization: bool = True,
         n_jobs: int = 1,
-    ) -> "FourTheta":
+    ) -> tuple[Self, dict[str, Any], float]:
         """
         Performs a grid search over all hyper parameters to select the best model,
         using the fitted values on the training series `ts`.
@@ -499,7 +505,7 @@ class FourTheta(LocalForecastingModel):
             model_mode = [ADDITIVE, MULTIPLICATIVE]
             drift_mode = [LINEAR, EXPONENTIAL]
 
-        theta = FourTheta.gridsearch(
+        theta = cls.gridsearch(
             {
                 "theta": thetas,
                 "model_mode": model_mode,
