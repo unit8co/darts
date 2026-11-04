@@ -4,7 +4,7 @@ TimeSeries Statistics
 """
 
 import math
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from typing import Literal, overload
 
 import matplotlib.axes
@@ -633,7 +633,7 @@ def stationarity_test_adf(
 def granger_causality_tests(
     ts_cause: TimeSeries,
     ts_effect: TimeSeries,
-    maxlag: int | Iterable[int],
+    maxlag: int | Sequence[int],
     addconst: bool = True,
     check_stationarity: bool = True,
 ) -> dict:
@@ -653,7 +653,7 @@ def granger_causality_tests(
         Univariate time series 'Granger caused' by ts_cause.
     maxlag
         If an integer, computes the test for all lags up to maxlag.
-        If an iterable, computes the tests only for the lags in maxlag.
+        If an sequence of integers, computes the tests only for the lags in maxlag.
     addconst
         Include a constant in the model.
     check_stationarity
