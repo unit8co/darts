@@ -3,12 +3,12 @@ from itertools import product
 import numpy as np
 import pytest
 
-from darts.utils.data.tabularization import strided_moving_window
+from darts.utils.data.tabularization.tabularization import _strided_moving_window
 
 
 class TestStridedMovingWindow:
     """
-    Tests `strided_moving_window` function defined in `darts.utils.data.tabularization`.
+    Tests `_strided_moving_window` function defined in `darts.utils.data.tabularization`.
     """
 
     def test_strided_moving_windows_extracted_windows(self):
@@ -30,7 +30,7 @@ class TestStridedMovingWindow:
         for axis, stride, window_len in product(
             axis_combos, stride_combos, window_len_combos
         ):
-            windows = strided_moving_window(
+            windows = _strided_moving_window(
                 x=x, window_len=window_len, stride=stride, axis=axis
             )
             # Iterate over extracted windows:
@@ -56,11 +56,11 @@ class TestStridedMovingWindow:
         x = np.arange(1)
         # `stride` isn't positive:
         with pytest.raises(ValueError) as err:
-            strided_moving_window(x, window_len=1, stride=0)
+            _strided_moving_window(x, window_len=1, stride=0)
         assert ("`stride` must be a positive `int`.") == str(err.value)
         # `stride` is `float`, not `int`:
         with pytest.raises(ValueError) as err:
-            strided_moving_window(x, window_len=1, stride=1.1)
+            _strided_moving_window(x, window_len=1, stride=1.1)
         assert ("`stride` must be a positive `int`.") == str(err.value)
 
     def test_strided_moving_window_negative_window_len_error(self):
@@ -71,11 +71,11 @@ class TestStridedMovingWindow:
         x = np.arange(1)
         # `window_len` isn't positive:
         with pytest.raises(ValueError) as err:
-            strided_moving_window(x, window_len=0, stride=1)
+            _strided_moving_window(x, window_len=0, stride=1)
         assert ("`window_len` must be a positive `int`.") == str(err.value)
         # `window_len` is `float`, not `int`:
         with pytest.raises(ValueError) as err:
-            strided_moving_window(x, window_len=1.1, stride=1)
+            _strided_moving_window(x, window_len=1.1, stride=1)
         assert ("`window_len` must be a positive `int`.") == str(err.value)
 
     def test_strided_moving_window_pass_invalid_axis_error(self):
@@ -87,11 +87,11 @@ class TestStridedMovingWindow:
         x = np.arange(1)
         # `axis` NOT an int:
         with pytest.raises(ValueError) as err:
-            strided_moving_window(x, window_len=1, stride=1, axis=0.1)
+            _strided_moving_window(x, window_len=1, stride=1, axis=0.1)
         assert ("`axis` must be an `int` that is less than `x.ndim`.") == str(err.value)
         # `axis` NOT < x.ndim:
         with pytest.raises(ValueError) as err:
-            strided_moving_window(x, window_len=1, stride=1, axis=1)
+            _strided_moving_window(x, window_len=1, stride=1, axis=1)
         assert ("`axis` must be an `int` that is less than `x.ndim`.") == str(err.value)
 
     def test_strided_moving_window_window_len_too_large_error(self):
@@ -101,7 +101,7 @@ class TestStridedMovingWindow:
         """
         x = np.arange(1)
         with pytest.raises(ValueError) as err:
-            strided_moving_window(x, window_len=2, stride=1)
+            _strided_moving_window(x, window_len=2, stride=1)
         assert ("`window_len` must be less than or equal to x.shape[axis].") == str(
             err.value
         )
