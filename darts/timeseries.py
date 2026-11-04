@@ -70,6 +70,7 @@ from darts.utils._formatting import (
 )
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
+    _infer_freq_returns_offset,
     _maybe_cast_array_dtype,
     dataframe_col_to_time_index,
     expand_arr,
@@ -324,7 +325,8 @@ class TimeSeries:
             # frequency must be known or it can be inferred
             freq = times.freq
             if freq is None:
-                freq = to_offset(times.inferred_freq)
+                with _infer_freq_returns_offset():
+                    freq = to_offset(times.inferred_freq)
                 times.freq = freq
 
             if freq is None:
@@ -3591,7 +3593,7 @@ class TimeSeries:
         """Return a new series with one (or more) additional component(s) that contain an attribute of the series' time
         index.
 
-        The additional components are specified with `attribute`, such as 'weekday', 'day' or 'month'.
+        The additional components are specified with `attribute`, such as 'day_of_week', 'day' or 'month'.
 
         This works only for deterministic time series (i.e., made of 1 sample).
 
@@ -3757,7 +3759,7 @@ class TimeSeries:
         import xarray as xr
 
         method_kwargs = method_kwargs or {}
-        if isinstance(freq, pd.DateOffset):
+        if isinstance(freq, pd.offsets.BaseOffset):
             freq = freq.freqstr
 
         resample = self.data_array(copy=False).resample(
@@ -5127,10 +5129,10 @@ class TimeSeries:
         # for each unique index, take one example including the left time stamp, and one including the right
         steps = np.column_stack([index[unq_td_index + i] for i in range(3)])
 
-        # find all unique inferred frequencies
-        observed_freqs = {pd.infer_freq(step) for step in steps}
-        observed_freqs.discard(None)
-        return observed_freqs
+        # find all unique inferred frequencies (as frequency strings)
+        with _infer_freq_returns_offset():
+            inferred_freqs = [to_offset(pd.infer_freq(step)) for step in steps]
+        return {freq.freqstr for freq in inferred_freqs if freq is not None}
 
     @staticmethod
     def _observed_freq_integer_index(index: pd.Index) -> set:

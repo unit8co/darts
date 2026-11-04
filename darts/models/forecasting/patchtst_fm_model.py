@@ -514,7 +514,7 @@ class PatchTSTFMModel(FoundationModel):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
