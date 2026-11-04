@@ -235,7 +235,7 @@ class BaseDataTransformer(ABC):
 
         The `params` dictionary *can* contain up to two keys:
 
-        - `params['fixed']` stores the fixed parameters of the transformation (i.e. attributed
+        - `params['fixed']` stores the fixed parameters of the transformation (i.e. attributes
           defined in the `__init__` method of the child-most class *before* `super().__init__` is called);
           `params['fixed']` is a dictionary itself, whose keys are the names of the fixed parameter
           attributes. For example, if `_my_fixed_param` is defined as an attribute in the child-most
@@ -256,7 +256,7 @@ class BaseDataTransformer(ABC):
 
         - The `apply_component_mask` and `unapply_component_mask` methods, which apply and 'unapply'
           `component_mask`s to a `TimeSeries` respectively; these methods are automatically called in `transform`
-          if the `mask_component` attribute of `BaseDataTransformer` is set to `True`, but you may want to manually
+          if the `mask_components` attribute of `BaseDataTransformer` is set to `True`, but you may want to manually
           call them if you set `mask_components` to `False` and wish to manually specify how `component_mask`s are
           applied to a `TimeSeries`.
         - The `stack_samples` method, which stacks all the samples in a `TimeSeries` along
@@ -279,7 +279,7 @@ class BaseDataTransformer(ABC):
         args
             Any poisitional arguments provided in addition to `series` when
         kwargs
-            Any additional keyword arguments provided to `transform`. Note that if the `mask_component`
+            Any additional keyword arguments provided to `transform`. Note that if the `mask_components`
             attribute of `BaseDataTransformer` is set to `False`, then `component_mask` will
             be passed as a keyword argument.
 

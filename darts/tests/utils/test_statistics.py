@@ -1,4 +1,4 @@
-import sys
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,6 +7,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset
+from darts.utils._modes import ADDITIVE, MULTIPLICATIVE
 from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.statistics import (
     check_seasonality,
@@ -30,9 +31,6 @@ from darts.utils.timeseries_generation import (
     gaussian_timeseries,
     linear_timeseries,
 )
-from darts.utils.utils import ModelMode, SeasonalityMode
-
-py_312_or_higher = sys.version_info >= (3, 12, 0)
 
 
 class TestTimeSeries:
@@ -131,22 +129,20 @@ class TestSeasonalDecompose:
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test default (naive) method additive
-        calc_trend, _ = extract_trend_and_seasonality(
-            self.ts, freq=6, model=ModelMode.ADDITIVE
-        )
+        calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6, model=ADDITIVE)
         diff = self.trend - calc_trend
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test STL method
         calc_trend, _ = extract_trend_and_seasonality(
-            self.ts, freq=6, method="STL", model=ModelMode.ADDITIVE
+            self.ts, freq=6, method="STL", model=ADDITIVE
         )
         diff = self.trend - calc_trend
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test MSTL method
         calc_trend, calc_seasonality = extract_trend_and_seasonality(
-            self.ts, freq=[3, 6], method="MSTL", model=ModelMode.ADDITIVE
+            self.ts, freq=[3, 6], method="MSTL", model=ADDITIVE
         )
         assert len(calc_seasonality.components) == 2
         diff = self.trend - calc_trend
@@ -157,7 +153,7 @@ class TestSeasonalDecompose:
 
         # test MSTL method with single freq
         calc_trend, calc_seasonality = extract_trend_and_seasonality(
-            self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
+            self.ts, freq=6, method="MSTL", model=ADDITIVE
         )
         assert len(calc_seasonality.components) == 1
         diff = self.trend - calc_trend
@@ -166,21 +162,36 @@ class TestSeasonalDecompose:
         # make sure non MSTL methods fail with multiple freqs
         with pytest.raises(ValueError):
             calc_trend, calc_seasonality = extract_trend_and_seasonality(
-                self.ts, freq=[1, 4, 6], method="STL", model=ModelMode.ADDITIVE
+                self.ts, freq=[1, 4, 6], method="STL", model=ADDITIVE
             )
 
         # check if error is raised when using multiplicative model
         with pytest.raises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
-                self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
+                self.ts, freq=6, method="STL", model=MULTIPLICATIVE
             )
 
         with pytest.raises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
-                self.ts, freq=[3, 6], method="MSTL", model=ModelMode.MULTIPLICATIVE
+                self.ts, freq=[3, 6], method="MSTL", model=MULTIPLICATIVE
             )
 
         assert self.ts == series_copy
+
+    @pytest.mark.parametrize("season_mode", [ADDITIVE, MULTIPLICATIVE])
+    def test_extract_return_residual(
+        self, season_mode: Literal["additive", "multiplicative"]
+    ):
+        calc_trend, calc_season, calc_residual = extract_trend_and_seasonality(
+            self.ts, freq=6, model=season_mode, return_residual=True
+        )
+        if season_mode == ADDITIVE:
+            recon = calc_trend + calc_season + calc_residual
+        else:
+            recon = calc_trend * calc_season * calc_residual
+        diff = self.ts - recon
+
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
     def test_remove_seasonality(self):
         # test default (naive) method
@@ -189,7 +200,7 @@ class TestSeasonalDecompose:
         assert np.mean(diff.values() ** 2).item() < 0.5
 
         # test default (naive) method additive
-        calc_trend = remove_seasonality(self.ts, freq=6, model=SeasonalityMode.ADDITIVE)
+        calc_trend = remove_seasonality(self.ts, freq=6, model=ADDITIVE)
         diff = self.trend - calc_trend
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
@@ -198,7 +209,7 @@ class TestSeasonalDecompose:
             self.ts,
             freq=6,
             method="STL",
-            model=SeasonalityMode.ADDITIVE,
+            model=ADDITIVE,
             low_pass=9,
         )
         diff = self.trend - calc_trend
@@ -207,7 +218,7 @@ class TestSeasonalDecompose:
         # check if error is raised
         with pytest.raises(ValueError):
             calc_trend = remove_seasonality(
-                self.ts, freq=6, method="STL", model=SeasonalityMode.MULTIPLICATIVE
+                self.ts, freq=6, method="STL", model=MULTIPLICATIVE
             )
 
     def test_remove_trend(self):
@@ -217,7 +228,7 @@ class TestSeasonalDecompose:
         assert np.mean(diff.values() ** 2).item() < 1.5
 
         # test naive method additive
-        calc_season = remove_trend(self.ts, freq=6, model=ModelMode.ADDITIVE)
+        calc_season = remove_trend(self.ts, freq=6, model=ADDITIVE)
         diff = self.season - calc_season
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
@@ -226,7 +237,7 @@ class TestSeasonalDecompose:
             self.ts,
             freq=6,
             method="STL",
-            model=ModelMode.ADDITIVE,
+            model=ADDITIVE,
             low_pass=9,
         )
         diff = self.season - calc_season
@@ -235,7 +246,7 @@ class TestSeasonalDecompose:
         # check if error is raised
         with pytest.raises(ValueError):
             calc_season = remove_trend(
-                self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
+                self.ts, freq=6, method="STL", model=MULTIPLICATIVE
             )
 
     @pytest.mark.parametrize(
@@ -376,42 +387,26 @@ class TestStatisticsInputValidation:
             check_seasonality(self.ts, m=10, max_lag=5)
 
     def test_extract_trend_and_seasonality_invalid_model(self):
-        if py_312_or_higher:
-            exc = ValueError
-            msg = "Unknown value for model_mode"
-        else:
-            exc = TypeError
-            msg = None
-        with pytest.raises(exc, match=msg):
+        with pytest.raises(ValueError, match="Unknown value for `model`"):
             extract_trend_and_seasonality(self.ts, freq=6, model="invalid")
 
     def test_extract_trend_and_seasonality_none_model(self):
-        with pytest.raises(
-            ValueError, match="The model must be either MULTIPLICATIVE or ADDITIVE"
-        ):
-            extract_trend_and_seasonality(self.ts, freq=6, model=SeasonalityMode.NONE)
+        with pytest.raises(ValueError, match="Unknown value for `model`: None"):
+            extract_trend_and_seasonality(self.ts, freq=6, model=None)
 
     def test_extract_trend_and_seasonality_invalid_method(self):
-        with pytest.raises(ValueError, match="Unknown value for method"):
+        with pytest.raises(ValueError, match="Unknown value for `method`"):
             extract_trend_and_seasonality(
-                self.ts, freq=6, model=ModelMode.ADDITIVE, method="invalid"
+                self.ts, freq=6, model=ADDITIVE, method="invalid"
             )
 
     def test_remove_from_series_invalid_model(self):
-        if py_312_or_higher:
-            exc = ValueError
-            msg = "Unknown value for model_mode"
-        else:
-            exc = TypeError
-            msg = None
-        with pytest.raises(exc, match=msg):
+        with pytest.raises(ValueError, match="Unknown value for `model`"):
             remove_from_series(self.ts, self.ts_other, model="invalid")
 
     def test_remove_seasonality_none_model(self):
-        with pytest.raises(
-            ValueError, match="The model must be either MULTIPLICATIVE or ADDITIVE"
-        ):
-            remove_seasonality(self.ts, freq=6, model=SeasonalityMode.NONE)
+        with pytest.raises(ValueError, match="Unknown value for `model`: None"):
+            remove_seasonality(self.ts, freq=6, model=None)
 
     def test_seasonality_and_trend_strength_univariate(self):
         with pytest.raises(AssertionError):
