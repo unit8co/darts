@@ -283,7 +283,7 @@ class TestSeasonalDecompose:
 
     def test_seasonality_and_trend_strength_multiplicative(self):
         ts_mult = self.trend * (self.season * 0.5 + 1)
-        kwargs = {"freq": 6, "model": ModelMode.MULTIPLICATIVE, "method": "naive"}
+        kwargs = {"freq": 6, "model": "multiplicative", "method": "naive"}
         strengths = seasonality_and_trend_strength(ts_mult, **kwargs)
         assert strengths[0] > 0.95
         assert strengths[1] > 0.95
@@ -427,16 +427,14 @@ class TestStatisticsInputValidation:
         with pytest.raises(
             ValueError, match="Only ADDITIVE model is compatible with the STL method"
         ):
-            seasonality_and_trend_strength(
-                self.ts, freq=6, model=ModelMode.MULTIPLICATIVE
-            )
+            seasonality_and_trend_strength(self.ts, freq=6, model="multiplicative")
 
     def test_seasonality_and_trend_strength_multiplicative_non_positive_values(self):
         index = pd.date_range("20130101", periods=50)
         series = TimeSeries.from_series(pd.Series(np.arange(-4.0, 46.0), index=index))
         with pytest.raises(ValueError):
             seasonality_and_trend_strength(
-                series, freq=6, model=ModelMode.MULTIPLICATIVE, method="naive"
+                series, freq=6, model="multiplicative", method="naive"
             )
 
     def test_seasonality_and_trend_strength_multiplicative_non_positive_trend(self):
@@ -449,7 +447,7 @@ class TestStatisticsInputValidation:
         )
         with pytest.raises(ValueError, match="strictly positive"):
             seasonality_and_trend_strength(
-                series, freq=6, model=ModelMode.MULTIPLICATIVE, method="naive"
+                series, freq=6, model="multiplicative", method="naive"
             )
 
     @pytest.mark.parametrize(
