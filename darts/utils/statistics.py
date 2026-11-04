@@ -203,8 +203,6 @@ def extract_trend_and_seasonality(
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     .. [3] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html
     """
-
-    ts._assert_univariate()
     model = validate_mode(model, param="model", allowed={ADDITIVE, MULTIPLICATIVE})
 
     if isinstance(freq, Sequence) and method != "MSTL":
@@ -214,11 +212,14 @@ def extract_trend_and_seasonality(
             ),
         )
 
+    values = ts.to_series(copy=False)
+    if np.isnan(values).any():
+        raise_log(ValueError("`ts` must not contain missing values."))
+
     if method == "naive":
         decomp = seasonal_decompose(
-            ts.to_series(), period=freq, model=model, extrapolate_trend="freq"
+            values, period=freq, model=model, extrapolate_trend="period"
         )
-
     elif method == "STL":
         if model != ADDITIVE:
             raise_log(
@@ -226,13 +227,7 @@ def extract_trend_and_seasonality(
                     f"Only ADDITIVE model is compatible with the STL method. Current model is {model}."
                 ),
             )
-
-        decomp = STL(
-            endog=ts.to_series(),
-            period=freq,
-            **kwargs,
-        ).fit()
-
+        decomp = STL(endog=values, period=freq, **kwargs).fit()
     elif method == "MSTL":
         if model != ADDITIVE:
             raise_log(
@@ -240,13 +235,7 @@ def extract_trend_and_seasonality(
                     f"Only ADDITIVE model is compatible with the MSTL method. Current model is {model}."
                 ),
             )
-
-        decomp = MSTL(
-            endog=ts.to_series(),
-            periods=freq,
-            **kwargs,
-        ).fit()
-
+        decomp = MSTL(endog=values, periods=freq, **kwargs).fit()
     else:
         raise_log(ValueError(f"Unknown value for `method`: {method}."))
 
@@ -324,6 +313,90 @@ def remove_from_series(
     else:  # ADDITIVE
         new_ts = ts - other
     return new_ts
+
+
+def seasonality_and_trend_strength(
+    ts: TimeSeries,
+    freq: int | None = None,
+    model: Literal["additive", "multiplicative"] = ADDITIVE,
+    method: str = "STL",
+    **kwargs,
+) -> tuple[float, float]:
+    """
+    Computes the strength of the trend and of the seasonality of a TimeSeries instance as defined in [1]_.
+
+    The series is decomposed into a trend `T`, a seasonal component `S` and a remainder `R` with
+    :func:`extract_trend_and_seasonality`. The strengths are then given by:
+
+    - trend strength: ``max(0, 1 - Var(R) / Var(T + R))``
+    - seasonal strength: ``max(0, 1 - Var(R) / Var(S + R))``
+
+    A strength close to 0 means that the series has (almost) no trend / seasonality, a strength close to 1 that
+    the trend / seasonality explains almost all the variation left after removing the other component.
+
+    If the variance in the denominator is zero up to numerical precision (e.g. for a constant series), the
+    corresponding strength is 0.
+
+    Parameters
+    ----------
+    ts
+        The series to compute the strengths for.
+    freq
+        The seasonality period to use.
+    model
+        The type of decomposition to use: ``"additive"`` or ``"multiplicative"``. Defaults to ``"multiplicative"``.
+    method
+        The method to be used to decompose the series.
+        - "STL" : Season-Trend decomposition using LOESS. Only compatible with ``ADDITIVE`` model type.
+        - "MSTL" : Season-Trend decomposition using LOESS with multiple seasonalities.
+        - "naive" : Seasonal decomposition using moving averages.
+        See :func:`extract_trend_and_seasonality` for details.
+    kwargs
+        Other keyword arguments are passed down to the decomposition method.
+
+    Returns
+    -------
+    Tuple[float, float]
+        A tuple of (trend strength, seasonal strength), each between 0 and 1.
+
+    References
+    ----------
+    .. [1] Hyndman, R.J., & Athanasopoulos, G. (2021) Forecasting: principles and practice, 3rd edition,
+       OTexts: Melbourne, Australia. https://otexts.com/fpp3/stlfeatures.html
+    """
+    model = validate_mode(model, param="model", allowed={ADDITIVE, MULTIPLICATIVE})
+
+    trend, season, residual = extract_trend_and_seasonality(
+        ts=ts, freq=freq, model=model, method=method, return_residual=True, **kwargs
+    )
+    trend, season, residual = (
+        x.univariate_values(copy=False) for x in [trend, season, residual]
+    )
+
+    if model == MULTIPLICATIVE:
+        if not all((x > 0).all() for x in (trend, season, residual)):
+            raise_log(
+                ValueError(
+                    "A 'multiplicative' model requires strictly positive values, trend and seasonality."
+                ),
+            )
+        trend, season, residual = (np.log(x) for x in [trend, season, residual])
+
+    scale = np.mean((trend + season + residual) ** 2)
+    return _strength(trend, residual, scale), _strength(season, residual, scale)
+
+
+def _strength(component: np.ndarray, resid: np.ndarray, scale: np.floating) -> float:
+    """
+    Computes ``max(0, 1 - Var(resid) / Var(component + resid))``.
+
+    Returns 0 if ``Var(component + resid)`` is negligible with respect to `scale` (the mean square of the series),
+    as floating point noise would otherwise produce an arbitrary ratio.
+    """
+    total_var = np.var(component + resid)
+    if total_var <= 1e-24 * scale:
+        return 0.0
+    return max(0.0, 1.0 - float(np.var(resid) / total_var))
 
 
 def remove_seasonality(
