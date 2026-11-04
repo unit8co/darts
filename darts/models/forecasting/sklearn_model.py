@@ -732,15 +732,20 @@ class SKLearnModel(GlobalForecastingModel):
     ) -> dict:
         """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
         validation set. This method can be overridden if the model requires a different logic to add the eval set."""
-        val_samples, val_labels, val_weight = self._create_lagged_data(
-            series=val_series,
-            past_covariates=val_past_covariates,
-            future_covariates=val_future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            sample_weight=val_sample_weight,
-            last_static_covariates_shape=self._static_covariates_shape,
-            stride=stride,
-        )
+        try:
+            val_samples, val_labels, val_weight = self._create_lagged_data(
+                series=val_series,
+                past_covariates=val_past_covariates,
+                future_covariates=val_future_covariates,
+                max_samples_per_ts=max_samples_per_ts,
+                sample_weight=val_sample_weight,
+                last_static_covariates_shape=self._static_covariates_shape,
+                stride=stride,
+            )
+        except ValueError as err:
+            raise_log(
+                ValueError(f"Invalid validation set: {err}"),
+            )
         # create validation sets for MultiOutputMixin
         if val_labels.ndim == 2 and isinstance(self.model, MultiOutputMixin):
             val_sets, val_weights = [], []

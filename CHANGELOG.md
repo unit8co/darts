@@ -24,6 +24,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - ExponentialSmoothing parameters `trend` and `seasonal`.
   - Theta and FourTheta parameters `season_mode`, `model_mode`, `trend_mode`.
   - `darts.utils.statistics` parameter `model`.
+- Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
 
 **Fixed**
 
