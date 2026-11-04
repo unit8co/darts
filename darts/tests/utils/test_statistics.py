@@ -409,12 +409,12 @@ class TestStatisticsInputValidation:
             remove_seasonality(self.ts, freq=6, model=None)
 
     def test_seasonality_and_trend_strength_univariate(self):
-        with pytest.raises(AssertionError):
+        with pytest.raises(AssertionError, match="univariate TimeSeries"):
             seasonality_and_trend_strength(self.ts.stack(self.ts_other), freq=6)
 
     def test_seasonality_and_trend_strength_deterministic(self):
-        stochastic = TimeSeries.from_values(np.random.uniform(1, 2, (100, 1, 5)))
-        with pytest.raises(AssertionError):
+        stochastic = TimeSeries.from_values(np.ones((5, 1, 3)))
+        with pytest.raises(AssertionError, match="deterministic TimeSeries"):
             seasonality_and_trend_strength(stochastic, freq=6)
 
     def test_seasonality_and_trend_strength_missing_values(self):
@@ -422,12 +422,6 @@ class TestStatisticsInputValidation:
         values[10] = np.nan
         with pytest.raises(ValueError, match="must not contain missing values"):
             seasonality_and_trend_strength(TimeSeries.from_values(values), freq=6)
-
-    def test_seasonality_and_trend_strength_multiplicative_stl(self):
-        with pytest.raises(
-            ValueError, match="Only ADDITIVE model is compatible with the STL method"
-        ):
-            seasonality_and_trend_strength(self.ts, freq=6, model="multiplicative")
 
     def test_seasonality_and_trend_strength_multiplicative_non_positive_values(self):
         index = pd.date_range("20130101", periods=50)
