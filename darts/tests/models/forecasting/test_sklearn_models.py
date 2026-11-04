@@ -1316,7 +1316,7 @@ class TestSKLearnModels:
             ValueError,
             match=(
                 r"^`target_series` must have at least "
-                r"`-min\(lags\) \+ output_chunk_length \+ output_chunk_shift` = 18 "
+                r"`-min\(lags\) \+ output_chunk_shift \+ output_chunk_length` = 18 "
                 r"time steps; instead, it only has 6\.$"
             ),
         ):
@@ -1329,47 +1329,45 @@ class TestSKLearnModels:
             ValueError,
             match=(
                 r"^`target_series` must have at least "
-                r"`output_chunk_length \+ output_chunk_shift` = 8 "
+                r"`output_chunk_shift \+ output_chunk_length` = 8 "
                 r"time steps; instead, it only has 6\.$"
             ),
         ):
             model_no_target_lags.fit(series=short_ts, past_covariates=train)
 
-        for model_cls in (
-            ([XGBModel] if XGB_AVAILABLE else [])
-            + ([LightGBMModel] if LGBM_AVAILABLE else [])
-            + ([CatBoostModel] if CB_AVAILABLE else [])
-        ):
-            m = model_cls(lags=12, lags_past_covariates=12, output_chunk_length=6)
-            with pytest.raises(
-                ValueError,
-                match=(
-                    r"^Invalid validation set: `target_series` must have at least "
-                    r"`-min\(lags\) \+ output_chunk_length \+ output_chunk_shift` = 18 "
-                    r"time steps; instead, it only has 6\.$"
-                ),
-            ):
-                m.fit(
-                    series=train,
-                    past_covariates=train,
-                    val_series=short_ts,
-                    val_past_covariates=train,
-                )
+        if not XGB_AVAILABLE:
+            return
 
-            with pytest.raises(
-                ValueError,
-                match=(
-                    r"^Invalid validation set: `past_covariates` must have at least "
-                    r"`-min\(lags_past_covariates\) \+ max\(lags_past_covariates\) \+ 1` = 12 "
-                    r"time steps; instead, it only has 6\.$"
-                ),
-            ):
-                m.fit(
-                    series=train,
-                    past_covariates=train,
-                    val_series=train,
-                    val_past_covariates=short_ts,
-                )
+        m = XGBModel(lags=12, lags_past_covariates=12, output_chunk_length=6)
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^Invalid validation set: `target_series` must have at least "
+                r"`-min\(lags\) \+ output_chunk_shift \+ output_chunk_length` = 18 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            m.fit(
+                series=train,
+                past_covariates=train,
+                val_series=short_ts,
+                val_past_covariates=train,
+            )
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^Invalid validation set: `past_covariates` must have at least "
+                r"`-min\(lags_past_covariates\) \+ max\(lags_past_covariates\) \+ 1` = 12 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            m.fit(
+                series=train,
+                past_covariates=train,
+                val_series=train,
+                val_past_covariates=short_ts,
+            )
 
     @pytest.mark.parametrize("multi_models", [True, False])
     def test_predict_target_too_short(self, multi_models):

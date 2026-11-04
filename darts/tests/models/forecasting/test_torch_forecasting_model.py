@@ -2265,7 +2265,10 @@ class TestTorchForecastingModel:
             fit_kwargs_short["val_future_covariates"] = fc
         with pytest.raises(
             ValueError,
-            match=r"^Invalid validation set: The input `series` are too short to extract even a single sample\.",
+            match=(
+                r"^Invalid validation set: The input `series` at index 0 is "
+                r"too short to extract even a single sample\."
+            ),
         ):
             model.fit(**fit_kwargs_short)
 
@@ -2648,7 +2651,7 @@ class TestTorchForecastingModel:
             model.fit(ts, sample_weight=ts[:-1])
         assert (
             str(err.value)
-            == "Invalid `sample_weight`; could not find values in index range: "
+            == "Invalid `sample_weight` at series index 0; could not find values in index range: "
             "2000-01-11 00:00:00 - 2000-01-11 00:00:00."
         )
 

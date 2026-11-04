@@ -1163,14 +1163,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         if val_series is not None:
-            val_dataset = self._build_train_dataset(
-                series=val_series,
-                past_covariates=val_past_covariates,
-                future_covariates=val_future_covariates,
-                sample_weight=val_sample_weight,
-                max_samples_per_ts=max_samples_per_ts,
-                stride=stride,
-            )
             try:
                 val_dataset = self._build_train_dataset(
                     series=val_series,
