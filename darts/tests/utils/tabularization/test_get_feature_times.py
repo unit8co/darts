@@ -885,7 +885,7 @@ class TestGetFeatureTimes:
             )
         assert (
             "`target_series` must have at least "
-            "`output_chunk_length + output_chunk_shift` = 5 "
+            "`output_chunk_shift + output_chunk_length` = 5 "
             "time steps; instead, it only has 2."
         ) == str(err.value)
 
@@ -899,7 +899,7 @@ class TestGetFeatureTimes:
             )
         assert (
             "`target_series` must have at least "
-            "`-min(lags) + output_chunk_length + output_chunk_shift` = 25 "
+            "`-min(lags) + output_chunk_shift + output_chunk_length` = 25 "
             "time steps; instead, it only has 2."
         ) == str(err.value)
 
@@ -926,7 +926,7 @@ class TestGetFeatureTimes:
                 is_training=True,
             )
         assert (
-            "`target_series` must have at least `-min(lags) + output_chunk_length + output_chunk_shift` = 25 "
+            "`target_series` must have at least `-min(lags) + output_chunk_shift + output_chunk_length` = 25 "
             "time steps; instead, it only has 2."
         ) == str(err.value)
         # `past_covariates` too short when training:

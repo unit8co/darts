@@ -2168,7 +2168,7 @@ class TestCreateLaggedTrainingData:
                 )
             assert (
                 "`target_series` must have at least "
-                "`-min(lags) + output_chunk_length + output_chunk_shift` = 25 "
+                "`-min(lags) + output_chunk_shift + output_chunk_length` = 25 "
                 "time steps; instead, it only has 2."
             ) == str(err.value)
             # `lags_past_covariates` too large test:
