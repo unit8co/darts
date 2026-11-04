@@ -73,24 +73,6 @@ class NotImportedModule:
         raise_log(ImportError(self.error_message))
 
 
-# Enums
-class SeasonalityMode(Enum):
-    MULTIPLICATIVE = "multiplicative"
-    ADDITIVE = "additive"
-    NONE = None
-
-
-class TrendMode(Enum):
-    LINEAR = "linear"
-    EXPONENTIAL = "exponential"
-
-
-class ModelMode(Enum):
-    MULTIPLICATIVE = "multiplicative"
-    ADDITIVE = "additive"
-    NONE = None
-
-
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
     """
     Build an iterable, possibly using tqdm (either in notebook or regular mode)
