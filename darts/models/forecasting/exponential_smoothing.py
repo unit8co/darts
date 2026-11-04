@@ -3,7 +3,7 @@ Exponential Smoothing
 ---------------------
 """
 
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
@@ -11,17 +11,18 @@ from sklearn.utils import check_random_state
 
 from darts import TimeSeries
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
+from darts.utils._modes import ADDITIVE, MULTIPLICATIVE, validate_mode
 from darts.utils._statsmodels_utils import SM_RNG_KWARG
-from darts.utils.utils import ModelMode, SeasonalityMode, random_method
+from darts.utils.utils import random_method
 
 
 class ExponentialSmoothing(LocalForecastingModel):
     @random_method
     def __init__(
         self,
-        trend: ModelMode | None = ModelMode.ADDITIVE,
+        trend: Literal["additive", "multiplicative"] | None = ADDITIVE,
         damped: bool | None = False,
-        seasonal: SeasonalityMode | None = SeasonalityMode.ADDITIVE,
+        seasonal: Literal["additive", "multiplicative"] | None = ADDITIVE,
         seasonal_periods: int | None = None,
         error: str | None = "add",
         random_errors: Any | None = None,
@@ -37,14 +38,9 @@ class ExponentialSmoothing(LocalForecastingModel):
         <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`__;
         we refer to this link for the original and more complete documentation of the parameters.
 
-        `trend` must be a ``ModelMode`` Enum member. You can access the Enum with
-        ``from darts.utils.utils import ModelMode``.
-        `seasonal` must be a ``SeasonalityMode`` Enum member. You can access the Enum with
-        ``from darts.utils.utils import SeasonalityMode``.
-
-        ``ExponentialSmoothing(trend=ModelMode.NONE, seasonal=SeasonalityMode.NONE)`` corresponds to a single
+        ``ExponentialSmoothing(trend=None, seasonal=None)`` corresponds to a single
         exponential smoothing.
-        ``ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.NONE)`` corresponds to a Holt's
+        ``ExponentialSmoothing(trend="additive", seasonal=None)`` corresponds to a Holt's
         exponential smoothing.
 
         Please note that automatic `seasonal_period` selection (setting the `seasonal_periods` parameter equal to
@@ -54,13 +50,13 @@ class ExponentialSmoothing(LocalForecastingModel):
         Parameters
         ----------
         trend
-            Type of trend component. Either ``ModelMode.ADDITIVE``, ``ModelMode.MULTIPLICATIVE``, ``ModelMode.NONE``,
-            or ``None``. Defaults to ``ModelMode.ADDITIVE``.
+            Type of trend component: ``"additive"``, ``"multiplicative"``, or ``None`` to disable.
+            Defaults to ``"additive"``.
         damped
             Should the trend component be damped. Defaults to False.
         seasonal
-            Type of seasonal component. Either ``SeasonalityMode.ADDITIVE``, ``SeasonalityMode.MULTIPLICATIVE``,
-            ``SeasonalityMode.NONE``, or ``None``. Defaults to ``SeasonalityMode.ADDITIVE``.
+            Type of seasonal component: ``"additive"``, ``"multiplicative"``, or ``None`` to disable.
+            Defaults to ``"additive"``.
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
@@ -96,10 +92,9 @@ class ExponentialSmoothing(LocalForecastingModel):
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import ExponentialSmoothing
-        >>> from darts.utils.utils import ModelMode, SeasonalityMode
         >>> series = AirPassengersDataset().load()
         >>> # using Holt's exponential smoothing
-        >>> model = ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.MULTIPLICATIVE)
+        >>> model = ExponentialSmoothing(trend="additive", seasonal="multiplicative")
         >>> model.fit(series)
         >>> pred = model.predict(6)
         >>> print(pred.values())
@@ -111,9 +106,13 @@ class ExponentialSmoothing(LocalForecastingModel):
          [573.31519186]]
         """
         super().__init__(min_train_length=min_train_length)
-        self.trend = trend
+        self.trend = validate_mode(
+            trend, param="trend", allowed={ADDITIVE, MULTIPLICATIVE, None}
+        )
         self.damped = damped
-        self.seasonal = seasonal
+        self.seasonal = validate_mode(
+            seasonal, param="seasonal", allowed={ADDITIVE, MULTIPLICATIVE, None}
+        )
         self.infer_seasonal_periods = seasonal_periods is None
         self.seasonal_periods = seasonal_periods
         self.error = error
@@ -141,9 +140,9 @@ class ExponentialSmoothing(LocalForecastingModel):
 
         hw_model = hw.ExponentialSmoothing(
             series.values(copy=False),
-            trend=self.trend if self.trend is None else self.trend.value,
+            trend=self.trend,
             damped_trend=self.damped,
-            seasonal=self.seasonal if self.seasonal is None else self.seasonal.value,
+            seasonal=self.seasonal,
             seasonal_periods=seasonal_periods_param,
             freq=series.freq if series.has_datetime_index else None,
             dates=series.time_index if series.has_datetime_index else None,

@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `darts.utils.statistics.seasonality_and_trend_strength()` to compute the STL-based trend and seasonal strengths of a series, as defined in [Forecasting: Principles and Practice](https://otexts.com/fpp3/stlfeatures.html). [#3321](https://github.com/unit8co/darts/pull/3321) by [fixfon](https://github.com/fixfon).
 - Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#3319](https://github.com/unit8co/darts/pull/3319) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 - Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
 - Improvements to `TimeSeries` :
@@ -18,6 +19,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `__truediv__` now supports dividing by zeros (as series, arrays or scalars). E.g. `series / 0.`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
   - Added a warning when calling `values()` on stochastic series without specifying a sample. [#3307](https://github.com/unit8co/darts/pull/3307) by [Pallav Biyala](https://github.com/Pallav-Biyala).
 - Added `ZeroInflatedLikelihood` for `TorchForecastingModel`: it wraps any univariate torch likelihood and adds a zero-inflation probability per component, e.g. a zero-inflated Poisson or negative binomial for intermittent demand, or a hurdle model with a continuous likelihood such as `GammaLikelihood` for targets that contain zeros. [#3245](https://github.com/unit8co/darts/pull/3245) by [Abhay Juloori](https://github.com/AbhayJuloori).
+- Added parameter `return_residual` to `darts.utils.statistics.extract_trend_and_seasonality()` to optionally return the residual component as a third time series. [#3329](https://github.com/unit8co/darts/pull/3329) by [Dennis Bader](https://github.com/dennisbader).
+- 🔴 Removed enums ``ModelMode``, ``SeasonalityMode``, and ``TrendMode`` from `darts.utils.utils` in favor of string literals. E.g. pass `seasonal="additive` instead of `seasonal=SeasonalityMode.ADDITIVE`. Affected parts are listed below. [#3329](https://github.com/unit8co/darts/pull/3329) by [Dennis Bader](https://github.com/dennisbader).
+  - ExponentialSmoothing parameters `trend` and `seasonal`.
+  - Theta and FourTheta parameters `season_mode`, `model_mode`, `trend_mode`.
+  - `darts.utils.statistics` parameter `model`.
 
 **Fixed**
 
@@ -33,6 +39,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed `ConformalNaiveModel` and `ConformalQRModel` accepting classification models (e.g. `SKLearnClassifierModel`), which resulted in meaningless intervals around the predicted class labels. A `ValueError` is now raised, since conformal models only support regression models. [#3282](https://github.com/unit8co/darts/pull/3282) by [Shiven Aggarwal](https://github.com/shivenaggarwal).
 - Fixed `ForecastingModel.historical_forecasts()` with `retrain=True` mutating caller-provided `Pipeline` instances under `data_transformers`. [#3312](https://github.com/unit8co/darts/pull/3312) by [Pallav Biyala](https://github.com/Pallav-Biyala).
 - Fixed `darts.logging.SuppressStdoutStderr` (used to suppress `Prophet` fit output) permanently redirecting the process-level stdout and stderr to `devnull` when contexts were used at the same time, and crashing in interpreters without usable standard streams (e.g. `pythonw` on Windows). [#3290](https://github.com/unit8co/darts/pull/3290) by [Manas Choksi](https://github.com/choksi2212).
+- Fixed some typos and docstrings for data transformers. [#3330](https://github.com/unit8co/darts/pull/3330) by [GolemCode](https://github.com/GolemCode).
 
 **Dependencies**
 
