@@ -3615,6 +3615,58 @@ class TestTorchForecastingModelInputValidation:
         )
         assert len(pred) == n
 
+    @staticmethod
+    def _manual_rollout(model, n, roll_size, series, **kwargs):
+        """One `predict()` call per chunk; chunks advance by `roll_size` and the last one ends at `n`."""
+        ocl = model.output_chunk_length
+        starts = [0]
+        while starts[-1] + ocl < n:
+            starts.append(min(starts[-1] + roll_size, n - ocl))
+        pred = None
+        for start, end in zip(starts, starts[1:] + [n]):
+            context = series if pred is None else series.append(pred)
+            chunk = model.predict(n=end - start, series=context, **kwargs)
+            pred = chunk if pred is None else pred.append(chunk)
+        return pred
+
+    @pytest.mark.parametrize(
+        "config", param_product([(1, 4), (2, 3), (4, 2)], [False, True])
+    )
+    def test_predict_roll_size_matches_manual_rollout(self, config):
+        """Every forecast step equals the same step of a manual rollout, for any `roll_size` and `n`."""
+        (icl, ocl), use_covariates = config
+        model = DLinearModel(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        kwargs = {}
+        if use_covariates:
+            cov_kwargs = {
+                "length": len(self.series) + 20,
+                "start": self.series.start_time(),
+                "freq": self.series.freq,
+            }
+            kwargs = {
+                "past_covariates": tg.linear_timeseries(**cov_kwargs),
+                "future_covariates": tg.sine_timeseries(**cov_kwargs),
+            }
+        model.fit(series=self.series, **kwargs)
+
+        for roll_size in range(1, ocl + 1):
+            for n in range(1, 2 * ocl + 3):
+                pred = model.predict(
+                    n=n, series=self.series, roll_size=roll_size, **kwargs
+                )
+                expected = self._manual_rollout(
+                    model, n, roll_size, self.series, **kwargs
+                )
+                assert pred.time_index.equals(expected.time_index)
+                np.testing.assert_allclose(
+                    pred.values(), expected.values(), rtol=1e-5, atol=1e-6
+                )
+
     def test_predict_from_dataset_num_samples_zero(self):
         model = DLinearModel(
             input_chunk_length=4, output_chunk_length=2, n_epochs=1, **tfm_kwargs_dev
