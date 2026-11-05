@@ -128,8 +128,8 @@ class Theta(LocalForecastingModel):
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            if (new_series.univariate_values() <= 0).any() and (
-                self.season_mode == MULTIPLICATIVE
+            if self.season_mode == MULTIPLICATIVE and (
+                (new_series.univariate_values(copy=False) <= 0).any()
             ):
                 self.season_mode = ADDITIVE
                 logger.warning(
@@ -352,7 +352,11 @@ class FourTheta(LocalForecastingModel):
             # force the user-defined seasonality to be considered as a true seasonal period.
             self.is_seasonal = self.season_period > 1
 
-        if (new_ts.univariate_values() <= 0).any():
+        if (
+            self.model_mode != ADDITIVE
+            or self.trend_mode != LINEAR
+            or self.season_mode == MULTIPLICATIVE
+        ) and (new_ts.univariate_values(copy=False) <= 0).any():
             self.model_mode = ADDITIVE
             self.trend_mode = LINEAR
             if self.season_mode == MULTIPLICATIVE:
@@ -371,9 +375,9 @@ class FourTheta(LocalForecastingModel):
             )
 
         ts_values = new_ts.univariate_values()
-        if (ts_values <= 0).any() and (
-            self.model_mode != ADDITIVE or self.trend_mode != LINEAR
-        ):
+        if (self.model_mode != ADDITIVE or self.trend_mode != LINEAR) and (
+            ts_values <= 0
+        ).any():
             self.model_mode = ADDITIVE
             self.trend_mode = LINEAR
             logger.warning(

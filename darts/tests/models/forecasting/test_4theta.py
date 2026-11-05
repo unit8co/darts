@@ -47,7 +47,25 @@ class TestFourTheta:
         assert Theta(**params).model_params == model.model_params
 
     def test_negative_series(self, caplog):
-        sine_series = st(length=50)
+        sine_series = st(length=30)
+        # additive linear models fit without warning
+        model = FourTheta(
+            model_mode=ADDITIVE,
+            trend_mode=LINEAR,
+            season_mode=ADDITIVE,
+            normalization=False,
+        )
+        with caplog.at_level(logging.WARNING):
+            model.fit(sine_series)
+            assert "Fallback to additive and linear model" not in caplog.text
+        caplog.clear()
+        assert (
+            model.model_mode == ADDITIVE
+            and model.trend_mode == LINEAR
+            and model.season_mode == ADDITIVE
+        )
+
+        # seasonal models fit but fall back to additive linear model
         model = FourTheta(
             model_mode=MULTIPLICATIVE,
             trend_mode=EXPONENTIAL,
@@ -66,6 +84,7 @@ class TestFourTheta:
         )
         assert np.isfinite(model.predict(6).values()).all()
 
+        # same warning for Theta
         theta_model = Theta(seasonality_period=12, season_mode=MULTIPLICATIVE)
         with caplog.at_level(logging.WARNING):
             theta_model.fit(sine_series)
