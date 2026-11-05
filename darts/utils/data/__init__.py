@@ -29,6 +29,27 @@ if TYPE_CHECKING:
     from darts.utils.data.torch_datasets.training_dataset import (
         TorchTrainingDataset as TorchTrainingDataset,
     )
+    from darts.utils.data.torch_datasets.utils import (
+        ModuleStage as ModuleStage,
+    )
+    from darts.utils.data.torch_datasets.utils import (
+        PLModuleInput as PLModuleInput,
+    )
+    from darts.utils.data.torch_datasets.utils import (
+        PLModuleOutput as PLModuleOutput,
+    )
+    from darts.utils.data.torch_datasets.utils import (
+        TorchInferenceBatch as TorchInferenceBatch,
+    )
+    from darts.utils.data.torch_datasets.utils import (
+        TorchInferenceSample as TorchInferenceSample,
+    )
+    from darts.utils.data.torch_datasets.utils import (
+        TorchTrainingBatch as TorchTrainingBatch,
+    )
+    from darts.utils.data.torch_datasets.utils import (
+        TorchTrainingSample as TorchTrainingSample,
+    )
 
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "SequentialTorchInferenceDataset": (
@@ -53,6 +74,34 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     ),
     "TorchTrainingDataset": (
         "darts.utils.data.torch_datasets.training_dataset",
+        "(Py)Torch",
+    ),
+    "TorchTrainingSample": (
+        "darts.utils.data.torch_datasets.utils",
+        "(Py)Torch",
+    ),
+    "TorchInferenceSample": (
+        "darts.utils.data.torch_datasets.utils",
+        "(Py)Torch",
+    ),
+    "TorchTrainingBatch": (
+        "darts.utils.data.torch_datasets.utils",
+        "(Py)Torch",
+    ),
+    "TorchInferenceBatch": (
+        "darts.utils.data.torch_datasets.utils",
+        "(Py)Torch",
+    ),
+    "ModuleStage": (
+        "darts.utils.data.torch_datasets.utils",
+        "(Py)Torch",
+    ),
+    "PLModuleInput": (
+        "darts.utils.data.torch_datasets.utils",
+        "(Py)Torch",
+    ),
+    "PLModuleOutput": (
+        "darts.utils.data.torch_datasets.utils",
         "(Py)Torch",
     ),
 }

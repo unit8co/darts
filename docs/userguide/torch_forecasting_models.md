@@ -256,9 +256,11 @@ prediction = model.predict(n=n,
 ## Advanced Functionnalities
 ### Saving and Loading Model States
 
-❗ Warning ❗ At this stage of Darts development, we are not (yet) ensuring backward compatibility, so it might not always be possible to load a model saved by an older version of the library.
+Darts offers several ways for saving and loading TFMs. Two artifacts are stored on every save: a Darts `.pt` wrapper and a PyTorch (Lightning) `.ckpt` checkpoint containing the internal model's state dict and states of other objects.
 
-For models trained on GPU with versions of Darts <= 0.22.0 that need to be loaded on CPU with a version of Darts >= 0.23.0, please look at the code snipped provided in this [issue](https://github.com/unit8co/darts/issues/1245).
+**Security:** Loading uses safe-by-default deserialization to mitigate malicious pickle files (CWE-502). Use `trusted=True` only for files you fully trust, or register custom classes/functions via `add_safe_globals` / `with safe_globals(...)`. See the [safe model loading guide](safe_model_loading.md) for details.
+
+**Note:** Backward compatibility is not always guaranteed. Loading a model saved by an older Darts version might fail.
 
 #### Automatic checkpointing
 
@@ -294,21 +296,22 @@ You can load a model to CPU that was trained and saved on GPU (see detailed [doc
 
 ```python
 # define a model using gpu as accelerator
-model = SomeTorchForecastingModel(...,
-                                  model_name='my_model',
-                                  save_checkpoints=True,
-                                  pl_trainer_kwargs={
-                                                     "accelerator":"gpu",
-                                                     "devices": -1,
-                                                     })
+model = SomeTorchForecastingModel(
+    ...,
+    model_name='my_model',
+    save_checkpoints=True,
+    pl_trainer_kwargs={"accelerator":"gpu", "devices": -1},
+)
 
 # train the model, automatic checkpoints will be created
 model.fit(...)
 
 # specify the device to which the model should be loaded
-loaded_model = SomeTorchForecastingModel.load_from_checkpoint(model_name='my_model',
-                                                              best=True,
-                                                              map_location="cpu")
+loaded_model = SomeTorchForecastingModel.load_from_checkpoint(
+    model_name='my_model',
+    best=True,
+    map_location="cpu",
+)
 loaded_model.to_cpu()
 
 # run inference
@@ -329,9 +332,11 @@ To re-train or fine-tune a model using a different optimizer and/or learning rat
 
 ```python
 # model with identical architecture but different optimizer (default: torch.optim.Adam)
-model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & values as in original model
-                                           optimizer_cls=torch.optim.SGD,
-                                           optimizer_kwargs={"lr": 0.001})
+model_finetune = SomeTorchForecastingModel(
+    ...,  # use identical parameters & values as in original model
+    optimizer_cls=torch.optim.SGD,
+    optimizer_kwargs={"lr": 0.001},
+)
 
 # load the weights from a checkpoint
 model_finetune.load_weights_from_checkpoint(model_name='my_model', best=True)
@@ -343,9 +348,11 @@ and similarly for manual saves and the learning rate scheduler:
 
 ```python
 # model with identical architecture but different lr scheduler (default: None)
-model_finetune = SomeTorchForecastingModel(...,  # use identical parameters & values as in original model
-                                           lr_scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
-                                           lr_scheduler_kwargs={"gamma": 0.09})
+model_finetune = SomeTorchForecastingModel(
+    ...,  # use identical parameters & values as in original model
+    lr_scheduler_cls=torch.optim.lr_scheduler.ExponentialLR,
+    lr_scheduler_kwargs={"gamma": 0.09}
+)
 
 # load the weights from a manual save
 model_finetune.load_weights("/your/path/to/save/model.pt")
@@ -374,48 +381,55 @@ For a comprehensive walkthrough of fine-tuning Torch Forecasting Models and Foun
 
 #### Exporting model to ONNX format for inference
 
-It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. The example below works for any `TorchForecastingModel` except `RNNModel` and for optional usage of past, future and / or static covariates. Note that all series and covariates must extend far enough into the past (`input_chunk_length)` and future (`output_chunk_length`) relative to the end of the target `series`. It will not be possible to forecast a horizon `n > output_chunk_length` without implementing the auto-regression logic.
+Exporting models to ONNX format and running inference optional dependencies `onnx>=1.0.0`, `onnxruntime>=1.24.1`, and `onnxscript>=0.7.0`. After export, inference can run **without PyTorch** using only `onnxruntime`, NumPy, and Darts' torch-free helpers in `darts.utils.onnx.inference`.
+
+`to_onnx()` exports the model to ONNX format.
 
 ```python
 model = SomeTorchForecastingModel(...)
 model.fit(...)
+horizon = model.output_chunk_length
 
-# make sure to have `onnx` and `onnxruntime` installed
-onnx_filename = "example_onnx.onnx"
+# export requires torch + onnx
+onnx_filename = "example.onnx"
 model.to_onnx(onnx_filename, export_params=True)
 ```
 
-Now, to load the model and predict steps after the end of the series:
+Now forecast using Darts' `run_onnx_prediction()` which mirrors `TorchForecastingModel.predict()` for deterministic models with ``num_samples=1`` and probabilistic models with ``predict_likelihood_parameters=True``.
 
 ```python
-from typing import Optional
-import onnx
 import onnxruntime as ort
-import numpy as np
-from darts import TimeSeries
-from darts.utils.onnx_utils.py import prepare_onnx_inputs
+from darts.utils.onnx import run_onnx_prediction
 
-onnx_model = onnx.load(onnx_filename)
-onnx.checker.check_model(onnx_model)
-ort_session = ort.InferenceSession(onnx_filename)
+session = ort.InferenceSession(onnx_filename)
 
-# use helper function to extract the features from the series
-past_feats, future_feats, static_feats = prepare_onnx_inputs(
-    model=model,
+# returns forecasts as (a sequence of) `TimeSeries`
+forecast = run_onnx_prediction(
+    n=horizon,
+    session=session,
     series=series,
     past_covariates=ts_past,
     future_covariates=ts_future,
 )
-
-# extract only the features expected by the model
-ort_inputs = {}
-for name, arr in zip(['x_past', 'x_future', 'x_static'], [past_feats, future_feats, static_feats]):
-    if name in [inp.name for inp in list(ort_session.get_inputs())]:
-        ort_inputs[name] = arr
-
-# output has shape (batch, output_chunk_length, n components, 1 or n likelihood params)
-ort_out = ort_session.run(None, ort_inputs)
 ```
+
+For a single ONNX step (advanced / custom loops), extract features with `prepare_onnx_inputs` using the spec:
+
+```python
+from darts.utils.onnx.inference import OnnxModelSpec, prepare_onnx_inputs
+
+session = ort.InferenceSession(onnx_filename)
+spec = OnnxModelSpec.from_session(session)
+onnx_inputs = prepare_onnx_inputs(
+    series=series,
+    spec=spec,
+    past_covariates=ts_past,
+    future_covariates=ts_future,
+)
+forecast = session.run(spec.output_names, onnx_inputs)
+```
+
+Raw ONNX output tensors (NumPy arrays) have shape `(batch, output_chunk_length, n_components, n_likelihood_params)`. Models trained with a `likelihood` export those raw parameters (sampling is not in the graph).
 
 ### Callbacks
 
@@ -575,7 +589,7 @@ impacts the time required to train the model for one epoch. You have two options
 * Specify some `max_samples_per_ts` argument to the `fit()` function. This will use only the most recent `max_samples_per_ts` samples
 per `TimeSeries` for training.
 * If this option does not do what you want, you can implement your own `TorchTrainingDataset` instance, and define
-how to slice your `TimeSeries` for training yourself. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data)
+how to slice your `TimeSeries` for training yourself. Each `__getitem__` must return a `TorchTrainingSample`. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data/torch_datasets)
 to see examples of how to do it.
 
 

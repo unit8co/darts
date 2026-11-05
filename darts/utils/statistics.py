@@ -5,6 +5,7 @@ TimeSeries Statistics
 
 import math
 from collections.abc import Sequence
+from typing import Literal, overload
 
 import matplotlib.axes
 import matplotlib.pyplot as plt
@@ -27,10 +28,10 @@ from darts.logging import get_logger, raise_log
 from darts.metrics.metrics import _tolerance_coverages
 from darts.metrics.utils import _get_tolerance_levels
 from darts.typing import TimeSeriesLike
+from darts.utils._modes import ADDITIVE, MULTIPLICATIVE, validate_mode
 from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.missing_values import fill_missing_values
 from darts.utils.ts_utils import get_single_series
-from darts.utils.utils import ModelMode, SeasonalityMode
 
 _NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
 _NP_TRAPEZOID_FN = np.trapezoid if _NP_2_OR_ABOVE else np.trapz
@@ -137,15 +138,38 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
         return math.sqrt((1 + 2 * sum(map(lambda x: x**2, r[: m - 1]))) / length)
 
 
+@overload
 def extract_trend_and_seasonality(
     ts: TimeSeries,
     freq: int | Sequence[int] | None = None,
-    model: SeasonalityMode | ModelMode = ModelMode.MULTIPLICATIVE,
+    model: Literal["additive", "multiplicative"] = MULTIPLICATIVE,
     method: str = "naive",
+    return_residual: Literal[False] = False,
     **kwargs,
-) -> tuple[TimeSeries, TimeSeries]:
+) -> tuple[TimeSeries, TimeSeries]: ...
+
+
+@overload
+def extract_trend_and_seasonality(
+    ts: TimeSeries,
+    freq: int | Sequence[int] | None = None,
+    model: Literal["additive", "multiplicative"] = MULTIPLICATIVE,
+    method: str = "naive",
+    return_residual: Literal[True] = True,
+    **kwargs,
+) -> tuple[TimeSeries, TimeSeries, TimeSeries]: ...
+
+
+def extract_trend_and_seasonality(
+    ts: TimeSeries,
+    freq: int | Sequence[int] | None = None,
+    model: Literal["additive", "multiplicative"] = MULTIPLICATIVE,
+    method: str = "naive",
+    return_residual: bool = False,
+    **kwargs,
+) -> tuple[TimeSeries, TimeSeries] | tuple[TimeSeries, TimeSeries, TimeSeries]:
     """
-    Extracts trend and seasonality from a TimeSeries instance using `statsmodels.tsa`.
+    Extracts trend, seasonality and residual from a TimeSeries instance using `statsmodels.tsa`.
 
     Parameters
     ----------
@@ -154,23 +178,24 @@ def extract_trend_and_seasonality(
     freq
         The seasonality period to use.
     model
-        The type of decomposition to use.
-        Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enum member.
-        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
-        Defaults ``ModelMode.MULTIPLICATIVE``.
+        The type of decomposition to use: ``"additive"`` or ``"multiplicative"``. Defaults to ``"multiplicative"``.
     method
         The method to be used to decompose the series.
         - "naive" : Seasonal decomposition using moving averages [1]_.
         - "STL" : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.
         - "MSTL" : Season-Trend decomposition using LOESS with multiple seasonalities [3]_.
         Only compatible with ``ADDITIVE`` model type.
+    return_residual
+        If ``False`` (default), return only the trend and seasonal parts. If ``True``, also return the residual
+        part as a third time series.
     kwargs
         Other keyword arguments are passed down to the decomposition method.
 
     Returns
     -------
-    Tuple[TimeSeries, TimeSeries]
-        A tuple of (trend, seasonal) time series.
+    Tuple[TimeSeries, TimeSeries] | Tuple[TimeSeries, TimeSeries, TimeSeries]
+        A tuple ``(trend, seasonal)`` when ``return_residual=False``, otherwise
+        ``(trend, seasonal, residual)``.
 
     References
     ----------
@@ -178,15 +203,7 @@ def extract_trend_and_seasonality(
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     .. [3] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html
     """
-
-    ts._assert_univariate()
-    if not (model in ModelMode or model in SeasonalityMode):  # pragma: no cover
-        raise_log(ValueError(f"Unknown value for model_mode: {model}."))
-
-    if model is SeasonalityMode.NONE:
-        raise_log(
-            ValueError("The model must be either MULTIPLICATIVE or ADDITIVE."),
-        )
+    model = validate_mode(model, param="model", allowed={ADDITIVE, MULTIPLICATIVE})
 
     if isinstance(freq, Sequence) and method != "MSTL":
         raise_log(
@@ -195,41 +212,32 @@ def extract_trend_and_seasonality(
             ),
         )
 
+    values = ts.to_series(copy=False)
+    if np.isnan(values).any():
+        raise_log(ValueError("`ts` must not contain missing values."))
+
     if method == "naive":
         decomp = seasonal_decompose(
-            ts.to_series(), period=freq, model=model.value, extrapolate_trend="freq"
+            values, period=freq, model=model, extrapolate_trend="period"
         )
-
     elif method == "STL":
-        if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE]:
+        if model != ADDITIVE:
             raise_log(
                 ValueError(
                     f"Only ADDITIVE model is compatible with the STL method. Current model is {model}."
                 ),
             )
-
-        decomp = STL(
-            endog=ts.to_series(),
-            period=freq,
-            **kwargs,
-        ).fit()
-
+        decomp = STL(endog=values, period=freq, **kwargs).fit()
     elif method == "MSTL":
-        if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE]:
+        if model != ADDITIVE:
             raise_log(
                 ValueError(
                     f"Only ADDITIVE model is compatible with the MSTL method. Current model is {model}."
                 ),
             )
-
-        decomp = MSTL(
-            endog=ts.to_series(),
-            periods=freq,
-            **kwargs,
-        ).fit()
-
+        decomp = MSTL(endog=values, periods=freq, **kwargs).fit()
     else:
-        raise_log(ValueError(f"Unknown value for method: {method}."))
+        raise_log(ValueError(f"Unknown value for `method`: {method}."))
 
     # keep components, ... only if the number of components matches
     season_shape = decomp.seasonal.shape
@@ -260,11 +268,23 @@ def extract_trend_and_seasonality(
         copy=False,
         **ts._attrs,
     )
-    return trend, season
+    if not return_residual:
+        return trend, season
+
+    residual = TimeSeries(
+        times=ts.time_index,
+        values=decomp.resid,
+        components=ts.components,
+        copy=False,
+        **ts._attrs,
+    )
+    return trend, season, residual
 
 
 def remove_from_series(
-    ts: TimeSeries, other: TimeSeries, model: SeasonalityMode | ModelMode
+    ts: TimeSeries,
+    other: TimeSeries,
+    model: Literal["additive", "multiplicative"],
 ) -> TimeSeries:
     """
     Removes the TimeSeries `other` from the TimeSeries `ts` as specified by `model`.
@@ -277,10 +297,7 @@ def remove_from_series(
     other
         The TimeSeries to remove.
     model
-        The type of model considered.
-        Must be ``from darts.utils.utils import ModelMode, SeasonalityMode`` Enums member.
-        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
-        Defaults ``ModelMode.MULTIPLICATIVE``.
+        The type of model considered: ``"additive"`` or ``"multiplicative"``.
 
     Returns
     -------
@@ -289,26 +306,103 @@ def remove_from_series(
     """
 
     ts._assert_univariate()
-    if not (model in ModelMode or model in SeasonalityMode):  # pragma: no cover
-        raise_log(ValueError(f"Unknown value for model_mode: {model}."))
+    model = validate_mode(model, param="model", allowed={ADDITIVE, MULTIPLICATIVE})
 
-    if model.value == "multiplicative":
+    if model == MULTIPLICATIVE:
         new_ts = ts / other
-    elif model.value == "additive":
+    else:  # ADDITIVE
         new_ts = ts - other
-    else:
-        raise_log(
-            ValueError(
-                f"Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {model}."
-            )
-        )
     return new_ts
+
+
+def seasonality_and_trend_strength(
+    ts: TimeSeries,
+    freq: int | None = None,
+    model: Literal["additive", "multiplicative"] = ADDITIVE,
+    method: str = "STL",
+    **kwargs,
+) -> tuple[float, float]:
+    """
+    Computes the strength of the trend and of the seasonality of a TimeSeries instance as defined in [1]_.
+
+    The series is decomposed into a trend `T`, a seasonal component `S` and a remainder `R` with
+    :func:`extract_trend_and_seasonality`. The strengths are then given by:
+
+    - trend strength: ``max(0, 1 - Var(R) / Var(T + R))``
+    - seasonal strength: ``max(0, 1 - Var(R) / Var(S + R))``
+
+    A strength close to 0 means that the series has (almost) no trend / seasonality, a strength close to 1 that
+    the trend / seasonality explains almost all the variation left after removing the other component.
+
+    If the variance in the denominator is zero up to numerical precision (e.g. for a constant series), the
+    corresponding strength is 0.
+
+    Parameters
+    ----------
+    ts
+        The series to compute the strengths for.
+    freq
+        The seasonality period to use.
+    model
+        The type of decomposition to use: ``"additive"`` or ``"multiplicative"``. Defaults to ``"multiplicative"``.
+    method
+        The method to be used to decompose the series.
+        - "STL" : Season-Trend decomposition using LOESS. Only compatible with ``ADDITIVE`` model type.
+        - "MSTL" : Season-Trend decomposition using LOESS with multiple seasonalities.
+        - "naive" : Seasonal decomposition using moving averages.
+        See :func:`extract_trend_and_seasonality` for details.
+    kwargs
+        Other keyword arguments are passed down to the decomposition method.
+
+    Returns
+    -------
+    Tuple[float, float]
+        A tuple of (trend strength, seasonal strength), each between 0 and 1.
+
+    References
+    ----------
+    .. [1] Hyndman, R.J., & Athanasopoulos, G. (2021) Forecasting: principles and practice, 3rd edition,
+       OTexts: Melbourne, Australia. https://otexts.com/fpp3/stlfeatures.html
+    """
+    model = validate_mode(model, param="model", allowed={ADDITIVE, MULTIPLICATIVE})
+
+    trend, season, residual = extract_trend_and_seasonality(
+        ts=ts, freq=freq, model=model, method=method, return_residual=True, **kwargs
+    )
+    trend, season, residual = (
+        x.univariate_values(copy=False) for x in [trend, season, residual]
+    )
+
+    if model == MULTIPLICATIVE:
+        if not all((x > 0).all() for x in (trend, season, residual)):
+            raise_log(
+                ValueError(
+                    "A 'multiplicative' model requires strictly positive values, trend and seasonality."
+                ),
+            )
+        trend, season, residual = (np.log(x) for x in [trend, season, residual])
+
+    scale = np.mean((trend + season + residual) ** 2)
+    return _strength(trend, residual, scale), _strength(season, residual, scale)
+
+
+def _strength(component: np.ndarray, resid: np.ndarray, scale: np.floating) -> float:
+    """
+    Computes ``max(0, 1 - Var(resid) / Var(component + resid))``.
+
+    Returns 0 if ``Var(component + resid)`` is negligible with respect to `scale` (the mean square of the series),
+    as floating point noise would otherwise produce an arbitrary ratio.
+    """
+    total_var = np.var(component + resid)
+    if total_var <= 1e-24 * scale:
+        return 0.0
+    return max(0.0, 1.0 - float(np.var(resid) / total_var))
 
 
 def remove_seasonality(
     ts: TimeSeries,
     freq: int | None = None,
-    model: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
+    model: Literal["additive", "multiplicative"] = MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
 ) -> TimeSeries:
@@ -322,10 +416,8 @@ def remove_seasonality(
     freq
         The seasonality period to use.
     model
-        The type of decomposition to use.
-        Must be a `from darts import SeasonalityMode` Enum member.
-        Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
-        Defaults SeasonalityMode.MULTIPLICATIVE.
+        The type of decomposition to use: ``"additive"`` or ``"multiplicative"``.
+        Defaults to ``"multiplicative"``.
     method
         The method to be used to decompose the series.
         - "naive" : Seasonal decomposition using moving averages [1]_.
@@ -345,11 +437,7 @@ def remove_seasonality(
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     """
     ts._assert_univariate()
-    if model is SeasonalityMode.NONE:
-        raise_log(
-            ValueError("The model must be either MULTIPLICATIVE or ADDITIVE."),
-        )
-    if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL":
+    if model != ADDITIVE and method == "STL":
         raise_log(
             ValueError(
                 f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}."
@@ -363,7 +451,7 @@ def remove_seasonality(
 
 def remove_trend(
     ts: TimeSeries,
-    model: ModelMode = ModelMode.MULTIPLICATIVE,
+    model: Literal["additive", "multiplicative"] = MULTIPLICATIVE,
     method: str = "naive",
     **kwargs,
 ) -> TimeSeries:
@@ -375,10 +463,8 @@ def remove_trend(
     ts
         The TimeSeries to adjust.
     model
-        The type of decomposition to use.
-        Must be a ``from darts.utils.utils import ModelMode`` Enum member.
-        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
-        Defaults ``ModelMode.MULTIPLICATIVE``.
+        The type of decomposition to use: ``"additive"`` or ``"multiplicative"``.
+        Defaults to ``"multiplicative"``.
     method
         The method to be used to decompose the series.
         - "naive" : Seasonal decomposition using moving averages [1]_.
@@ -400,7 +486,7 @@ def remove_trend(
 
     ts._assert_univariate()
 
-    if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL":
+    if model != ADDITIVE and method == "STL":
         raise_log(
             ValueError(
                 f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}."
@@ -452,7 +538,7 @@ def stationarity_tests(
 
 def stationarity_test_kpss(
     ts: TimeSeries, regression: str = "c", nlags: str | int = "auto"
-) -> set:
+) -> tuple:
     """
     Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
     using :func:`statsmodels.tsa.stattools.kpss`. See [1]_.
@@ -473,7 +559,7 @@ def stationarity_test_kpss(
 
     Returns
     -------
-    set
+    tuple
         | kpss_stat: The test statistic.
         | pvalue: The p-value of the test. The p-value is interpolated from Table 1 in [2]_,
         | and a boundary point is returned if the test statistic is outside the table of critical values,
@@ -497,7 +583,7 @@ def stationarity_test_adf(
     maxlag: None | int = None,
     regression: str = "c",
     autolag: None | str = "AIC",
-) -> set:
+) -> tuple:
     """
     Provides Augmented Dickey-Fuller unit root test for a time series,
     using :func:`statsmodels.tsa.stattools.adfuller`. See [1]_.
@@ -524,7 +610,7 @@ def stationarity_test_adf(
 
     Returns
     -------
-    set
+    tuple
         | adf: The test statistic.
         | pvalue: MacKinnon's approximate p-value based on [2]_.
         | usedlag: The number of lags used.
@@ -547,9 +633,10 @@ def stationarity_test_adf(
 def granger_causality_tests(
     ts_cause: TimeSeries,
     ts_effect: TimeSeries,
-    maxlag: int,
+    maxlag: int | Sequence[int],
     addconst: bool = True,
-) -> None:
+    check_stationarity: bool = True,
+) -> dict:
     """
     Provides four tests for granger non causality of 2 time series using
     :func:`statsmodels.tsa.stattools.grangercausalitytests`.
@@ -566,9 +653,13 @@ def granger_causality_tests(
         Univariate time series 'Granger caused' by ts_cause.
     maxlag
         If an integer, computes the test for all lags up to maxlag.
-        If an iterable, computes the tests only for the lags in maxlag.
+        If an sequence of integers, computes the tests only for the lags in maxlag.
     addconst
         Include a constant in the model.
+    check_stationarity
+        Whether to perform stationarity tests on `ts_cause` and `ts_effect` before running the
+        Granger causality test. If set to ``False``, the stationarity checks and any associated
+        warnings are skipped.
 
     Returns
     -------
@@ -603,14 +694,17 @@ def granger_causality_tests(
     ts_cause = ts_cause.slice_intersect(ts_effect)
     ts_effect = ts_effect.slice_intersect(ts_cause)
 
-    if not stationarity_tests(ts_cause):
-        logger.warning(
-            "ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context."
-        )
-    if not stationarity_tests(ts_effect):
-        logger.warning(
-            "ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context."
-        )
+    if check_stationarity:
+        if not stationarity_tests(ts_cause):
+            logger.warning(
+                "ts_cause doesn't seem to be stationary. Please review "
+                "granger causality validity in your problem context."
+            )
+        if not stationarity_tests(ts_effect):
+            logger.warning(
+                "ts_effect doesn't seem to be stationary. Please review "
+                "granger causality validity in your problem context."
+            )
 
     return grangercausalitytests(
         np.concatenate(

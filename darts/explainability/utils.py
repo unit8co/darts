@@ -275,8 +275,6 @@ def get_component_names(
 
     Parameters
     ----------
-    model
-        any `ForecastingModel`.
     series
          A sequence of target `TimeSeries`.
     past_covariates

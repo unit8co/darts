@@ -1,5 +1,4 @@
 import copy
-import itertools
 import logging
 import os
 import sys
@@ -45,6 +44,7 @@ from darts.models import (
     NaiveSeasonal,
     RegressionEnsembleModel,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.mlflow import (
     _build_metric_keys,
     _flush_logged_metrics,
@@ -2361,7 +2361,7 @@ class TestAutoLogBacktestMetrics:
                 assert np.isnan(row["window_index"])
                 assert row["value"] == pytest.approx(ref[s_idx][w_idx])
 
-    @pytest.mark.parametrize("config", list(itertools.product([1, 3], [True, False])))
+    @pytest.mark.parametrize("config", param_product([1, 3], [True, False]))
     def test_autolog_backtest_log_aggregate_scalar(
         self, autolog_context, mlflow_tracking, config
     ):

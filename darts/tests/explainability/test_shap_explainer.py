@@ -1,5 +1,4 @@
 import copy
-import itertools
 import logging
 from datetime import date, timedelta
 
@@ -26,11 +25,13 @@ from darts.models import (
     LinearRegressionModel,
     NaiveSeasonal,
     SKLearnModel,
+    XGBModel,
 )
 from darts.tests.conftest import (
     GBM_AVAILABLE,
     LGBM_AVAILABLE,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 from darts.utils.utils import generate_index
 
@@ -202,17 +203,16 @@ class TestShapExplainer:
                     **cb_test_params,
                 },
             },
-            # # TODO: add back test once raising min python version to 3.11
-            # {
-            #     "model_cls": XGBModel,
-            #     "config": {
-            #         "lags": 4,
-            #         "lags_past_covariates": [-1, -2, -3],
-            #         "lags_future_covariates": [0],
-            #         "output_chunk_length": 4,
-            #         "add_encoders": add_encoders,
-            #     },
-            # },
+            {
+                "model_cls": XGBModel,
+                "config": {
+                    "lags": 4,
+                    "lags_past_covariates": [-1, -2, -3],
+                    "lags_future_covariates": [0],
+                    "output_chunk_length": 4,
+                    "add_encoders": add_encoders,
+                },
+            },
         ],
     )
     def test_gbm_creation(self, model):
@@ -803,14 +803,13 @@ class TestShapExplainer:
     @pytest.mark.parametrize(
         "config",
         [(LinearRegressionModel, {})]
-        # # TODO: add back test once raising min python version to 3.11
-        # + ([(XGBModel, {**xgb_test_params}})] if XGB_AVAILABLE else [])
         + (
             [
+                (XGBModel, {**xgb_test_params}),
                 (
                     LightGBMModel,
                     {"likelihood": "quantile", "quantiles": [0.5], **lgbm_test_params},
-                )
+                ),
             ]
             if GBM_AVAILABLE
             else []
@@ -1295,14 +1294,13 @@ class TestShapExplainer:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [[0.1, 0.5, 0.9], [0.5]],
             [(LinearRegressionModel, {})]
             + (
                 [
                     (LightGBMModel, lgbm_test_params),
-                    # # TODO: add back test once raising min python version to 3.11
-                    # (XGBModel, xgb_test_params),
+                    (XGBModel, xgb_test_params),
                     (CatBoostModel, cb_test_params),
                 ]
                 if GBM_AVAILABLE
@@ -1405,14 +1403,13 @@ class TestShapExplainer:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [[0.1, 0.5, 0.9], [0.5]],
             [(LinearRegressionModel, {})]
             + (
                 [
                     (LightGBMModel, lgbm_test_params),
-                    # # TODO: add back test once raising min python version to 3.11
-                    # (XGBModel, xgb_test_params),
+                    (XGBModel, xgb_test_params),
                     (CatBoostModel, cb_test_params),
                 ]
                 if GBM_AVAILABLE

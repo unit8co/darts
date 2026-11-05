@@ -1,5 +1,4 @@
 import copy
-import itertools
 import os
 
 import numpy as np
@@ -19,6 +18,7 @@ from darts.models import (
 )
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 
 if TORCH_AVAILABLE:
@@ -28,7 +28,12 @@ else:
 
 if TORCH_AVAILABLE:
     from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
-    from darts.utils.likelihood_models.torch import QuantileRegression
+    from darts.utils.likelihood_models.torch import (
+        GammaLikelihood,
+        PoissonLikelihood,
+        QuantileRegression,
+        ZeroInflatedLikelihood,
+    )
 
 
 def _make_ts(start_value=0, n=100):
@@ -385,6 +390,28 @@ class TestEnsembleModels:
             naive_ensemble.predict(n=4, predict_likelihood_parameters=True)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
+    def test_same_likelihood_zero_inflated(self):
+        def model(likelihood):
+            return DLinearModel(
+                input_chunk_length=4,
+                output_chunk_length=1,
+                likelihood=likelihood,
+                **tfm_kwargs,
+            )
+
+        # zero-inflated likelihoods must also wrap the same distribution
+        ensemble = NaiveEnsembleModel([
+            model(ZeroInflatedLikelihood(PoissonLikelihood())),
+            model(ZeroInflatedLikelihood(PoissonLikelihood())),
+        ])
+        assert ensemble.supports_likelihood_parameter_prediction
+        ensemble = NaiveEnsembleModel([
+            model(ZeroInflatedLikelihood(PoissonLikelihood())),
+            model(ZeroInflatedLikelihood(GammaLikelihood())),
+        ])
+        assert not ensemble.supports_likelihood_parameter_prediction
+
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_predict_likelihood_parameters_univariate_naive_ensemble(self):
         m_proba_quantile1 = LinearRegressionModel(
             lags=2,
@@ -664,7 +691,7 @@ class TestEnsembleModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product([NaiveEnsembleModel, RegressionEnsembleModel], [True, False]),
+        param_product([NaiveEnsembleModel, RegressionEnsembleModel], [True, False]),
     )
     def test_sample_weight_global(self, config):
         """Check sample weights for ensemble models with global forecasting models.

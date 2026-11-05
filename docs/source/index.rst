@@ -20,7 +20,7 @@ Time Series Made Easy in Python
    <p align="center" style="margin-top: 20px;">
        <a href="https://badge.fury.io/py/darts"><img src="https://badge.fury.io/py/darts.svg" alt="PyPI version"></a>
        <a href="https://anaconda.org/conda-forge/u8darts-all"><img src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" alt="Conda Version"></a>
-       <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Supported versions">
+       <img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Supported versions">
        <a href="https://hub.docker.com/r/unit8/darts"><img src="https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date" alt="Docker Image Version"></a>
        <img src="https://img.shields.io/github/release-date/unit8co/darts" alt="GitHub Release Date">
        <img src="https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master" alt="GitHub Workflow Status">
@@ -208,7 +208,7 @@ Articles on Selected Topics
 Quick Install
 -------------
 
-We recommend to first setup a clean Python environment for your project with Python 3.10+ using your favorite tool
+We recommend to first setup a clean Python environment for your project with Python 3.11+ using your favorite tool
 (`conda <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_,
 `venv <https://docs.python.org/3/library/venv.html>`_, `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with
 or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_).
@@ -683,18 +683,36 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - ✅
      - `TimesFM 1.0 paper <https://arxiv.org/abs/2310.10688>`_, `Google blog post <https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting>`_
+   * - `TimesFM3Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.timesfm3_model.html#darts.models.forecasting.timesfm3_model.TimesFM3Model>`_
+     - ✅ ✅
+     - ✅ ✅ 🔴
+     - ✅ ✅
+     - ✅
+     - `TimesFM 1.0 paper <https://arxiv.org/abs/2310.10688>`_, `TimesFM 3.0 model card <https://huggingface.co/google/timesfm-3.0-pytorch>`_
    * - `TiRexModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tirex_model.html#darts.models.forecasting.tirex_model.TiRexModel>`_
      - ✅ ✅
      - 🔴 🔴 🔴
      - ✅ ✅
      - ✅
      - `TiRex paper <https://arxiv.org/abs/2505.23719>`_, `TiRex GitHub <https://github.com/NX-AI/tirex>`_
+   * - `TiRex2Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tirex2_model.html#darts.models.forecasting.tirex2_model.TiRex2Model>`_
+     - ✅ ✅
+     - ✅ ✅ 🔴
+     - ✅ ✅
+     - ✅
+     - `TiRex-2 paper <https://arxiv.org/abs/2607.01204>`_, `TiRex-2 GitHub <https://github.com/NX-AI/tirex-2>`_
    * - `PatchTSTFMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.patchtst_fm_model.html#darts.models.forecasting.patchtst_fm_model.PatchTSTFMModel>`_
      - ✅ ✅
      - 🔴 🔴 🔴
      - ✅ ✅
      - ✅
      - `PatchTST-FM paper <https://arxiv.org/abs/2602.06909>`_, `PatchTST-FM Github <https://github.com/ibm-granite/granite-tsfm>`_
+   * - `T0Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.t0_model.html#darts.models.forecasting.t0_model.T0Model>`_
+     - ✅ ✅
+     - ✅ ✅ 🔴
+     - ✅ ✅
+     - ✅
+     - `T0 report <https://www.theforecastingcompany.com/papers/files/t0-technical-report.pdf>`_, `tfc-t0 GitHub <https://github.com/theforecastingcompany/tfc-t0>`_
    * - **Ensemble Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): Model support is dependent on ensembled forecasting models and the ensemble model itself
      -
      -

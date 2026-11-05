@@ -26,6 +26,12 @@ Available Options
     configure both backends with a custom style optimized for time series visualization. When False,
     the default or user-configured styles will be used. Changes to this option take effect immediately.
 
+**Serialization (safe model loading)**
+
+Model load allow-listing is not a scalar config option. Use :func:`darts.utils.serialization.add_safe_globals` for
+process-wide extras, or :func:`darts.utils.serialization.safe_globals` as a context manager (similar to
+:func:`option_context` for display/plotting options). See :doc:`/userguide/safe_model_loading`.
+
 Examples
 ========
 >>> from darts import get_option, set_option, option_context

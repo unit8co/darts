@@ -20,6 +20,9 @@ in which case they are applied to model each component of multivariate series in
 Some other distributions (such as ``DirichletLikelihood``) are multivariate,
 in which case they will model all components of multivariate time series jointly.
 
+Univariate likelihoods can be wrapped with ``ZeroInflatedLikelihood`` to model targets with excess zeros
+(e.g. intermittent demand), such as a zero-inflated Poisson or negative binomial distribution.
+
 Univariate likelihoods accept either scalar or array-like values for the optional prior parameters.
 If a scalar is provided, it is used as a prior for all components of the series. If an array-like is provided,
 the i-th value will be used as a prior for the i-th component of the series. Multivariate likelihoods
@@ -32,6 +35,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 
 import collections.abc
 from abc import ABC, abstractmethod
+from typing import Any
 
 import numpy as np
 import torch
@@ -124,7 +128,7 @@ class TorchLikelihood(Likelihood, ABC):
         model_output: torch.Tensor,
         target: torch.Tensor,
         sample_weight: torch.Tensor,
-    ):
+    ) -> torch.Tensor:
         """
         Computes a loss from a `model_output`, which represents the parameters of a given probability
         distribution for every ground truth value in `target`, and the `target` itself.
@@ -157,7 +161,12 @@ class TorchLikelihood(Likelihood, ABC):
 
         return loss
 
-    def _nllloss(self, params_out, target, sample_weight):
+    def _nllloss(
+        self,
+        params_out: tuple[torch.Tensor, ...],
+        target: torch.Tensor,
+        sample_weight: torch.Tensor,
+    ) -> torch.Tensor:
         """
         This is the basic way to compute the NLL loss. It can be overwritten by likelihoods for which
         PyTorch proposes a numerically better NLL loss.
@@ -169,7 +178,7 @@ class TorchLikelihood(Likelihood, ABC):
         return loss.mean()
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[torch.Tensor, ...] | None:
         """
         Has to be overwritten by the Likelihood objects supporting specifying a prior distribution on the
         outputs. If it returns None, no prior will be used and the model will be trained with plain maximum likelihood.
@@ -177,7 +186,9 @@ class TorchLikelihood(Likelihood, ABC):
         return None
 
     @abstractmethod
-    def _distr_from_params(self, params: tuple) -> torch.distributions.Distribution:
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         """
         Returns a torch distribution built with the specified params
         """
@@ -185,7 +196,7 @@ class TorchLikelihood(Likelihood, ABC):
     @abstractmethod
     def _params_from_output(
         self, model_output: torch.Tensor
-    ) -> tuple[torch.Tensor, ...] | torch.Tensor:
+    ) -> tuple[torch.Tensor, ...]:
         """
         Returns the distribution parameters, obtained from the raw model outputs
         (e.g. applies softplus or sigmoids to get parameters in the expected domains).
@@ -201,17 +212,17 @@ class TorchLikelihood(Likelihood, ABC):
         """
         Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.
         """
-        params = self._params_from_output(model_output)
-        if isinstance(params, torch.Tensor):
-            return params
-        else:
-            # interleave the predicted parameters to group them by input series component
-            num_samples, n_times, n_components, n_params = model_output.shape
-            return torch.stack(params, dim=3).reshape((
-                num_samples,
-                n_times,
-                n_components * n_params,
-            ))
+        params: tuple[torch.Tensor, ...] = self._params_from_output(model_output)
+        if len(params) == 1:
+            return params[0]
+
+        # interleave the predicted parameters to group them by input series component
+        num_samples, n_times, n_components, n_params = model_output.shape
+        return torch.stack(params, dim=3).reshape((
+            num_samples,
+            n_times,
+            n_components * n_params,
+        ))
 
     @staticmethod
     def _get_equality_attrs(likelihood, ignore_attrs):
@@ -274,7 +285,12 @@ class GaussianLikelihood(TorchLikelihood):
             prior_strength=prior_strength,
         )
 
-    def _nllloss(self, params_out, target, sample_weight):
+    def _nllloss(
+        self,
+        params_out: tuple[torch.Tensor, ...],
+        target: torch.Tensor,
+        sample_weight: torch.Tensor,
+    ) -> torch.Tensor:
         means_out, sigmas_out = params_out
         # Note: GaussianNLLLoss expects variance (and not stdev)
         cont_var = sigmas_out.contiguous() ** 2
@@ -288,10 +304,12 @@ class GaussianLikelihood(TorchLikelihood):
         return loss.mean()
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return self.prior_mu, self.prior_sigma
 
-    def _distr_from_params(self, params):
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         mu, sigma = params
         return _Normal(mu, sigma)
 
@@ -299,7 +317,9 @@ class GaussianLikelihood(TorchLikelihood):
         mu, sigma = self._params_from_output(model_output)
         return torch.normal(mu, sigma)
 
-    def _params_from_output(self, model_output):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         mu = model_output[:, :, :, 0]
         sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
@@ -335,28 +355,37 @@ class PoissonLikelihood(TorchLikelihood):
             prior_strength=prior_strength,
         )
 
-    def _nllloss(self, params_out, target, sample_weight):
-        lambda_out = params_out
+    def _nllloss(
+        self,
+        params_out: tuple[torch.Tensor, ...],
+        target: torch.Tensor,
+        sample_weight: torch.Tensor,
+    ) -> torch.Tensor:
+        (lambda_out,) = params_out
         loss = self.nllloss(lambda_out, target)
         if sample_weight is not None:
             loss = loss * sample_weight
         return loss.mean()
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return (self.prior_lambda,)
 
-    def _distr_from_params(self, params):
-        lmbda = params[0]
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
+        (lmbda,) = params
         return _Poisson(lmbda)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        model_lambda = self._params_from_output(model_output)
+        (model_lambda,) = self._params_from_output(model_output)
         return torch.poisson(model_lambda)
 
-    def _params_from_output(self, model_output):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         lmbda = self.softplus(model_output.squeeze(dim=-1))
-        return lmbda
+        return (lmbda,)
 
 
 class NegativeBinomialLikelihood(TorchLikelihood):
@@ -372,8 +401,10 @@ class NegativeBinomialLikelihood(TorchLikelihood):
         - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).
         - Parameters: number of failures :math:`r > 0`, success probability :math:`p \\in (0, 1)`.
 
-        Behind the scenes the distribution is reparameterized so that the actual outputs of the
-        network are in terms of the mean :math:`\\mu` and shape :math:`\\alpha`.
+        Behind the scenes the network outputs the mean :math:`\\mu > 0` and the dispersion :math:`\\alpha > 0`
+        (variance :math:`\\mu + \\alpha \\mu^2`), which are mapped to :math:`r = 1 / \\alpha` and
+        :math:`p = \\mu / (\\mu + r)`. The returned :math:`p` follows PyTorch's convention (mean
+        :math:`r p / (1 - p)`).
         """
         self.softplus = nn.Softplus()
         super().__init__(
@@ -383,34 +414,47 @@ class NegativeBinomialLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return None
 
     @staticmethod
-    def _get_r_and_p_from_mu_and_alpha(mu, alpha):
-        # See https://en.wikipedia.org/wiki/Negative_binomial_distribution for the different parametrizations
+    def _get_r_and_logits_from_mu_and_alpha(
+        mu: torch.Tensor, alpha: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        # See https://en.wikipedia.org/wiki/Negative_binomial_distribution for the different parametrizations.
+        # With r = 1 / alpha, the mean r * p / (1 - p) equals mu for p = mu / (mu + r), i.e.
+        # logits = log(p / (1 - p)) = log(mu * alpha). Using logits keeps the log-likelihood stable when p -> 1.
         r = 1.0 / alpha
-        p = r / (mu + r)
-        return r, p
+        logits = torch.log(mu) + torch.log(alpha)
+        return r, logits
 
-    def _distr_from_params(self, params):
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         mu, alpha = params
-        r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
-        return _NegativeBinomial(r, p)
+        r, logits = self._get_r_and_logits_from_mu_and_alpha(mu, alpha)
+        return _NegativeBinomial(total_count=r, logits=logits)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        mu, alpha = self._params_from_output(model_output)
-        r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
-        distr = _NegativeBinomial(r, p)
+        distr = self._distr_from_params(self._params_from_output(model_output))
         return distr.sample()
 
     def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
         """Overwrite the parent since the parameters are extracted in two steps."""
         mu, alpha = self._params_from_output(model_output)
-        r, p = NegativeBinomialLikelihood._get_r_and_p_from_mu_and_alpha(mu, alpha)
-        return torch.cat([r, p], dim=-1)
+        r, logits = self._get_r_and_logits_from_mu_and_alpha(mu, alpha)
+        p = torch.sigmoid(logits)
+        # interleave the parameters to group them by input series component
+        num_samples, n_times, n_components, n_params = model_output.shape
+        return torch.stack([r, p], dim=3).reshape((
+            num_samples,
+            n_times,
+            n_components * n_params,
+        ))
 
-    def _params_from_output(self, model_output):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         mu = self.softplus(model_output[:, :, :, 0])
         alpha = self.softplus(model_output[:, :, :, 1])
         return mu, alpha
@@ -445,20 +489,24 @@ class BernoulliLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return (self.prior_p,)
 
-    def _distr_from_params(self, params):
-        p = params[0]
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
+        (p,) = params
         return _Bernoulli(p)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        model_p = self._params_from_output(model_output)
+        (model_p,) = self._params_from_output(model_output)
         return torch.bernoulli(model_p)
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         p = self.sigmoid(model_output.squeeze(dim=-1))
-        return p
+        return (p,)
 
 
 class BetaLikelihood(TorchLikelihood):
@@ -494,10 +542,12 @@ class BetaLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return self.prior_alpha, self.prior_beta
 
-    def _distr_from_params(self, params):
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         alpha, beta = params
         return _Beta(alpha, beta)
 
@@ -506,7 +556,9 @@ class BetaLikelihood(TorchLikelihood):
         distr = _Beta(alpha, beta)
         return distr.sample()
 
-    def _params_from_output(self, model_output):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         alpha = self.softplus(model_output[:, :, :, 0])
         beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
@@ -548,10 +600,12 @@ class CauchyLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return self.prior_xzero, self.prior_gamma
 
-    def _distr_from_params(self, params):
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         xzero, gamma = params
         return _Cauchy(xzero, gamma)
 
@@ -560,7 +614,9 @@ class CauchyLikelihood(TorchLikelihood):
         distr = _Cauchy(xzero, gamma)
         return distr.sample()
 
-    def _params_from_output(self, model_output):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         xzero = model_output[:, :, :, 0]
         gamma = self.softplus(model_output[:, :, :, 1])
         # We need this hack as sometimes the output of the softplus is 0 in practice for Cauchy...
@@ -597,21 +653,25 @@ class ContinuousBernoulliLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return (self.prior_lambda,)
 
-    def _distr_from_params(self, params):
-        lmbda = params[0]
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
+        (lmbda,) = params
         return _ContinuousBernoulli(lmbda)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        model_lmbda = self._params_from_output(model_output)
+        (model_lmbda,) = self._params_from_output(model_output)
         distr = _ContinuousBernoulli(model_lmbda)
         return distr.sample()
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         lmbda = self.sigmoid(model_output.squeeze(dim=-1))
-        return lmbda
+        return (lmbda,)
 
 
 class DirichletLikelihood(TorchLikelihood):
@@ -643,27 +703,27 @@ class DirichletLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return (self.prior_alphas,)
 
-    def _distr_from_params(self, params: tuple):
-        alphas = params[0]
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
+        (alphas,) = params
         return _Dirichlet(alphas)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        alphas = self._params_from_output(model_output)
+        (alphas,) = self._params_from_output(model_output)
         distr = _Dirichlet(alphas)
         return distr.sample()
 
-    def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
-        alphas = self._params_from_output(model_output)
-        return alphas
-
-    def _params_from_output(self, model_output):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         alphas = self.softmax(
             model_output.squeeze(dim=-1)
         )  # take softmax over components
-        return alphas
+        return (alphas,)
 
 
 class ExponentialLikelihood(TorchLikelihood):
@@ -694,21 +754,25 @@ class ExponentialLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return (self.prior_lambda,)
 
-    def _distr_from_params(self, params: tuple):
-        lmbda = params[0]
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
+        (lmbda,) = params
         return _Exponential(lmbda)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        lmbda = self._params_from_output(model_output)
+        (lmbda,) = self._params_from_output(model_output)
         distr = _Exponential(lmbda)
         return distr.sample()
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         lmbda = self.softplus(model_output.squeeze(dim=-1))
-        return lmbda
+        return (lmbda,)
 
 
 class GammaLikelihood(TorchLikelihood):
@@ -743,10 +807,12 @@ class GammaLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return self.prior_alpha, self.prior_beta
 
-    def _distr_from_params(self, params: tuple):
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         alpha, beta = params
         return _Gamma(alpha, beta)
 
@@ -755,7 +821,9 @@ class GammaLikelihood(TorchLikelihood):
         distr = _Gamma(alpha, beta)
         return distr.sample()
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         alpha = self.softplus(model_output[:, :, :, 0])
         beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
@@ -789,21 +857,25 @@ class GeometricLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return (self.prior_p,)
 
-    def _distr_from_params(self, params: tuple):
-        p = params[0]
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
+        (p,) = params
         return _Geometric(p)
 
-    def sample(self, model_output) -> torch.Tensor:
-        p = self._params_from_output(model_output)
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        (p,) = self._params_from_output(model_output)
         distr = _Geometric(p)
         return distr.sample()
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         p = self.sigmoid(model_output.squeeze(dim=-1))
-        return p
+        return (p,)
 
 
 class GumbelLikelihood(TorchLikelihood):
@@ -837,19 +909,23 @@ class GumbelLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return self.prior_mu, self.prior_beta
 
-    def _distr_from_params(self, params: tuple):
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         mu, beta = params
         return _Gumbel(mu, beta)
 
-    def sample(self, model_output) -> torch.Tensor:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         mu, beta = self._params_from_output(model_output)
         distr = _Gumbel(mu, beta)
         return distr.sample()
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         mu = model_output[:, :, :, 0]
         beta = self.softplus(model_output[:, :, :, 1])
         return mu, beta
@@ -883,21 +959,25 @@ class HalfNormalLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return (self.prior_sigma,)
 
-    def _distr_from_params(self, params: tuple):
-        sigma = params[0]
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
+        (sigma,) = params
         return _HalfNormal(sigma)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        sigma = self._params_from_output(model_output)
+        (sigma,) = self._params_from_output(model_output)
         distr = _HalfNormal(sigma)
         return distr.sample()
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         sigma = self.softplus(model_output.squeeze(dim=-1))
-        return sigma
+        return (sigma,)
 
 
 class LaplaceLikelihood(TorchLikelihood):
@@ -931,19 +1011,23 @@ class LaplaceLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return self.prior_mu, self.prior_b
 
-    def _distr_from_params(self, params: tuple):
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         mu, b = params
         return _Laplace(mu, b)
 
-    def sample(self, model_output) -> torch.Tensor:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         mu, b = self._params_from_output(model_output)
         distr = _Laplace(mu, b)
         return distr.sample()
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         mu = model_output[:, :, :, 0]
         b = self.softplus(model_output[:, :, :, 1])
         return mu, b
@@ -980,10 +1064,12 @@ class LogNormalLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return self.prior_mu, self.prior_sigma
 
-    def _distr_from_params(self, params):
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         mu, sigma = params
         return _LogNormal(mu, sigma)
 
@@ -992,7 +1078,9 @@ class LogNormalLikelihood(TorchLikelihood):
         distr = _LogNormal(mu, sigma)
         return distr.sample()
 
-    def _params_from_output(self, model_output):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         mu = model_output[:, :, :, 0]
         sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
@@ -1024,19 +1112,23 @@ class WeibullLikelihood(TorchLikelihood):
         )
 
     @property
-    def _prior_params(self):
+    def _prior_params(self) -> tuple[Any, ...] | None:
         return None
 
-    def _distr_from_params(self, params: tuple):
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
         lmba, k = params
         return _Weibull(lmba, k)
 
-    def sample(self, model_output) -> torch.Tensor:
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         lmbda, k = self._params_from_output(model_output)
         distr = _Weibull(lmbda, k)
         return distr.sample()
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
         lmbda = self.softplus(model_output[:, :, :, 0])
         k = self.softplus(model_output[:, :, :, 1])
         return lmbda, k
@@ -1127,8 +1219,8 @@ class QuantileRegression(TorchLikelihood):
 
         # repeat the model output on the edges
         repeat_count = [1] * n_quantiles
-        repeat_count[0] = 2
-        repeat_count[-1] = 2
+        repeat_count[0] += 1
+        repeat_count[-1] += 1
         repeat_count = torch.tensor(repeat_count).to(device)
         shifted_output = torch.repeat_interleave(model_output, repeat_count, dim=-1)
 
@@ -1164,7 +1256,7 @@ class QuantileRegression(TorchLikelihood):
         model_output: torch.Tensor,
         target: torch.Tensor,
         sample_weight: torch.Tensor,
-    ):
+    ) -> torch.Tensor:
         """
         We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood
 
@@ -1208,13 +1300,182 @@ class QuantileRegression(TorchLikelihood):
             losses = losses * sample_weight
         return losses.mean()
 
-    def _distr_from_params(self, params: tuple) -> None:
-        # This should not be called in this class (we are abusing Likelihood)
-        return None
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> torch.distributions.Distribution:
+        raise NotImplementedError(
+            "`_distr_from_params` is not implemented for `QuantileRegression`."
+        )
 
-    def _params_from_output(self, model_output: torch.Tensor) -> None:
-        # This should not be called in this class (we are abusing Likelihood)
-        return None
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
+        raise NotImplementedError(
+            "`_params_from_output` is not implemented for `QuantileRegression`."
+        )
+
+
+class _ZeroInflatedDistribution(torch.distributions.Distribution):
+    arg_constraints = {}
+    has_rsample = False
+
+    def __init__(
+        self,
+        base_distr: torch.distributions.Distribution,
+        gate: torch.Tensor,
+    ):
+        """Zero-inflated version of a univariate distribution `base_distr`.
+
+        With probability `gate`, the value is zero, otherwise it is drawn from `base_distr`. For discrete
+        distributions, zeros can come from both components. For continuous distributions, zeros only come from
+        the gate (hurdle model), and `log_prob()` combines the probability mass at zero with the density elsewhere.
+        """
+        eps = torch.finfo(gate.dtype).eps
+        self.base_distr = base_distr
+        self.gate = gate.clamp(eps, 1.0 - eps)
+        super().__init__(batch_shape=base_distr.batch_shape, validate_args=False)
+
+    @property
+    def mean(self) -> torch.Tensor:
+        return (1.0 - self.gate) * self.base_distr.mean
+
+    def sample(self, sample_shape=torch.Size()) -> torch.Tensor:
+        with torch.no_grad():
+            base_sample = self.base_distr.sample(sample_shape)
+            is_zero = torch.bernoulli(self.gate.expand(base_sample.shape)).bool()
+            return torch.where(is_zero, torch.zeros_like(base_sample), base_sample)
+
+    def log_prob(self, value: torch.Tensor) -> torch.Tensor:
+        log_gate = torch.log(self.gate)
+        log_not_gate = torch.log1p(-self.gate)
+        is_zero = value == 0
+        if self.base_distr.support.is_discrete:
+            log_prob_base = self.base_distr.log_prob(value)
+            log_prob_zero = torch.logaddexp(log_gate, log_not_gate + log_prob_base)
+        else:
+            # keep the unused branch finite when zero is outside the base support (e.g. Gamma or LogNormal)
+            fill = torch.nan_to_num(
+                self.base_distr.mean.detach(), nan=1.0, posinf=1.0, neginf=1.0
+            )
+            log_prob_base = self.base_distr.log_prob(torch.where(is_zero, fill, value))
+            log_prob_zero = log_gate
+        return torch.where(is_zero, log_prob_zero, log_not_gate + log_prob_base)
+
+
+class ZeroInflatedLikelihood(TorchLikelihood):
+    def __init__(self, likelihood: TorchLikelihood):
+        """
+        Zero-inflated version of a univariate likelihood.
+
+        https://en.wikipedia.org/wiki/Zero-inflated_model
+
+        Adds a zero-inflation probability :math:`\\pi` per target component to the wrapped `likelihood`.
+        With probability :math:`\\pi` the target is zero, otherwise it follows the wrapped distribution.
+
+        - For discrete distributions (e.g. ``PoissonLikelihood``, ``NegativeBinomialLikelihood``), zeros can come
+          from both components: :math:`P(y = 0) = \\pi + (1 - \\pi) P_{base}(0)` and
+          :math:`P(y) = (1 - \\pi) P_{base}(y)` for :math:`y > 0`. The target must contain integer values only.
+        - For continuous distributions (e.g. ``GammaLikelihood``, ``LogNormalLikelihood``), zeros only come from the
+          zero-inflation component (hurdle model): :math:`P(y = 0) = \\pi` and the density is
+          :math:`(1 - \\pi) f_{base}(y)` for :math:`y \\neq 0`, so strictly positive distributions can be
+          used for targets that contain zeros.
+        - Parameters: the parameters of the wrapped likelihood, and the zero-inflation probability
+          :math:`\\pi \\in (0, 1)` (named ``zi_p``).
+
+        Priors are not supported (the KL divergence between zero-inflated distributions has no closed form), so the
+        wrapped likelihood must be created without priors.
+
+        Parameters
+        ----------
+        likelihood
+            The univariate torch likelihood to zero-inflate. ``QuantileRegression``, ``DirichletLikelihood`` and
+            ``BernoulliLikelihood`` (already a distribution over zeros and ones) are not supported.
+
+        Examples
+        --------
+        >>> from darts.models import TiDEModel
+        >>> from darts.utils.likelihood_models import (
+        ...     NegativeBinomialLikelihood,
+        ...     ZeroInflatedLikelihood,
+        ... )
+        >>> model = TiDEModel(
+        ...     input_chunk_length=12,
+        ...     output_chunk_length=6,
+        ...     likelihood=ZeroInflatedLikelihood(NegativeBinomialLikelihood()),
+        ... )
+        """
+        unsupported = (
+            QuantileRegression,
+            DirichletLikelihood,
+            BernoulliLikelihood,
+            ZeroInflatedLikelihood,
+        )
+        if not isinstance(likelihood, TorchLikelihood) or isinstance(
+            likelihood, unsupported
+        ):
+            raise_log(
+                ValueError(
+                    f"`ZeroInflatedLikelihood` does not support "
+                    f"`{getattr(likelihood, '__name__', type(likelihood).__name__)}`. "
+                    f"It requires a univariate torch likelihood instance other than `QuantileRegression`, "
+                    f"`DirichletLikelihood`, `BernoulliLikelihood` or `ZeroInflatedLikelihood`."
+                )
+            )
+        prior_params = likelihood._prior_params
+        if prior_params is not None and any(p is not None for p in prior_params):
+            raise_log(
+                ValueError(
+                    "`ZeroInflatedLikelihood` does not support likelihoods with priors."
+                )
+            )
+        if isinstance(likelihood, GaussianLikelihood) and likelihood.beta_nll > 0.0:
+            raise_log(
+                ValueError(
+                    "`ZeroInflatedLikelihood` does not support `GaussianLikelihood` with `beta_nll > 0`."
+                )
+            )
+
+        self.likelihood = likelihood
+        super().__init__(
+            likelihood_type=LikelihoodType.ZeroInflated,
+            parameter_names=likelihood.parameter_names + ["zi_p"],
+        )
+
+    def _params_from_output(
+        self, model_output: torch.Tensor
+    ) -> tuple[torch.Tensor, ...]:
+        params = self.likelihood._params_from_output(model_output[:, :, :, :-1])
+        gate = torch.sigmoid(model_output[:, :, :, -1])
+        return *params, gate
+
+    def _distr_from_params(
+        self, params: tuple[torch.Tensor, ...]
+    ) -> _ZeroInflatedDistribution:
+        *base_params, gate = params
+        base_distr = self.likelihood._distr_from_params(tuple(base_params))
+        return _ZeroInflatedDistribution(base_distr, gate)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        base_sample = self.likelihood.sample(model_output[:, :, :, :-1])
+        gate = torch.sigmoid(model_output[:, :, :, -1])
+        is_zero = torch.bernoulli(gate).bool()
+        return torch.where(is_zero, torch.zeros_like(base_sample), base_sample)
+
+    def predict_likelihood_parameters(self, model_output: torch.Tensor) -> torch.Tensor:
+        num_samples, n_times, n_components, n_params = model_output.shape
+        base_params = self.likelihood.predict_likelihood_parameters(
+            model_output[:, :, :, :-1]
+        )
+        gate = torch.sigmoid(model_output[:, :, :, -1:])
+        # interleave the parameters to group them by input series component
+        params = torch.cat(
+            [
+                base_params.reshape((num_samples, n_times, n_components, n_params - 1)),
+                gate,
+            ],
+            dim=3,
+        )
+        return params.reshape((num_samples, n_times, n_components * n_params))
 
 
 """ TODO
@@ -1251,14 +1512,14 @@ from torch.distributions import MultivariateNormal as _MultivariateNormal
             super().__init__(prior_strength)
 
         @property
-        def _prior_params(self):
+        def _prior_params(self) -> tuple[Any, ...] | None:
             return self.prior_mu, self.prior_covmat
 
-        def _distr_from_params(self, params: Tuple):
+        def _distr_from_params(self, params: tuple[torch.Tensor, ...]) -> torch.distributions.Distribution:
             mu, covmat = params
             return _MultivariateNormal(mu, covmat)
 
-        def sample(self, model_output: torch.Tensor):
+        def sample(self, model_output: torch.Tensor) -> torch.Tensor:
             mu, covmat = self._params_from_output(model_output)
             distr = _MultivariateNormal(mu, covmat)
             return distr.sample()
@@ -1267,7 +1528,7 @@ from torch.distributions import MultivariateNormal as _MultivariateNormal
         def num_parameters(self) -> int:
             return int(self.dim + (self.dim ** 2 - self.dim) / 2)
 
-        def _params_from_output(self, model_output: torch.Tensor):
+        def _params_from_output(self, model_output: torch.Tensor) -> tuple[torch.Tensor, ...]:
             device = model_output.device
             mu = model_output[:, :, : self.dim]
             covmat_coefs = self.softplus(model_output[:, :, self.dim :])

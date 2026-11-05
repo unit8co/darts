@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+*Info: All issues must be approved by a maintainer (labeled **`ok`**) before opening pull requests. See [CONTRIBUTING.md](../../CONTRIBUTING.md).*
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
@@ -17,8 +19,8 @@ Steps to reproduce the behavior, preferably code snippet.
 A clear and concise description of what you expected to happen.
 
 **System (please complete the following information):**
- - Python version: [e.g. 3.11]
- - darts version [e.g. 0.38.0]
+ - Python version: [e.g. 3.12]
+ - darts version [e.g. 0.47.0]
 
 **Additional context**
 Add any other context about the problem here.

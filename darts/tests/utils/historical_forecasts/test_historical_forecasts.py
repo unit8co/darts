@@ -1,8 +1,6 @@
-import itertools
 import logging
 import math
 from copy import deepcopy
-from itertools import product
 from unittest.mock import patch
 
 import numpy as np
@@ -45,6 +43,7 @@ from darts.tests.conftest import (
     XGB_AVAILABLE,
     tfm_kwargs,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import (
@@ -482,13 +481,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [True, False],
-                [0, 1, 3],
-                [0, 1, 2],
-            )
-        ),
+        param_product([True, False], [0, 1, 3], [0, 1, 2]),
     )
     def test_historical_forecasts_output(self, config):
         """Tests historical forecasts output type and values for all combinations of:
@@ -557,6 +550,29 @@ class TestHistoricalforecast:
                 np.testing.assert_array_almost_equal(
                     hfc.values(), y_ref.values()[-horizon:]
                 )
+
+    @pytest.mark.parametrize("as_pipeline", [True, False])
+    def test_historical_forecasts_does_not_mutate_pipeline(self, as_pipeline):
+        transformer = Scaler()
+        if as_pipeline:
+            transformer = Pipeline([transformer])
+
+        model = LinearRegressionModel(lags=5)
+
+        def _fit_called(tf):
+            return tf[0]._fit_called if as_pipeline else tf._fit_called
+
+        assert not _fit_called(transformer)
+
+        model.historical_forecasts(
+            series=self.sine_univariate1,
+            data_transformers={"series": transformer},
+            retrain=True,
+            forecast_horizon=1,
+            last_points_only=True,
+            verbose=False,
+        )
+        assert not _fit_called(transformer)
 
     def test_hfc_too_short_input_for_training_with_multiple_samples(self):
         model = LinearRegressionModel(lags=3)
@@ -1186,13 +1202,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [True, False],  # retrain
-                [True, False],  # last_points_only
-                [1, 2],  # forecast_horizon
-            )
-        ),
+        param_product([True, False], [True, False], [1, 2]),
     )
     def test_historical_forecasts_start_end(self, config):
         """Test start='end' generates a single forecast per series starting one step after series end."""
@@ -1227,7 +1237,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 (NaiveSeasonal, {"K": 2}),
                 (LinearRegressionModel, {"lags": 2}),
@@ -1329,34 +1339,32 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [
-                    (
-                        "2000-01-01 00:00:00",  # start
-                        1,  # stride
-                        "2000-01-01 03:00:00",  # expected start
-                        "h",  # freq
-                    ),
-                    ("2000-01-01 00:00:00", 2, "2000-01-01 04:00:00", "h"),
-                    ("1999-01-01 00:00:00", 6, "2000-01-01 06:00:00", "h"),
-                    ("2000-01-01 00:00:00", 2, "2000-01-01 08:00:00", "2h"),
-                    # special case where start is not in the frequency -> start will be converted
-                    # to "2000-01-01 00:00:00", and then it's adjusted to be within the historical fc index
-                    ("1999-12-31 23:00:00", 2, "2000-01-01 08:00:00", "2h"),
-                    # integer index
-                    (0, 1, 3, 1),
-                    (0, 2, 4, 1),
-                    (-24, 6, 6, 1),
-                    (0, 2, 8, 2),
-                    # special case where start is not in the frequency -> start will be converted
-                    # to 0, and then it's adjusted to be within the historical fc index
-                    (-1, 2, 8, 2),
-                ],
-                ["value", "position"],  # start format
-                [True, False],  # retrain
-                [True, False] if TORCH_AVAILABLE else [False],  # use torch model
-            )
+        param_product(
+            [
+                (
+                    "2000-01-01 00:00:00",  # start
+                    1,  # stride
+                    "2000-01-01 03:00:00",  # expected start
+                    "h",  # freq
+                ),
+                ("2000-01-01 00:00:00", 2, "2000-01-01 04:00:00", "h"),
+                ("1999-01-01 00:00:00", 6, "2000-01-01 06:00:00", "h"),
+                ("2000-01-01 00:00:00", 2, "2000-01-01 08:00:00", "2h"),
+                # special case where start is not in the frequency -> start will be converted
+                # to "2000-01-01 00:00:00", and then it's adjusted to be within the historical fc index
+                ("1999-12-31 23:00:00", 2, "2000-01-01 08:00:00", "2h"),
+                # integer index
+                (0, 1, 3, 1),
+                (0, 2, 4, 1),
+                (-24, 6, 6, 1),
+                (0, 2, 8, 2),
+                # special case where start is not in the frequency -> start will be converted
+                # to 0, and then it's adjusted to be within the historical fc index
+                (-1, 2, 8, 2),
+            ],
+            ["value", "position"],
+            [True, False],
+            [True, False] if TORCH_AVAILABLE else [False],
         ),
     )
     def test_historical_forecasts_start_too_early(self, caplog, config):
@@ -1459,6 +1467,28 @@ class TestHistoricalforecast:
             assert warning_short not in caplog.text
             assert pred.start_time() == start_expected
 
+    def test_historical_forecasts_start_too_late_with_too_short_covariates(self):
+        """`backtest()`/`historical_forecasts()` should raise a clear error when the provided
+        `future_covariates` end before the `series` (previously a cryptic ``ValueError``)."""
+        series = tg.linear_timeseries(length=20, dtype="float32")
+        covs = series
+        model = LinearRegressionModel(
+            lags=6, lags_future_covariates=(0, 1), output_chunk_length=1
+        )
+        model.fit(series, future_covariates=covs)
+
+        with pytest.raises(ValueError) as msg:
+            model.historical_forecasts(
+                series=series,
+                future_covariates=covs[:10],
+                start=0.7,
+                retrain=False,
+            )
+        assert str(msg.value).startswith(
+            "`start` position `0.7` corresponding to time `2000-01-14 00:00:00` is after "
+            "the last historical forecastable time index `2000-01-10 00:00:00`"
+        )
+
     @pytest.mark.parametrize("config", models_reg_no_cov_cls_kwargs)
     def test_regression_auto_start_multiple_no_cov(self, config):
         # minimum required train length (+1 since sklearn models require 2 samples)
@@ -1521,7 +1551,7 @@ class TestHistoricalforecast:
     @pytest.mark.slow
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [ts_univariate, ts_multivariate],
             models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs,
             [True, False],
@@ -1622,18 +1652,16 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [False, True],  # use covariates
-                [True, False],  # last points only
-                [False, True],  # overlap end
-                [1, 3],  # stride
-                [
-                    3,  # horizon < ocl
-                    5,  # horizon == ocl
-                ],
-                [True, False],  # multi models
-            )
+        param_product(
+            [False, True],
+            [True, False],
+            [False, True],
+            [1, 3],
+            [
+                3,  # horizon < ocl
+                5,  # horizon == ocl
+            ],
+            [True, False],
         ),
     )
     def test_optimized_historical_forecasts_regression_with_encoders(self, config):
@@ -1812,20 +1840,18 @@ class TestHistoricalforecast:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [False, True],  # use covariates
-                [True, False],  # last points only
-                [False, True],  # overlap end
-                [1, 3],  # stride
-                [
-                    3,  # horizon < ocl
-                    5,  # horizon == ocl
-                    7,  # horizon > ocl -> autoregression
-                ],
-                [False, True],  # use integer indexed series
-                [False, True],  # use multi-series
-            )
+        param_product(
+            [False, True],
+            [True, False],
+            [False, True],
+            [1, 3],
+            [
+                3,  # horizon < ocl
+                5,  # horizon == ocl
+                7,  # horizon > ocl -> autoregression
+            ],
+            [False, True],
+            [False, True],
         ),
     )
     def test_optimized_historical_forecasts_torch_with_encoders(self, config):
@@ -2208,7 +2234,7 @@ class TestHistoricalforecast:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "model_config,retrain",
-        itertools.product(models_torch_cls_kwargs, [True, False]),
+        param_product(models_torch_cls_kwargs, [True, False]),
     )
     def test_torch_auto_start_multiple_no_cov(self, model_config, retrain):
         n_fcs = 3
@@ -2288,7 +2314,7 @@ class TestHistoricalforecast:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "model_config,retrain",
-        itertools.product(models_torch_cls_kwargs, [True, False]),
+        param_product(models_torch_cls_kwargs, [True, False]),
     )
     def test_torch_auto_start_with_past_cov(self, model_config, retrain):
         n_fcs = 3
@@ -2423,7 +2449,7 @@ class TestHistoricalforecast:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "model_config,retrain",
-        itertools.product(models_torch_cls_kwargs, [True, False]),
+        param_product(models_torch_cls_kwargs, [True, False]),
     )
     def test_torch_auto_start_with_future_cov(self, model_config, retrain):
         n_fcs = 3
@@ -2563,7 +2589,7 @@ class TestHistoricalforecast:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "model_config,retrain",
-        itertools.product(models_torch_cls_kwargs, [True, False]),
+        param_product(models_torch_cls_kwargs, [True, False]),
     )
     def test_torch_auto_start_with_past_and_future_cov(self, model_config, retrain):
         n_fcs = 3
@@ -2950,11 +2976,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            [False, True],  # last_points_only
-            [True, False],  # multi_models
-            [1, 2, 3],  # horizon
-        ),
+        param_product([False, True], [True, False], [1, 2, 3]),
     )
     def test_probabilistic_optimized_hist_fc_regression(self, config):
         """Tests optimized probabilistic historical forecasts for regression models."""
@@ -3143,7 +3165,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "params",
-        product(
+        param_product(
             [
                 (
                     {
@@ -3174,10 +3196,10 @@ class TestHistoricalforecast:
                     {"series": Scaler(), "past_covariates": Scaler()},
                 ),
             ],
-            [True, False],  # retrain
-            [True, False],  # last point only
-            [False, True],  # use train length
-            [False, True],  # use val length
+            [True, False],
+            [True, False],
+            [False, True],
+            [False, True],
             models,
         ),
     )
@@ -3372,7 +3394,7 @@ class TestHistoricalforecast:
             )
             assert expected_warning in caplog.text
 
-    @pytest.mark.parametrize("params", product([True, False], [True, False]))
+    @pytest.mark.parametrize("params", param_product([True, False], [True, False]))
     def test_historical_forecasts_with_scaler_multiple_series(self, params):
         """Verify that the scaling in historical forecasts behave as expected when multiple series are used.
 
@@ -3505,7 +3527,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "model_type,enable_optimization",
-        product(["regression", "torch"], [True, False]),
+        param_product(["regression", "torch"], [True, False]),
     )
     def test_fit_kwargs(self, model_type, enable_optimization):
         """check that the parameters provided in fit_kwargs are correctly processed"""
@@ -3576,7 +3598,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "model_type,enable_optimization",
-        product(["regression", "torch"], [True, False]),
+        param_product(["regression", "torch"], [True, False]),
     )
     def test_predict_kwargs(self, model_type, enable_optimization):
         """check that the parameters provided in predict_kwargs are correctly processed"""
@@ -3636,7 +3658,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        product(["regression", "torch"], [True, False], [True, False]),
+        param_product(["regression", "torch"], [True, False], [True, False]),
     )
     def test_sample_weight(self, config):
         """check that passing sample weights work and that it yields different results than without sample weights."""
@@ -3817,19 +3839,19 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [False, True],  # use covariates
-            [True, False],  # last points only
-            [True, False],  # overlap end
-            [1, 3],  # stride
+        param_product(
+            [False, True],
+            [True, False],
+            [True, False],
+            [1, 3],
             [
                 3,  # horizon < ocl
                 5,  # horizon == ocl
                 7,  # horizon > ocl -> autoregression
             ],
-            [False, True],  # use integer indexed series
-            [False, True],  # use multi-series
-            [0, 1],  # output chunk shift
+            [False, True],
+            [False, True],
+            [0, 1],
         ),
     )
     def test_conformal_historical_forecasts(self, config):
@@ -4015,14 +4037,14 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [False, True],  # last points only
-            [None, 1, 2],  # cal length
-            [False, True],  # use start
-            ["value", "position"],  # start format
-            [False, True],  # use integer indexed series
-            [False, True],  # use multi-series
-            [0, 1],  # output chunk shift
+        param_product(
+            [False, True],
+            [None, 1, 2],
+            [False, True],
+            ["value", "position"],
+            [False, True],
+            [False, True],
+            [0, 1],
         ),
     )
     def test_conformal_historical_start_cal_length(self, config):
@@ -4153,13 +4175,8 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [False, True],  # last points only
-            [None, 2],  # cal length
-            ["value", "position"],  # start format
-            [2, 4],  # stride
-            [1, 2],  # cal stride
-            [0, 1],  # output chunk shift
+        param_product(
+            [False, True], [None, 2], ["value", "position"], [2, 4], [1, 2], [0, 1]
         ),
     )
     def test_conformal_historical_forecast_start_stride(self, caplog, config):
@@ -4267,7 +4284,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 # doesn't support val set, and no transferable series for prediction
                 (NaiveSeasonal, {"K": 3}),
@@ -4314,7 +4331,7 @@ class TestHistoricalforecast:
                 if XGB_AVAILABLE
                 else []
             ),
-            [False, True],  # use covariates
+            [False, True],
         ),
     )
     def test_val_length(self, config, caplog):
@@ -4468,12 +4485,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            ["past", "future", "none"],
-            [1, 2],
-            [0, 1],
-            [0, 1],
-        ),
+        param_product(["past", "future", "none"], [1, 2], [0, 1], [0, 1]),
     )
     def test_train_length_warnings(self, config, caplog):
         """Tests that `train_length` raises correct warning for models with input requirements and shorter
@@ -4530,12 +4542,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            ["past", "future", "none"],
-            [1, 2],
-            [0, 1],
-            [0, 1],
-        ),
+        param_product(["past", "future", "none"], [1, 2], [0, 1], [0, 1]),
     )
     def test_val_length_warnings(self, config, caplog):
         """Tests that `val_length` raises correct warning for models with input requirements and shorter covariates."""
@@ -4645,12 +4652,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            models_test_global_hfc,
-            [1, 2],  # number of generated forecasts
-            [True, False],  # last points only,
-            [1, 5],  # horizon
-        ),
+        param_product(models_test_global_hfc, [1, 2], [True, False], [1, 5]),
     )
     def test_global_historical_forecasts_single_series(self, config):
         """Tests that globally applied historical forecasts on a single series is the same as 'local' forecast."""
@@ -4690,11 +4692,7 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            models_test_global_hfc,
-            [1, 2],  # number of generated forecasts
-            [True, False],  # last points only
-        ),
+        param_product(models_test_global_hfc, [1, 2], [True, False]),
     )
     def test_global_historical_forecasts_fit_predict(self, config):
         """Tests globally applied historical forecasts for model fit and predict."""
@@ -4806,7 +4804,7 @@ class TestHistoricalforecast:
                         == series[0].end_time() - (n_fc - idx - 2) * series[0].freq
                     )
 
-    @pytest.mark.parametrize("config", product(models_test_global_hfc, [1, 2]))
+    @pytest.mark.parametrize("config", param_product(models_test_global_hfc, [1, 2]))
     def test_global_historical_forecasts_data_transformer(self, config):
         """Tests historical forecasts on a global model with data transformers."""
         (model_cls, model_kwargs), n_fc = config
@@ -4824,6 +4822,23 @@ class TestHistoricalforecast:
                 self.fit_calls = []
                 self.transform_calls = []
                 self.inverse_transform_calls = []
+
+            def __deepcopy__(self, memo=None):
+                if memo is None:
+                    memo = {}
+
+                copied = type(self)(
+                    deepcopy(self._transformers, memo),
+                    copy=False,
+                )
+                memo[id(self)] = copied
+
+                # Share tracking logs so the test can observe calls on the copy.
+                copied.fit_calls = self.fit_calls
+                copied.transform_calls = self.transform_calls
+                copied.inverse_transform_calls = self.inverse_transform_calls
+
+                return copied
 
             def fit(self, data, *args, **kwargs):
                 self.fit_calls.append(data)

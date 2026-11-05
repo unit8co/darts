@@ -1,5 +1,4 @@
 import os
-from itertools import product
 
 import numpy as np
 import pytest
@@ -18,6 +17,8 @@ if not OPTUNA_AVAILABLE:
     )
 
 import optuna
+
+from darts.tests.parametrize_helpers import param_product
 
 if TORCH_AVAILABLE:
     import torch
@@ -109,7 +110,9 @@ class TestOptuna:
 
             # reload best model over course of training
             model = TCNModel.load_from_checkpoint(
-                model_name="tcn_model", work_dir=os.getcwd()
+                model_name="tcn_model",
+                work_dir=os.getcwd(),
+                trusted=True,
             )
 
             # Evaluate how good it is on the validation set, using sMAPE
@@ -125,10 +128,7 @@ class TestOptuna:
 
     @pytest.mark.parametrize(
         "params",
-        product(
-            [True, False],  # multi_models
-            [1, 3],  # ocl
-        ),
+        param_product([True, False], [1, 3]),
     )
     def test_optuna_regression_model(self, params):
         """Check that optuna works as expected with a regression model"""
@@ -174,3 +174,23 @@ class TestOptuna:
         # optimize hyperparameters by minimizing the sMAPE on the validation set
         study = optuna.create_study(direction="minimize")
         study.optimize(objective, n_trials=3)
+
+    def test_optuna_regression_model_n_jobs(self):
+        """Check that optuna works as expected with a regression model using n_jobs>1"""
+
+        def objective(trial):
+            target_lags = trial.suggest_int("lags", 1, 12)
+
+            model = LinearRegressionModel(lags=target_lags)
+            assert model.model_params["lags"] == trial.params["lags"]
+
+            model.fit(series=self.train)
+
+            preds = model.predict(n=self.val_length)
+            return smape(self.val, preds)
+
+        study = optuna.create_study(direction="minimize")
+        study.optimize(objective, n_trials=6, n_jobs=2)
+
+        for trial in study.trials:
+            assert trial.state == optuna.trial.TrialState.COMPLETE

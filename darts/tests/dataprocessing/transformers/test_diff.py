@@ -1,4 +1,3 @@
-import itertools
 from collections.abc import Sequence
 from copy import deepcopy
 
@@ -9,6 +8,7 @@ import pytest
 from darts import TimeSeries
 from darts import concatenate as darts_concat
 from darts.dataprocessing.transformers import Diff
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
 
@@ -203,11 +203,7 @@ class TestDiff:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [True, False],
-            [True, False],
-            [[1], [1, 2]],
-        ),
+        param_product([True, False], [True, False], [[1], [1, 2]]),
     )
     def test_diff_with_component_mask_or_columns(self, config):
         """
@@ -246,6 +242,51 @@ class TestDiff:
         # inverse transformed must be equal to original values
         series_inv_tf = diff.inverse_transform(series_tf, **tf_kwargs)
         np.testing.assert_array_almost_equal(series_inv_tf.values(), vals_orig)
+
+    @pytest.mark.parametrize(
+        "config",
+        param_product(
+            [
+                pd.RangeIndex(0, 10),
+                pd.RangeIndex(10, 20),
+                pd.RangeIndex(10, 30, 2),
+                pd.date_range("2000-01-01", periods=10, freq="D"),
+            ],
+            [True, False],
+            [[1], [1, 2]],
+        ),
+    )
+    def test_diff_time_index(self, config):
+        """
+        Tests that `Diff` works with integer- and datetime-indexed series, also when the integer index does
+        not start at 0 or has a step other than 1.
+        """
+        times, dropna, lags = config
+        vals = np.arange(20, dtype=float).reshape(10, 2) ** 2
+        series = TimeSeries(times=times, values=vals)
+
+        diff = Diff(lags=lags, dropna=dropna)
+        series_tf = diff.fit_transform(series)
+
+        vals_expected = vals.copy()
+        for lag in lags:
+            vals_expected = vals_expected[lag:] - vals_expected[:-lag]
+
+        vals_actual = series_tf.values()
+        if dropna:
+            assert series_tf.time_index.equals(times[sum(lags) :])
+            np.testing.assert_array_almost_equal(vals_actual, vals_expected)
+        else:
+            assert series_tf.time_index.equals(times)
+            np.testing.assert_array_almost_equal(vals_actual[: sum(lags)], np.nan)
+            np.testing.assert_array_almost_equal(
+                vals_actual[sum(lags) :], vals_expected
+            )
+
+        # inverse transform must recover the original series
+        self.assert_series_equal(
+            series, diff.inverse_transform(series_tf), equal_nan=False
+        )
 
     def test_diff_series_too_short(self):
         """

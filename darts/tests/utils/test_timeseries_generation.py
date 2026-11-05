@@ -1,5 +1,4 @@
-import itertools
-from datetime import timezone
+from datetime import UTC
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -7,6 +6,7 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.timeseries_generation import (
     ONE_INDEXED_FREQS,
     _build_forecast_series_from_schema,
@@ -396,7 +396,7 @@ class TestTimeSeriesGeneration:
         )
 
         # tz=timezone.utc is the same as tz=None
-        self.helper_routine(idx, "hour", vals_exp=vals, tz=timezone.utc)
+        self.helper_routine(idx, "hour", vals_exp=vals, tz=UTC)
 
         # tz="CET" is +1 hour to UTC
         vals = vals[1:] + [0]
@@ -699,7 +699,7 @@ class TestTimeSeriesGeneration:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [np.float32, np.float64],
             [
                 (autoregressive_timeseries, {"coef": [1.0]}, False),

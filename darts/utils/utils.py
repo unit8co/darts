@@ -73,24 +73,6 @@ class NotImportedModule:
         raise_log(ImportError(self.error_message))
 
 
-# Enums
-class SeasonalityMode(Enum):
-    MULTIPLICATIVE = "multiplicative"
-    ADDITIVE = "additive"
-    NONE = None
-
-
-class TrendMode(Enum):
-    LINEAR = "linear"
-    EXPONENTIAL = "exponential"
-
-
-class ModelMode(Enum):
-    MULTIPLICATIVE = "multiplicative"
-    ADDITIVE = "additive"
-    NONE = None
-
-
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
     """
     Build an iterable, possibly using tqdm (either in notebook or regular mode)
@@ -437,7 +419,9 @@ def n_steps_between(
         )
 
     # frequency has a fixed period (e.g. non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W'), or integer step)
-    if isinstance(freq, int) or pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
+    # since pandas 3.0, 'D' is a calendar day and not a `Tick` anymore; pandas>=3.1 converts it to a timedelta,
+    # but `Timestamp` differences can't be divided by it, so it uses the period-based approach below
+    if isinstance(freq, int | pd.offsets.Tick):
         diff = end - start
         if abs(diff) != diff:
             # (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency
@@ -765,8 +749,6 @@ def dataframe_col_to_time_index(
         The dataframe containing the time column.
     time_col
         The name of the time column.
-    skip_uniqueness_check
-        Whether to skip uniqueness checks in case of an integer index.
     """
     if time_col not in df.columns:
         raise_log(AttributeError(f"time_col='{time_col}' is not present."))

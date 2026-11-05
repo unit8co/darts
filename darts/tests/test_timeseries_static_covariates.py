@@ -1,5 +1,4 @@
 import copy
-import itertools
 import logging
 import os
 
@@ -9,8 +8,13 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries, concatenate, to_group_dataframe
-from darts.dataprocessing.transformers import BoxCox, Scaler
+from darts.dataprocessing.transformers import (
+    BoxCox,
+    Scaler,
+    StaticCovariatesTransformer,
+)
 from darts.tests.conftest import PANDAS_30_OR_GREATER, POLARS_AVAILABLE
+from darts.tests.parametrize_helpers import param_product
 from darts.timeseries import (
     DEFAULT_GLOBAL_STATIC_COV_NAME,
     METADATA_TAG,
@@ -276,7 +280,7 @@ class TestTimeSeriesStaticCovariate:
         )
 
     @pytest.mark.parametrize(
-        "config", itertools.product(["int", "dt", "str"], TEST_BACKENDS)
+        "config", param_product(["int", "dt", "str"], TEST_BACKENDS)
     )
     def test_from_group_dataframe(self, config):
         """Tests correct extract of TimeSeries groups from a long DataFrame with unsorted (time/integer) index"""
@@ -313,10 +317,7 @@ class TestTimeSeriesStaticCovariate:
 
     @pytest.mark.parametrize(
         "backend,time_as_index",
-        itertools.product(
-            TEST_BACKENDS,
-            [True, False],
-        ),
+        param_product(TEST_BACKENDS, [True, False]),
     )
     def test_to_group_dataframe_creation(self, backend, time_as_index):
         df_pd = pd.DataFrame(
@@ -1065,6 +1066,35 @@ class TestTimeSeriesStaticCovariate:
         ts = ts.astype(np.float32)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
         assert isinstance(ts.static_covariates.dtypes["cat"], object)
+
+    @pytest.mark.parametrize("dtype", ["float16", "float32", "float64"])
+    def test_non_numerical_static_covariates_from_series(self, dtype):
+        # a Series with mixed types has `object` dtype
+        static_covs = pd.Series({"cat": "a", "num": 1.0})
+        assert static_covs.dtype == object
+
+        ts = linear_timeseries(length=10, dtype=dtype).with_static_covariates(
+            static_covs
+        )
+        # each covariate gets its own dtype; numerical ones are cast to the series dtype
+        assert ts.static_covariates.dtypes["num"] == ts.dtype == dtype
+        assert not pd.api.types.is_numeric_dtype(ts.static_covariates.dtypes["cat"])
+
+        ts = ts.astype("float32")
+        assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
+
+        # the numerical covariate is scaled, not encoded as a category
+        series = [
+            linear_timeseries(length=10).with_static_covariates(
+                pd.Series({"cat": cat, "num": num})
+            )
+            for cat, num in [("a", 100.0), ("b", 150.0), ("c", 300.0)]
+        ]
+        series_tr = StaticCovariatesTransformer().fit_transform(series)
+        np.testing.assert_almost_equal(
+            np.concatenate([s.static_covariates_values() for s in series_tr]),
+            np.array([[0.0, 0.0], [1.0, 0.25], [2.0, 1.0]]),
+        )
 
     def test_non_numerical_metadata(self):
         metadata = {"a": 0, "b": "foo"}

@@ -26,12 +26,7 @@ import sys
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from glob import glob
-from typing import Any, Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Any, Literal, Self
 
 import numpy as np
 import pandas as pd
@@ -59,10 +54,14 @@ from darts.utils.data import (
 )
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
 from darts.utils.data.torch_datasets.utils import (
-    TorchBatch,
-    TorchInferenceDatasetOutput,
-    TorchTrainingDatasetOutput,
+    TorchInferenceSample,
     TorchTrainingSample,
+    _as_inference_sample,
+    _as_training_sample,
+    _batch_collate_fn_predict,
+    _batch_collate_fn_train,
+    _coerce_training_sample,
+    _train_sample_from_shapes,
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -72,6 +71,11 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
     _optimized_historical_forecasts,
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
+from darts.utils.serialization.torch import (
+    _DartsCheckpointIO,
+    load_ckpt_safely,
+    load_wrapper_safely,
+)
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import (
@@ -99,33 +103,6 @@ TORCH_NP_DTYPES = {
 TFM_ATTRS_NO_PICKLE = {"model": None, "trainer": None}
 
 logger = get_logger(__name__)
-
-# lightning 2.6.0 introduced `weights_only` loading to API
-_PL_2_6_OR_ABOVE = tuple(int(el) for el in pl.__version__.split(".")[:2]) >= (2, 6)
-
-
-class _DartsCheckpointIO(TorchCheckpointIO):
-    """Custom CheckpointIO that defaults ``weights_only`` to ``False``.
-
-    PyTorch >= 2.6 changed ``torch.load`` to default to ``weights_only=True``.
-    Darts checkpoints contain non-tensor objects (optimizer state, hparams, etc.)
-    that require full unpickling. By injecting this plugin into the Trainer, all
-    internal checkpoint loading paths (resume training, Tuner, etc.) automatically
-    use ``weights_only=False`` without having to patch each call site.
-    """
-
-    def load_checkpoint(self, path, map_location=None, weights_only=None, **kwargs):
-        weights_only_kwargs = dict()
-        if _PL_2_6_OR_ABOVE:
-            weights_only_kwargs["weights_only"] = (
-                False if weights_only is None else weights_only
-            )
-        return super().load_checkpoint(
-            path,
-            map_location=map_location,
-            **weights_only_kwargs,
-            **kwargs,
-        )
 
 
 def _get_checkpoint_folder(work_dir, model_name):
@@ -345,45 +322,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model_name = model_name
         self.work_dir = work_dir
 
-        # setup model save dirs
+        # setup model checkpointing
         self.save_checkpoints = save_checkpoints
-        checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
-        log_folder = _get_logs_folder(self.work_dir, self.model_name)
-        checkpoint_exists = (
-            os.path.exists(checkpoints_folder)
-            and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
+        checkpoint_callbacks = self._setup_checkpointing(
+            create_save_dirs=True, force_reset=force_reset
         )
 
-        # setup model save dirs
-        if checkpoint_exists and save_checkpoints:
-            if not force_reset:
-                raise_log(
-                    ValueError(
-                        f"Some model data already exists for `model_name` '{self.model_name}'. "
-                        f"Either load model to continue training or use `force_reset=True` to "
-                        f"initialize anyway to start training from scratch and remove all the "
-                        f"model data."
-                    ),
-                )
-            self.reset_model()
-        elif save_checkpoints:
-            self._create_save_dirs()
-        else:
-            pass
-
-        # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
-        if save_checkpoints:
-            checkpoint_callback = pl.callbacks.ModelCheckpoint(
-                dirpath=checkpoints_folder,
-                save_last=True,
-                monitor="val_loss",
-                filename="best-{epoch}-{val_loss:.2f}",
-            )
-            checkpoint_callback.CHECKPOINT_NAME_LAST = "last-{epoch}"
-        else:
-            checkpoint_callback = None
-
         # save tensorboard under 'darts_logs/model_name/logs/'
+        log_folder = _get_logs_folder(self.work_dir, self.model_name)
         model_logger = (
             pl_loggers.TensorBoardLogger(save_dir=log_folder, name="", version="logs")
             if log_tensorboard
@@ -396,7 +342,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "max_epochs": n_epochs,
             "check_val_every_n_epoch": nr_epochs_val_period,
             "enable_checkpointing": save_checkpoints,
-            "callbacks": [cb for cb in [checkpoint_callback] if cb is not None],
+            "callbacks": checkpoint_callbacks,
         }
 
         # update trainer parameters with user defined `pl_trainer_kwargs`
@@ -502,13 +448,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ),
             )
 
-        self.pl_module_params["train_sample_shape"] = [
-            variate.shape if variate is not None else None
-            for variate in self.train_sample
-        ]
+        self.pl_module_params["train_sample_shape"] = self.train_sample.sample_shapes()
         # the tensors have shape (chunk_length, nr_dimensions)
         model = self._create_model(self.train_sample)
+        # The forecasting subclass may live in the user's module while the
+        # Lightning module class lives next to the base model. Store the class
+        # that `_create_model` actually returned.
         self._module_name = model.__class__.__name__
+        self._module_path = model.__class__.__module__
 
         # we should determine the precision based on time series data type
         # however if user has defined a precision, we should follow that
@@ -518,7 +465,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if trainer is None
             else trainer.precision
         )
-        dtype = self.train_sample[0].dtype
+        dtype = self.train_sample.past_target.dtype
         if precision_user is not None:
             logger.info(
                 f"Using user-defined precision: {precision_user}. The model output will have the same dtype. If you "
@@ -592,6 +539,56 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else:
                 param.requires_grad = not make_trainable
 
+    def _setup_checkpointing(
+        self, create_save_dirs: bool, force_reset: bool = False
+    ) -> list[pl.callbacks.Callback]:
+        """Sets up a callbacks for checkpointing and optionally creates and verifies save directories."""
+        if not self.save_checkpoints:
+            return []
+
+        checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
+
+        if create_save_dirs:
+            checkpoint_exists = (
+                os.path.exists(checkpoints_folder)
+                and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
+            )
+
+            # setup model save dirs
+            if checkpoint_exists:
+                if not force_reset:
+                    raise_log(
+                        ValueError(
+                            f"Some model data already exists for `model_name` '{self.model_name}'. "
+                            f"Either load model to continue training or use `force_reset=True` to "
+                            f"initialize anyway to start training from scratch and remove all the "
+                            f"model data."
+                        ),
+                    )
+                self.reset_model()
+            else:
+                self._create_save_dirs()
+
+        # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
+        best_checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            dirpath=checkpoints_folder,
+            filename="best-{epoch}-{val_loss:.4f}",
+            monitor="val_loss",
+            save_last=False,
+            save_top_k=1,
+        )
+        last_checkpoint_callback = pl.callbacks.ModelCheckpoint(
+            dirpath=checkpoints_folder,
+            filename="last-{epoch}",
+            monitor=None,
+            save_last=False,
+            save_top_k=1,
+        )
+        return [
+            best_checkpoint_callback,
+            last_checkpoint_callback,
+        ]
+
     def _setup_trainer(
         self,
         trainer: pl.Trainer | None,
@@ -628,9 +625,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # prevent lightning from adding callbacks to the callbacks list in `self.trainer_params`
         callbacks = trainer_params_copy.pop("callbacks", None)
 
-        # ensure internal checkpoint loading (e.g. resuming training, Tuner) uses
-        # weights_only=False so that non-tensor objects (optimizer state, hparams, etc.)
-        # can be deserialized (PyTorch >= 2.6 defaults to weights_only=True)
+        # ensure internal checkpoint loading (Tuner, plugin-routed loads, etc.) is
+        # safe-by-default via `_DartsCheckpointIO` / `load_ckpt_safely` (load-scoped allow-list).
         plugins = list(trainer_params_copy.pop("plugins", None) or [])
         has_checkpoint_io = any(isinstance(p, TorchCheckpointIO) for p in plugins)
         if not has_checkpoint_io:
@@ -720,10 +716,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         _raise_if_wrong_type(inference_dataset, TorchInferenceDataset)
 
-    def _validate_predict_sample(
+    def _validate_predict_ds_output(
         self,
         train_sample: TorchTrainingSample,
-        predict_sample: TorchInferenceDatasetOutput,
+        inference_sample: TorchInferenceSample,
     ):
         """Validates that the predict sample matches a sample that the model was trained on.
 
@@ -732,42 +728,28 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         train_sample
-            (past target, past covariates, historic future covariates, future covariates, static covariates,
-            future target)
-        predict_sample
-            (past target, past covariates, future past covariates, historic future covariates, future covariates,
-            static covariates, target series schema, prediction start time)
+            Stored model snapshot (``TorchTrainingSample``) or a training dataset sample.
+        inference_sample
+            Inference dataset sample. Malformed outputs will raise an exception.
         """
-        # datasets; we skip future target for train and predict, and skip future past covariates for predict datasets
+        # skip future_target (train labels) and future_past_covariates (inference-only AR)
+        train_sample = _as_training_sample(train_sample)
+        inference_sample = _as_inference_sample(inference_sample)
+
+        # mind the order for more intuitive error messages (dataset name)
         ds_names = [
-            "series",
-            "past_covariates",
-            "historic_future_covariates",
-            "future_covariates",
-            "static_covariates",
+            ("past_covariates", "past_covariates"),
+            ("future_covariates", "future_covariates"),
+            ("static_covariates", "static_covariates"),
+            ("past_target", "series"),
+            ("historic_future_covariates", "future_covariates"),
         ]
+        for ds_name, series_name in ds_names:
+            ds_train = getattr(train_sample, ds_name)
+            ds_inference = getattr(inference_sample, ds_name)
 
-        # ignore sample weight and future target from train sample
-        train_features = train_sample[:-1]
-        train_has_ds = [ds is not None for ds in train_features]
-
-        # ignore future past covariates, target schema, and prediction start time from predict sample
-        predict_features = predict_sample[:2] + predict_sample[3:-2]
-        predict_has_ds = [ds is not None for ds in predict_features]
-
-        if len(train_features) != len(predict_features):
-            raise_log(
-                ValueError(
-                    f"Mismatch between number of training features `{len(train_features)}` "
-                    f"and prediction features `{len(predict_features)}`. Make sure your prediction "
-                    f"dataset's `__getitem__` method returns the same output type as given in "
-                    f"`darts.utils.data.inference_dataset.TorchInferenceDataset`."
-                ),
-            )
-
-        for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(
-            zip(train_has_ds, predict_has_ds, ds_names)
-        ):
+            ds_in_train = ds_train is not None
+            ds_in_predict = ds_inference is not None
             if ds_in_train and not ds_in_predict:
                 raise_log(
                     ValueError(
@@ -783,8 +765,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     ),
                 )
             if ds_in_train and ds_in_predict:
-                train_shape = train_features[idx].shape
-                preds_shape = predict_features[idx].shape
+                train_shape = ds_train.shape
+                preds_shape = ds_inference.shape
 
                 if ds_name == "static_covariates":
                     train_n_comp = train_shape[0] * train_shape[1]
@@ -796,14 +778,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 if train_n_comp != preds_n_comp:
                     raise_log(
                         ValueError(
-                            f"The provided `{ds_name}` must have equal number of components as the "
-                            f"`{ds_name}` used to train the model. Received number of components: "
+                            f"The provided `{series_name}` must have equal number of components as the "
+                            f"`{series_name}` used to train the model. Received number of components: "
                             f"`{preds_n_comp}`, expected: `{train_n_comp}`.",
                         ),
                     )
 
         # check dtype consistency within predict sample
-        self._verify_dtypes(predict_sample)
+        self._verify_dtypes(inference_sample)
 
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
@@ -864,14 +846,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _verify_dtypes(
         self,
-        sample: TorchTrainingDatasetOutput | TorchInferenceDatasetOutput,
+        ds_output: TorchTrainingSample | TorchInferenceSample,
     ):
         """Dataset output dtype checks.
 
         Checks that all dataset output arrays have the same dtype, and whether the dtype matches
         the one of the training dataset
         """
-        observed_dtypes = set([el.dtype for el in sample if isinstance(el, np.ndarray)])
+        observed_dtypes = set(el.dtype for el in ds_output.iter_arrays())
         if len(observed_dtypes) != 1:
             logger.warning(
                 f"Observed mixed data types in the dataset output: {observed_dtypes}. "
@@ -882,8 +864,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         if self.train_sample is not None:
             expected_dtype = (
-                self.train_sample[0].dtype
-                if isinstance(self.train_sample[0], np.ndarray)
+                self.train_sample.past_target.dtype
+                if isinstance(self.train_sample.past_target, np.ndarray)
                 else None
             )
             current_dtype = observed_dtypes.pop()
@@ -983,7 +965,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
         uses_[past/future/static]_covariates attributes."""
-        _, past_cov, historic_future_cov, future_cov, static_cov, _ = self.train_sample
+        past_cov = self.train_sample.past_covariates
+        future_cov = self.train_sample.future_covariates
+        static_cov = self.train_sample.static_covariates
 
         self._uses_past_covariates = past_cov is not None
         self._expect_past_covariates = (
@@ -999,24 +983,38 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     def to_onnx(self, path: str | None = None, **kwargs):
-        """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
-        :func:`torch.onnx.export` method (`official documentation <https://lightning.ai/docs/pytorch/
-        stable/common/lightning_module.html#to-onnx>`__).
+        """Export model to ONNX format for optimized inference.
 
-        Note: requires `onnx` library (optional dependency) to be installed.
+        After exporting, use torch-free :func:`~darts.utils.onnx.inference.run_onnx_prediction`
+        to generate forecasts.
+
+        .. note::
+            Requires ONNX dependencies to be installed:
+
+            - `onnx>=1.0.0` and `onnxscript>=0.7.0` for exporting to ONNX
+            - `onnxruntime>=1.24.1` for inference
 
         Example for exporting a :class:`DLinearModel`:
 
         .. highlight:: python
         .. code-block:: python
 
+            # train torch model and export to ONNX format
             from darts.datasets import AirPassengersDataset
             from darts.models import DLinearModel
 
-            series = AirPassengersDataset().load()
-            model = DLinearModel(input_chunk_length=4, output_chunk_length=1)
+            series = AirPassengersDataset().load().astype("f")
+            model = DLinearModel(input_chunk_length=12, output_chunk_length=1)
             model.fit(series, epochs=1)
-            model.to_onnx("my_model.onnx")
+            onnx_filename = "my_model.onnx"
+            model.to_onnx(onnx_filename)
+
+            # run torch-free inference
+            import onnxruntime as ort
+            from darts.utils.onnx import run_onnx_prediction
+
+            session = ort.InferenceSession(onnx_filename)
+            forecast = run_onnx_prediction(n=3, session=session, series=series)
         ..
 
         Parameters
@@ -1025,12 +1023,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Path under which to save the model at its current state. If no path is specified, the model
             is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH_MM_SS}.onnx"``.
         **kwargs
-            Additional kwargs for PyTorch's :func:`torch.onnx.export` method (except parameters ``file_path``,
-            ``input_sample``, ``input_name``). For more information, read the `official documentation
+            Additional kwargs for PyTorch's :func:`torch.onnx.export` method (except ``args`` and
+            the export destination). For more information, read the `official documentation
             <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`__.
         """
-        # TODO: LSTM model should be exported with a batch size of 1
-        # TODO: predictions with TFT and TCN models is incorrect, might be caused by helper function to process inputs
+        from darts.utils.onnx.export import to_onnx
+
         if not self._fit_called:
             raise_log(
                 ValueError("`fit()` needs to be called before `to_onnx()`."),
@@ -1039,39 +1037,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if path is None:
             path = self._default_save_path() + ".onnx"
 
-        # last dimension in train_sample_shape is the expected target
-        def _randomize(shape) -> torch.Tensor | None:
-            return torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
-
-        # type warning if we do not create the mocked `mock_batch` explicitly
-        train_sample_shape = self.model.train_sample_shape
-        mock_batch: TorchBatch = (
-            _randomize(train_sample_shape[0]),
-            _randomize(train_sample_shape[1]),
-            _randomize(train_sample_shape[2]),
-            _randomize(train_sample_shape[3]),
-            _randomize(train_sample_shape[4]),
-            # future_target is excluded: ONNX export traces the inference path only
-            None,
-        )
-        input_sample = self.model._process_input_batch(mock_batch)
-
-        # torch models necessarily use historic target values as features in current implementation
-        input_names = ["x_past"]
-        if self.uses_future_covariates:
-            input_names.append("x_future")
-        if self.uses_static_covariates:
-            input_names.append("x_static")
-
-        # TODO: `dynamo=True` should be the way to go since PyTorch 2.9; we have to wait until RNN module onnx exports
-        #  are  fixed
-        self.model.to_onnx(
-            file_path=path,
-            input_sample=(input_sample,),
-            input_names=input_names,
-            dynamo=False,
-            **kwargs,
-        )
+        to_onnx(self.model, path, **kwargs)
 
     @random_method
     def fit(
@@ -1294,14 +1260,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         if val_series is not None:
-            val_dataset = self._build_train_dataset(
-                series=val_series,
-                past_covariates=val_past_covariates,
-                future_covariates=val_future_covariates,
-                sample_weight=val_sample_weight,
-                max_samples_per_ts=max_samples_per_ts,
-                stride=stride,
-            )
+            try:
+                val_dataset = self._build_train_dataset(
+                    series=val_series,
+                    past_covariates=val_past_covariates,
+                    future_covariates=val_future_covariates,
+                    sample_weight=val_sample_weight,
+                    max_samples_per_ts=max_samples_per_ts,
+                    stride=stride,
+                )
+            except ValueError as err:
+                raise_log(
+                    ValueError(f"Invalid validation set: {err}"),
+                )
         else:
             val_dataset = None
 
@@ -1432,42 +1403,27 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ),
             )
 
-        train_sample = train_dataset[0]
-        # ignore sample weights [-2] for model dimensions
-        train_sample_no_weight = train_sample[:-2] + train_sample[-1:]
+        train_sample = _as_training_sample(train_dataset[0])
 
         # Test dtypes of sample
         self._verify_dtypes(train_sample)
 
         if self.model is None:
             # build model based on the dimensions of the first series in the train set.
-            self.train_sample = train_sample_no_weight
-            self.output_dim = train_sample[-1].shape[1]
+            self.train_sample = train_sample
+            self.output_dim = train_sample.future_target.shape[1]
             model = self._init_model(trainer)
         else:
             model = self.model
-            # check existing model has input/output dims matching what's provided in the training set.
-            if len(train_sample_no_weight) != len(self.train_sample):
-                raise_log(
-                    ValueError(
-                        "The size of the training set samples (tuples) does not match what the model has been"
-                        f" previously trained on. Trained on tuples of length {len(self.train_sample)},"
-                        f" received tuples of length {len(train_sample_no_weight)}."
-                    ),
-                )
-            sample_shapes_last = [
-                s.shape[1] if s is not None else None for s in self.train_sample
-            ]
-            sample_shapes = [
-                s.shape[1] if s is not None else None for s in train_sample_no_weight
-            ]
-            if sample_shapes != sample_shapes_last:
+            component_dims_last = self.train_sample.component_dims()
+            component_dims = train_sample.component_dims()
+            if component_dims != component_dims_last:
                 raise_log(
                     ValueError(
                         "The dimensionality of the series in the training set do not match the dimensionality"
                         " of the series the model has previously been trained on. "
-                        f"Model input/output dimensions = {sample_shapes_last},"
-                        f" provided input/output dimensions = {sample_shapes}."
+                        f"Model input/output dimensions = {component_dims_last},"
+                        f" provided input/output dimensions = {component_dims}."
                     ),
                 )
 
@@ -1499,8 +1455,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
         # loss must not reduce the output when using sample weight
-        train_sample_weight = train_sample[-2]
-        val_sample_weight = val_dataset[0][-2] if val_dataset is not None else None
+        train_sample_weight = train_sample.sample_weight
+        val_sample_weight = (
+            _as_training_sample(val_dataset[0]).sample_weight
+            if val_dataset is not None
+            else None
+        )
         for sample_weight, criterion, set_name in [
             (train_sample_weight, model.train_criterion, "train"),
             (val_sample_weight, model.val_criterion, "val"),
@@ -1542,7 +1502,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             batch_size=self.batch_size,
-            collate_fn=self._batch_collate_fn,
+            collate_fn=_batch_collate_fn_train,
             dataloader_kwargs=dataloader_kwargs,
         )
 
@@ -1592,44 +1552,39 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # if model was loaded from checkpoint (when `load_ckpt_path is not None`) and model.fit() is called,
         # we resume training
+        ckpt_callback: pl.callbacks.ModelCheckpoint | None = None
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
-
         if load_best:
-            ckpt_callback: pl.callbacks.ModelCheckpoint | None = (
-                trainer.checkpoint_callback
-            )
-            ckpt_activated = ckpt_callback is not None and hasattr(
-                ckpt_callback, "best_model_path"
-            )
-            if not ckpt_activated or len(datamodule.val_dataloader()) == 0:
+            for cb in trainer.checkpoint_callbacks:
+                if (
+                    isinstance(cb, pl.callbacks.ModelCheckpoint)
+                    and cb.monitor is not None
+                ):
+                    ckpt_callback = cb
+                    break
+
+            if ckpt_callback is None or len(datamodule.val_dataloader()) == 0:
                 logger.warning(
                     "Loading the best model will be skipped (`load_best` is ignored), as it requires "
                     "active checkpointing and a validation set to be provided to the current fit method."
                     "If not using a custom `trainer`, make sure to set `save_checkpoints=True` at model creation. "
                     "Otherwise, make sure the custom `trainer` uses a pytorch-lightning `ModelCheckpoint` callback."
                 )
-                load_best = False
-        else:
-            ckpt_callback = None
+                ckpt_callback = None
 
         if self._requires_training:
-            weights_only_kwargs = dict()
-            if ckpt_path is not None and _PL_2_6_OR_ABOVE:
-                weights_only_kwargs["weights_only"] = False
-
             trainer.fit(
                 model=model,
                 datamodule=datamodule,
                 ckpt_path=ckpt_path,
-                **weights_only_kwargs,
             )
-            if load_best:
+            if ckpt_callback is not None:
                 best_model_path = ckpt_callback.best_model_path
                 logger.info(
                     f"Loading best model from checkpoint: '{os.path.basename(best_model_path)}'"
                 )
-                model = self._load_from_checkpoint(best_model_path)
+                model = self._load_from_checkpoint(best_model_path, trusted=True)
         else:
             trainer.strategy.connect(model)
         self.model = model
@@ -1849,15 +1804,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = params["model"]
         datamodule = params["datamodule"]
 
-        tune_kwargs: dict[str, Any] = dict()
-        if _PL_2_6_OR_ABOVE:
-            tune_kwargs.update(
-                dict(
-                    margin=margin,
-                    max_val=max_val,
-                )
-            )
-
         batch_size = Tuner(trainer).scale_batch_size(
             model=model,
             datamodule=datamodule,
@@ -1867,7 +1813,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             init_val=init_val,
             max_trials=max_trials,
             batch_arg_name="batch_size",
-            **tune_kwargs,
+            margin=margin,
+            max_val=max_val,
         )
 
         if batch_size is None:
@@ -1955,7 +1902,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             (and optionally future covariates) back into the model. If this parameter is not provided,
             it will be set ``output_chunk_length`` by default.
         num_samples
-            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be set to 1 for deterministic
+            models. When ``num_samples > 1``, predictions within each output chunk are sampled
+            independently across output steps and components. When `n > output_chunk_length`, each sample trajectory
+            is generated autoregressively across output chunks, by feeding sampled values of a previous chunk as
+            input to forecast the distribution of the next chunk.
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
             inference/prediction dataset. For more information on `DataLoader`, check out `this link
@@ -2242,8 +2193,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # check that covariates and dimensions are matching what we had during training
-        self._validate_predict_sample(
-            train_sample=self.train_sample, predict_sample=dataset[0]
+        self._validate_predict_ds_output(
+            train_sample=self.train_sample,
+            inference_sample=dataset[0],
         )
 
         if roll_size is None:
@@ -2287,7 +2239,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         datamodule = TorchDataModule(
             predict_dataset=dataset,
             batch_size=batch_size,
-            collate_fn=self._batch_collate_fn,
+            collate_fn=_batch_collate_fn_predict,
             dataloader_kwargs=dataloader_kwargs,
         )
 
@@ -2372,25 +2324,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.output_chunk_length + self.output_chunk_shift,
         )
 
-    @staticmethod
-    def _batch_collate_fn(batch: list[tuple]) -> tuple:
-        """
-        Returns a batch Tuple from a list of samples
-        """
-        aggregated = []
-        first_sample = batch[0]
-        for i in range(len(first_sample)):
-            elem = first_sample[i]
-            if isinstance(elem, np.ndarray):
-                aggregated.append(
-                    torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0))
-                )
-            elif elem is None:
-                aggregated.append(None)
-            else:
-                aggregated.append([sample[i] for sample in batch])
-        return tuple(aggregated)
-
     def _clean(self) -> Self:
         """Returns a cleaned model, keeping only the necessary attributes for prediction."""
         model = super()._clean()
@@ -2398,7 +2331,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # a shallow copy is enough since we are only interested in removing pointers
         model.model = copy.copy(self.model)  # keep the model for prediction
         model._model_params = copy.copy(self._model_params)
-        model._model_params["pl_trainer_kwargs"] = None
+        model._model_params.pop("pl_trainer_kwargs", None)
         model.trainer_params = {}
         return model
 
@@ -2471,10 +2404,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def load(
-        path: str, pl_trainer_kwargs: dict | None = None, **kwargs
+        path: str,
+        pl_trainer_kwargs: dict | None = None,
+        trusted: bool = False,
+        **kwargs,
     ) -> "TorchForecastingModel":
         """
         Loads a model from a given file path.
+
+        .. warning::
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         Example for loading a general save from :class:`RNNModel`:
 
@@ -2517,22 +2459,31 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
             `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
             for more information about the supported kwargs.
+        trusted
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
+            ``weights_only`` is not supported; use ``trusted`` instead.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
-        with open(path, "rb") as fin:
-            model: TorchForecastingModel = torch.load(
-                fin, weights_only=False, map_location=kwargs.get("map_location", None)
-            )
+        model: TorchForecastingModel = load_wrapper_safely(
+            path=path,
+            trusted=trusted,
+            map_location=kwargs.get("map_location", None),
+        )
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
         path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
-            model.model = model._load_from_checkpoint(path_ptl_ckpt, **kwargs)
+            model.model = model._load_from_checkpoint(
+                path_ptl_ckpt,
+                trusted=trusted,
+                **kwargs,
+            )
         else:
             model._fit_called = False
             logger.warning(
@@ -2544,6 +2495,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model.trainer_params = pl_trainer_kwargs
             model._model_params["pl_trainer_kwargs"] = copy.deepcopy(pl_trainer_kwargs)
 
+        # upgrade legacy tuple ``train_sample`` values from older saved models (darts<=0.47.0).
+        train_sample = model.train_sample
+        if train_sample is not None:
+            model.train_sample = _coerce_training_sample(train_sample)
         return model
 
     @staticmethod
@@ -2552,11 +2507,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         work_dir: str | None = None,
         file_name: str | None = None,
         best: bool = True,
+        trusted: bool = False,
         **kwargs,
     ) -> "TorchForecastingModel":
         """
         Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.
         This method is used for models that were created with ``save_checkpoints=True``.
+
+        .. warning::
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         If you manually saved your model, consider using :meth:`load() <TorchForecastingModel.load()>`.
 
@@ -2599,9 +2561,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         best
             If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
             is ignored when ``file_name`` is given.
+        trusted
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
+            ``weights_only`` is not supported; use ``trusted`` instead.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
 
@@ -2626,8 +2592,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}."
                 ),
             )
-        model: TorchForecastingModel = torch.load(
-            base_model_path, weights_only=False, map_location=kwargs.get("map_location")
+        model: TorchForecastingModel = load_wrapper_safely(
+            path=base_model_path,
+            trusted=trusted,
+            map_location=kwargs.get("map_location"),
         )
 
         # load PyTorch LightningModule from checkpoint
@@ -2638,7 +2606,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         file_path = os.path.join(checkpoint_dir, file_name)
         logger.info(f"loading {file_name}")
 
-        model.model = model._load_from_checkpoint(file_path, **kwargs)
+        model.model = model._load_from_checkpoint(
+            file_path,
+            trusted=trusted,
+            **kwargs,
+        )
 
         # loss_fn is excluded from pl_forecasting_module ckpt, must be restored
         loss_fn = model.model_params.get("loss_fn")
@@ -2656,9 +2628,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # restore _fit_called attribute, set to False in load() if no .ckpt is found/provided
         model._fit_called = True
         model.load_ckpt_path = file_path
+
+        # upgrade legacy tuple ``train_sample`` values from older saved models (darts<=0.47.0).
+        train_sample = model.train_sample
+        if train_sample is not None:
+            model.train_sample = _coerce_training_sample(train_sample)
         return model
 
-    def _load_from_checkpoint(self, file_path, **kwargs):
+    def _load_from_checkpoint(self, file_path, trusted=False, **kwargs):
         """Loads a checkpoint for the underlying :class:`PLForecastingModule` (PLM) model.
         The PLM object is not stored when saving a :class:`TorchForecastingModel` (TFM) to avoid saving
         the model twice. Instead, we recover the module class with the module path and class name stored
@@ -2667,9 +2644,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pl_module_cls: PLForecastingModule = getattr(
             sys.modules[self._module_path], self._module_name
         )
-        if _PL_2_6_OR_ABOVE:
-            kwargs.setdefault("weights_only", False)
-        return pl_module_cls.load_from_checkpoint(file_path, **kwargs)
+
+        return load_ckpt_safely(
+            load_fn=pl_module_cls.load_from_checkpoint,
+            path=file_path,
+            trusted=trusted,
+            **kwargs,
+        )
 
     def load_weights_from_checkpoint(
         self,
@@ -2680,6 +2661,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         strict: bool = True,
         load_encoders: bool = True,
         skip_checks: bool = False,
+        trusted: bool = False,
         **kwargs,
     ):
         """
@@ -2687,6 +2669,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         checkpoints/'. This method is used for models that were created with ``save_checkpoints=True`` and
         that need to be re-trained or fine-tuned with different optimizer or learning rate scheduler. However,
         it can also be used to load weights for inference.
+
+        .. warning::
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         To resume an interrupted training, please consider using :meth:`load_from_checkpoint()
         <TorchForecastingModel.load_from_checkpoint()>` which also reload the trainer, optimizer and
@@ -2720,20 +2708,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         skip_checks
             If set, will disable the loading of the encoders and the sanity checks on model parameters
             (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
+        trusted
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
+            ``weights_only`` is not supported; use ``trusted`` instead.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
             torch.load.html>`__.
         """
-        if "weights_only" in kwargs.keys() and kwargs["weights_only"]:
-            raise_log(
-                ValueError(
-                    "Passing `weights_only=True` to `torch.load` will disrupt this"
-                    " method sanity checks."
-                ),
-            )
-
         if skip_checks and load_encoders:
             raise_log(
                 ValueError(
@@ -2767,15 +2751,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             tfm_save_file_name = file_name[:-5]
 
         ckpt_path = os.path.join(checkpoint_dir, file_name)
-        ckpt = torch.load(ckpt_path, weights_only=False, **kwargs)
+        ckpt = load_ckpt_safely(
+            load_fn=torch.load,
+            path=ckpt_path,
+            trusted=trusted,
+            **kwargs,
+        )
 
         # pl_forecasting module saves the train_sample shape, must recreate one
         np_dtype = TORCH_NP_DTYPES[ckpt["model_dtype"]]
-        mock_train_sample = [
-            np.zeros(sample_shape, dtype=np_dtype) if sample_shape else None
-            for sample_shape in ckpt["train_sample_shape"]
-        ]
-        self.train_sample = tuple(mock_train_sample)
+        self.train_sample = _train_sample_from_shapes(
+            ckpt["train_sample_shape"], dtype=np_dtype
+        )
 
         if not skip_checks:
             # path to the tfm checkpoint (darts model, .pt extension)
@@ -2788,13 +2775,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     ),
                 )
 
-            # updating model attributes before self._init_model() which create new tfm ckpt
-            with open(tfm_save_file_path, "rb") as tfm_save_file:
-                tfm_save: TorchForecastingModel = torch.load(
-                    tfm_save_file,
-                    weights_only=False,
-                    map_location=kwargs.get("map_location", None),
-                )
+            # updating model attributes before self._init_model() which create new tfm ckpt.
+            tfm_save: TorchForecastingModel = load_wrapper_safely(
+                path=tfm_save_file_path,
+                trusted=trusted,
+                map_location=kwargs.get("map_location", None),
+            )
 
             # encoders are necessary for direct inference
             self.encoders, self.add_encoders = self._load_encoders(
@@ -2824,13 +2810,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.model.rin_component_indices = ckpt["rin_component_indices"]
 
     def load_weights(
-        self, path: str, load_encoders: bool = True, skip_checks: bool = False, **kwargs
+        self,
+        path: str,
+        load_encoders: bool = True,
+        skip_checks: bool = False,
+        trusted: bool = False,
+        **kwargs,
     ):
         """
         Loads the weights from a manually saved model (saved with :meth:`save() <TorchForecastingModel.save()>`).
 
         Note: This method needs to be able to access the darts model checkpoint (.pt) in order to load the encoders
         and perform sanity checks on the model parameters.
+
+        .. warning::
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         Parameters
         ----------
@@ -2843,9 +2840,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         skip_checks
             If set, will disable the loading of the encoders and the sanity checks on model parameters
             (not recommended). Cannot be used with `load_encoders=True`. Default: ``False``.
+        trusted
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         **kwargs
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
+            ``weights_only`` is not supported; use ``trusted`` instead.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
             torch.load.html>`__.
 
@@ -2862,6 +2863,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             file_name=path_ptl_ckpt,
             load_encoders=load_encoders,
             skip_checks=skip_checks,
+            trusted=trusted,
             **kwargs,
         )
 
@@ -3200,7 +3202,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def __getstate__(self):
         # do not pickle the PyTorch LightningModule, and Trainer
-        return {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
+        state = {k: v for k, v in self.__dict__.items() if k not in TFM_ATTRS_NO_PICKLE}
+
+        # remove callbacks from trainer params for pickling; they (untrained) objects
+        # are restored via `__setstate__` and state is loaded via lightning ckpt when
+        # resuming training
+        state["trainer_params"] = {
+            k: v for k, v in state["trainer_params"].items() if k != "callbacks"
+        }
+        return state
 
     def __setstate__(self, d):
         self.__dict__ = d
@@ -3208,6 +3218,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # default values
         for attr, default_val in TFM_ATTRS_NO_PICKLE.items():
             setattr(self, attr, default_val)
+
+        # restore (untrained) callbacks from model creation parameters
+        callbacks = self._setup_checkpointing(create_save_dirs=False)
+        trainer_params = self._model_params.get("pl_trainer_kwargs", None)
+        if (
+            trainer_params is not None
+            and "callbacks" in self._model_params["pl_trainer_kwargs"]
+        ):
+            callbacks += copy.deepcopy(trainer_params["callbacks"])
+        self.trainer_params["callbacks"] = callbacks
 
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):

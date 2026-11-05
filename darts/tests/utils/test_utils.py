@@ -1,5 +1,4 @@
 import builtins
-import itertools
 from unittest.mock import patch
 
 import numpy as np
@@ -9,6 +8,7 @@ from pandas.tseries.offsets import CustomBusinessDay
 
 from darts import TimeSeries
 from darts.tests.conftest import IPYTHON_AVAILABLE
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import _with_sanity_checks
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
@@ -141,6 +141,52 @@ class TestUtils:
         assert isinstance(subseries_no_gap, list)
         assert len(subseries_no_gap) == 1
         assert subseries_no_gap[0] == no_gap_series
+
+        # multivariate series with leading and trailing partial NaNs under mode="any"
+
+        partial_nan_vals = np.array([
+            [np.nan, 1.0, 2.0, np.nan, 4.0, 5.0],
+            [1.0, 1.0, 2.0, 3.0, 4.0, np.nan],
+        ]).T
+        partial_nan_series = TimeSeries.from_values(partial_nan_vals)
+        subseries_partial = extract_subseries(
+            partial_nan_series, min_gap_size=1, mode="any"
+        )
+        assert len(subseries_partial) == 2
+        assert len(subseries_partial[0]) == 2
+        assert not np.isnan(subseries_partial[0].values()).any()
+        assert len(subseries_partial[1]) == 1
+        assert not np.isnan(subseries_partial[1].values()).any()
+
+        # all-NaN series returns an empty list
+        all_nan_series = TimeSeries.from_values(np.full((1, 2), np.nan))
+        assert extract_subseries(all_nan_series) == []
+        assert extract_subseries(all_nan_series, mode="any") == []
+
+        # empty series returns an empty list
+        empty_series = TimeSeries.from_values(np.array([]))
+        assert extract_subseries(empty_series) == []
+
+    @pytest.mark.parametrize(
+        "start,freq",
+        [
+            ("2000-01-01", "MS"),
+            ("2000-02-01", "2MS"),
+            (0, 1),
+            (10, 2),
+        ],
+    )
+    def test_extract_subseries_by_index_type(self, start, freq):
+        # integer-indexed series must keep the last value before each gap
+        values = np.array([1.0, 2.0, np.nan, np.nan, 5.0, 6.0, np.nan, 8.0])
+        times = generate_index(start=start, freq=freq, length=len(values))
+        series = TimeSeries.from_times_and_values(times, values)
+
+        subseries = extract_subseries(series)
+        assert len(subseries) == 3
+        assert subseries[0] == series[:2]
+        assert subseries[1] == series[4:6]
+        assert subseries[2] == series[-1]
 
     @pytest.mark.parametrize(
         "config",
@@ -749,11 +795,7 @@ class TestUtils:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 2],  # n times
-            [2, 3],  # ndim
-            [1, 2],  # n components
-        ),
+        param_product([1, 2], [2, 3], [1, 2]),
     )
     def test_generate_samples_output(self, config):
         """Tests sample generation from quantiles and quantile predictions for:

@@ -11,16 +11,9 @@ Base Aggregator
 # - create show_all_combined (info about correlation, and from what path did
 #   the anomaly alarm came from)
 
-import sys
-from typing import Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
-
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from typing import Literal, Self
 
 import numpy as np
 

@@ -1,4 +1,3 @@
-import itertools
 import logging
 import math
 from tempfile import NamedTemporaryFile
@@ -13,6 +12,7 @@ from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate, slice_intersect
 from darts.tests.conftest import POLARS_AVAILABLE
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
@@ -177,7 +177,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "backend,date_type",
-        itertools.product(
+        param_product(
             ["pandas"] + (["polars"] if POLARS_AVAILABLE else []),
             ["str", "date", "datetime"],
         ),
@@ -197,7 +197,7 @@ class TestTimeSeries:
             df = pl.DataFrame(data)
             if date_type != "str":
                 # we must first convert to Date before optional Datetime
-                df = df.cast({"time": pl.Date})
+                df = df.with_columns(pl.col("time").str.to_date())
                 if date_type == "datetime":
                     df = df.cast({"time": pl.Datetime})
 
@@ -578,7 +578,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_rescale_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
@@ -591,6 +591,33 @@ class TestTimeSeries:
     def test_slice(self):
         helper_test_slice(self.series1)
 
+    @pytest.mark.parametrize(
+        "times",
+        [
+            pd.RangeIndex(10),
+            pd.RangeIndex(10, 30, 2),
+            pd.date_range("20130101", periods=10, freq="D"),
+        ],
+    )
+    def test_slice_n_points_integer(self, times):
+        series = TimeSeries(times, np.arange(10))
+        # integers are labels for integer-indexed series and positions otherwise
+        idx = times if series.has_range_index else pd.RangeIndex(10)
+
+        assert series.slice_n_points_after(idx[2], 3).time_index.equals(times[2:5])
+        assert series.slice_n_points_before(idx[5], 3).time_index.equals(times[3:6])
+
+        # fewer than `n` points available
+        assert series.slice_n_points_after(idx[8], 5).time_index.equals(times[8:])
+        assert series.slice_n_points_before(idx[1], 5).time_index.equals(times[:2])
+
+    def test_slice_n_points_integer_not_in_index(self):
+        series = TimeSeries(pd.RangeIndex(10, 30, 2), np.arange(10))
+        sliced = series.slice_n_points_after(15, 2)
+        assert sliced.time_index.equals(pd.RangeIndex(16, 20, 2))
+        sliced = series.slice_n_points_before(15, 2)
+        assert sliced.time_index.equals(pd.RangeIndex(12, 16, 2))
+
     def test_split(self):
         helper_test_split(self.series1)
 
@@ -600,9 +627,7 @@ class TestTimeSeries:
         helper_test_drop_before(self.series1, keep_point=False)
         helper_test_drop_before(self.series1, keep_point=True)
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(["D", "2D", 1, 2], [False, True])
-    )
+    @pytest.mark.parametrize("config", param_product(["D", "2D", 1, 2], [False, True]))
     def test_intersect(self, config):
         """Tests slice intersection between two series with datetime or range index with identical and
         mixed frequencies."""
@@ -611,7 +636,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 (False, 1, 1, 1),  # integer step
                 (False, 1, 2, 2),
@@ -730,7 +755,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 (  # univariate array
                     np.array([0, 1, 2]).reshape((3, 1, 1)),
@@ -851,7 +876,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_append_prepend_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
@@ -929,7 +954,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_append_prepend_values_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
@@ -987,7 +1012,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_with_values_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(
@@ -1069,8 +1094,16 @@ class TestTimeSeries:
         targetDiv = TimeSeries.from_series(
             pd.Series([i / 2 for i in range(10)], index=self.pd_series1.index)
         )
+        targetrDiv = TimeSeries.from_times_and_values(
+            times=self.pd_series1.index,
+            values=2.0 / np.array([i for i in range(10)], dtype=self.series1.dtype),
+        )
         targetPow = TimeSeries.from_series(
             pd.Series([float(i**2) for i in range(10)], index=self.pd_series1.index)
+        )
+        targetnPow = TimeSeries.from_times_and_values(
+            times=self.pd_series1.index,
+            values=np.array([i for i in range(10)], dtype=self.series1.dtype) ** (-2),
         )
 
         assert self.series1 + seriesA == targetAdd
@@ -1083,15 +1116,9 @@ class TestTimeSeries:
         assert 2 * self.series1 == targetMul
         assert self.series1 / seriesA == targetDiv
         assert self.series1 / 2 == targetDiv
+        assert 2 / self.series1 == targetrDiv
         assert self.series1**2 == targetPow
-
-        with pytest.raises(ZeroDivisionError):
-            # Cannot divide by a TimeSeries with a value 0.
-            self.series1 / self.series1
-
-        with pytest.raises(ZeroDivisionError):
-            # Cannot divide by 0.
-            self.series1 / 0
+        assert self.series1 ** (-2) == targetnPow
 
     def test_ops_array(self):
         # can work with xarray directly
@@ -1111,7 +1138,7 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "broadcast_components,broadcast_samples",
-        itertools.product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_ops_broadcasting(self, broadcast_components, broadcast_samples):
         # generate random time-series
@@ -1129,6 +1156,7 @@ class TestTimeSeries:
         seriesMul = TimeSeries(self.times, arrayA * arrayB)
         seriesDiv = TimeSeries(self.times, arrayA / arrayB)
         seriesPow = TimeSeries(self.times, arrayA**arrayB)
+        seriesnPow = TimeSeries(self.times, arrayA ** (-arrayB))
 
         # assert different operations; must be equivalent to operations with scalar
         assert seriesA + seriesB == seriesAdd
@@ -1136,6 +1164,7 @@ class TestTimeSeries:
         assert seriesA * seriesB == seriesMul
         assert seriesA / seriesB == seriesDiv
         assert seriesA**seriesB == seriesPow
+        assert seriesA ** (-seriesB) == seriesnPow
 
         # it also works with numpy arrays directly
         assert seriesA + arrayB == seriesAdd
@@ -1143,10 +1172,11 @@ class TestTimeSeries:
         assert seriesA * arrayB == seriesMul
         assert seriesA / arrayB == seriesDiv
         assert seriesA**arrayB == seriesPow
+        assert seriesA ** (-arrayB) == seriesnPow
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_ops_dtype_conversion(self, dt_source, dt_vals):
         series = linear_timeseries(
@@ -1158,7 +1188,29 @@ class TestTimeSeries:
         assert (series - vals).dtype == dt_source
         assert (series * vals).dtype == dt_source
         assert (series / vals).dtype == dt_source
+        assert (2 / series).dtype == dt_source
         assert (series**vals).dtype == dt_source
+        assert (series**2).dtype == dt_source
+        assert (series**-2).dtype == dt_source
+        assert (series**0.5).dtype == dt_source
+
+    def test_zero_truediv(self):
+        series = TimeSeries.from_values(np.array([1.0, 2.0, 3.0]))
+        z_values = np.array([1.0, 0.0, 3.0]).reshape((3, 1, 1))
+        z_series = TimeSeries.from_values(z_values)
+
+        np.testing.assert_array_equal((series / 0.0).values()[:, 0], [np.inf] * 3)
+        np.testing.assert_array_equal(
+            (series / z_values).values()[:, 0], [1.0, np.inf, 1.0]
+        )
+        np.testing.assert_array_equal(
+            (series / z_series).values()[:, 0], [1.0, np.inf, 1.0]
+        )
+
+    def test_zero_rtruediv(self):
+        series = TimeSeries.from_values(np.array([1.0, 0.0, 2.0]))
+        np.testing.assert_array_equal((1.0 / series).values()[:, 0], [1.0, np.inf, 0.5])
+        np.testing.assert_array_equal((0.0 / series).values()[:, 0], [0.0, np.nan, 0.0])
 
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
@@ -1869,6 +1921,36 @@ class TestTimeSeries:
 
         assert data_darts1 == data_darts2
 
+    @pytest.mark.parametrize("dtype", ["float16", "float32", "float64"])
+    @pytest.mark.parametrize("with_nan", [False, True])
+    @pytest.mark.parametrize("freq", ["D", "2D", 1, 2])
+    @pytest.mark.parametrize("stochastic", [False, True])
+    def test_json_roundtrip_keeps_float_precision2(
+        self, dtype, with_nan, freq, stochastic
+    ):
+        np.random.seed(42)
+        shape = (10, 3) if not stochastic else (10, 3, 2)
+        values = np.random.random(shape).astype(dtype)
+
+        values[5, 2] = 1 / 3
+        values[6, 2] = 1e-12
+
+        if with_nan:
+            values[3, 0] = np.nan
+
+        static_covariates = pd.DataFrame({"num": [1 / 3], "cat": ["abc"]})
+
+        start = "20200101" if isinstance(freq, str) else 1
+        series = TimeSeries.from_times_and_values(
+            times=generate_index(start=start, freq=freq, length=len(values)),
+            values=values,
+            static_covariates=static_covariates,
+            columns=["a", "b", "c"],
+        )
+        restored = TimeSeries.from_json(series.to_json())
+        assert restored == series
+        assert restored.dtype == series.dtype
+
     def test_index_creation(self):
         times = pd.date_range(start="20210312", periods=15, freq="MS")
         values1 = np.random.uniform(low=-10, high=10, size=len(times))
@@ -2004,6 +2086,20 @@ class TestTimeSeries:
             "fn must return an array of shape `(3, 1, 1)`. Received shape `(3, 2, 1)`"
         )
 
+    def test_strip(self):
+        vals = np.array([np.nan, 1.0, 2.0, np.nan])
+        series = TimeSeries.from_values(vals)
+        # leading and trailing nan
+        assert series.strip() == series[1:-1]
+        # trailing nan only
+        assert series[1:].strip() == series[1:-1]
+        # leading nan only
+        assert series[:-1].strip() == series[1:-1]
+        # zero nan
+        assert series[1:-1].strip() == series[1:-1]
+        # only nan
+        assert series[:1].strip() == series[:0]
+
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
         times2 = pd.date_range("20120101", "20210301", freq="QE")
@@ -2108,6 +2204,51 @@ class TestTimeSeries:
 
         assert len(series1.longest_contiguous_slice()) == 3
         assert len(series1.longest_contiguous_slice(2)) == 6
+
+        # all-NaN series returns empty series
+        all_nan = TimeSeries.from_values(np.array([np.nan]))
+        assert len(all_nan.longest_contiguous_slice()) == 0
+
+        # multivariate series with mode="any" and boundary partial NaNs
+        vals = np.array([
+            [np.nan, 1.0, 2.0, 3.0, 4.0],
+            [1.0, 1.0, 2.0, 3.0, np.nan],
+        ]).T
+        ts_multi = TimeSeries.from_values(vals)
+        res_lcs = ts_multi.longest_contiguous_slice(max_gap_size=1, mode="any")
+        assert len(res_lcs) == 3
+        assert not np.isnan(res_lcs.values()).any()
+
+    @pytest.mark.parametrize(
+        "times",
+        [
+            pd.RangeIndex(9),
+            pd.RangeIndex(10, 28, 2),
+            pd.date_range("20130101", periods=9, freq="D"),
+            pd.date_range("20130101", periods=9, freq="2D"),
+        ],
+    )
+    def test_longest_contiguous_slice_index_types(self, times):
+        values = np.array([1, 2, np.nan, 3, 4, 5, 6, np.nan, 7.0])
+        series = TimeSeries(times, values)
+
+        # longest slice is at the center
+        result = series.longest_contiguous_slice()
+        np.testing.assert_array_equal(result.values().flatten(), [3, 4, 5, 6])
+        assert result.time_index.equals(times[3:7])
+
+        # longest slice is at the end, and trailing NaNs are stripped
+        series = TimeSeries(times, np.array([1, np.nan] + [2] * 6 + [np.nan]))
+        result = series.longest_contiguous_slice()
+        assert result.time_index.equals(times[2:8])
+
+        # only leading and trailing NaNs
+        series = TimeSeries(times, np.array([np.nan] + [1] * 7 + [np.nan]))
+        assert series.longest_contiguous_slice().time_index.equals(times[1:8])
+
+        # all slices of length one
+        series = TimeSeries(times, np.array([1, np.nan] * 4 + [1]))
+        assert series.longest_contiguous_slice().time_index.equals(times[:1])
 
     def test_with_columns_renamed(self):
         series1 = linear_timeseries(
@@ -2275,6 +2416,30 @@ class TestTimeSeries:
         assert idx.name == "test_index"
 
         assert ts.time_index.equals(idx)
+
+    def test_values_stochastic_warning(self, caplog):
+        ts = TimeSeries.from_values(np.arange(30).reshape(10, 1, 3))
+        msg = "stochastic series only extracts values of a single sample"
+        with caplog.at_level(logging.WARNING):
+            values = ts.values()
+
+        assert msg in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 0])
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            values = ts.values(sample=1)
+
+        assert msg not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            values = TimeSeries.from_values(ts.values(sample=1)).values()
+
+        assert msg not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
+        caplog.clear()
 
 
 def helper_test_slice(test_series: TimeSeries):
@@ -2934,7 +3099,7 @@ class TestTimeSeriesConcatenate:
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
-        itertools.product(["float32", "float64"], ["float64", "float32"]),
+        param_product(["float32", "float64"], ["float64", "float32"]),
     )
     def test_concatenate_dtype_conversion(self, dt_source, dt_vals):
         series_1 = linear_timeseries(

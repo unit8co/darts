@@ -275,16 +275,21 @@ class TestPTLTrainer:
                 **tfm_kwargs["pl_trainer_kwargs"],
             },
         )
-        # we expect 3 callbacks
-        assert len(model.trainer_params["callbacks"]) == 3
+        # we expect 4 callbacks (2 for checkpoint (best + last epoch) + 2 custom callbacks)
+        assert len(model.trainer_params["callbacks"]) == 4
 
-        # first one is our Checkpointer
-        assert isinstance(
-            model.trainer_params["callbacks"][0], pl.callbacks.ModelCheckpoint
-        )
+        # first one is our best epochs checkpointer
+        cb = model.trainer_params["callbacks"][0]
+        assert isinstance(cb, pl.callbacks.ModelCheckpoint)
+        assert cb.monitor == "val_loss"
 
-        # second and third are CounterCallbacks
-        for i in range(1, 3):
+        # second one is our last epochs checkpointer
+        cb = model.trainer_params["callbacks"][1]
+        assert isinstance(cb, pl.callbacks.ModelCheckpoint)
+        assert cb.monitor is None
+
+        # third and forth are CounterCallbacks
+        for i in range(2, 4):
             assert isinstance(model.trainer_params["callbacks"][i], CounterCallback)
 
     def test_early_stopping(self):

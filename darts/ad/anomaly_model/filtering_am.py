@@ -7,14 +7,8 @@ several anomaly scorer(s) to compute anomaly scores
 by comparing how actuals deviate from the model's predictions (filtered series).
 """
 
-import sys
 from collections.abc import Sequence
-from typing import Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Literal, Self
 
 from darts import TimeSeries
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel

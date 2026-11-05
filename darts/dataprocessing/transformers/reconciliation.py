@@ -20,6 +20,7 @@ from darts.dataprocessing.transformers import (
     FittableDataTransformer,
 )
 from darts.logging import raise_log
+from darts.utils.utils import _maybe_cast_array_dtype
 
 
 def _get_summation_matrix(series: TimeSeries):
@@ -46,7 +47,7 @@ def _get_summation_matrix(series: TimeSeries):
     leaves_seq = series.bottom_level_components
     m = len(leaves_seq)
     n = len(components_seq)
-    S = np.zeros((n, m))
+    S = np.zeros((n, m), dtype=series.dtype)
 
     components_indexes = {comp: i for i, comp in enumerate(components_seq)}
     leaves_indexes = {leaf: i for i, leaf in enumerate(leaves_seq)}
@@ -64,7 +65,7 @@ def _get_summation_matrix(series: TimeSeries):
         leaf_idx = leaves_indexes[leaf]
         increment(leaf, leaf_idx)
 
-    return S.astype(series.dtype)
+    return S
 
 
 def _reconcile_from_S_and_G(
@@ -77,7 +78,7 @@ def _reconcile_from_S_and_G(
     reconciled_values = S @ G @ y_hat  # (n, m) * (m, n) * (time, n, samples)
     return TimeSeries(
         times=series.time_index,
-        values=reconciled_values,
+        values=_maybe_cast_array_dtype(reconciled_values, series.dtype),
         components=series.components,
         copy=False,
         **series._attrs,
@@ -251,7 +252,8 @@ class MinTReconciliator(FittableDataTransformer):
         elif method == "mint_cov":
             MinTReconciliator._assert_deterministic(series)
             Wh = np.cov(
-                series.values(copy=False).T
+                series.values(copy=False).T,
+                dtype=series.dtype,
             )  # + 1e-3 * np.eye(len(series.components))
         else:
             raise_log(ValueError(f"Unknown method: {method}."))

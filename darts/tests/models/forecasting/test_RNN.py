@@ -10,9 +10,15 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
 import torch.nn as nn
 
 from darts.models.forecasting.rnn_model import CustomRNNModule, RNNModel, _RNNModule
+from darts.utils.data.torch_datasets.utils import (
+    ModuleStage,
+    PLModuleInput,
+    PLModuleOutput,
+)
 
 
 class ModuleValid1(_RNNModule):
@@ -29,9 +35,12 @@ class ModuleValid2(CustomRNNModule):
         super().__init__(**kwargs)
         self.linear = nn.Linear(self.input_size, self.target_size)
 
-    def forward(self, x_in, h=None):
-        x = self.linear(x_in[0])
-        return x.view(len(x), -1, self.target_size, self.nr_params), h
+    def forward(self, x_in):
+        x = self.linear(x_in.past_target)
+        return PLModuleOutput(
+            prediction=x.view(len(x), -1, self.target_size, self.nr_params),
+            state=x_in.state,
+        )
 
 
 class TestRNNModel:
@@ -173,3 +182,54 @@ class TestRNNModel:
 
     def test_pred_length(self):
         self.helper_test_pred_length(RNNModel, self.series)
+
+    def test_forward_uses_module_stage_not_trainer(self):
+        """`forward()` branches on `x_in.stage` and must not require a Lightning trainer."""
+        module = _RNNModule(
+            name="RNN",
+            input_chunk_length=4,
+            output_chunk_length=1,
+            output_chunk_shift=0,
+            input_size=2,
+            hidden_dim=8,
+            num_layers=1,
+            target_size=1,
+            nr_params=1,
+            dropout=0,
+        )
+        module.eval()
+        torch.manual_seed(0)
+
+        past_train = torch.randn(2, 6, 1)
+        hfc_train = torch.randn(2, 6, 1)
+        fc_train = torch.randn(2, 6, 1)
+        x_train = PLModuleInput(
+            past_target=past_train,
+            historic_future_covariates=hfc_train,
+            future_covariates=fc_train,
+            stage=ModuleStage.TRAIN,
+        )
+        out_train = module(x_train)
+        # in non-predict mode: all inputs get predictions (6)
+        assert out_train.prediction.shape == (2, 6, 1, 1)
+
+        out_val = module(x_train.replace(stage=ModuleStage.VALIDATE))
+        assert out_val.prediction.shape == (2, 6, 1, 1)
+        torch.testing.assert_close(out_train.prediction, out_val.prediction)
+
+        past_pred = torch.randn(2, 4, 1)
+        hfc_pred = torch.randn(2, 4, 1)
+        fc_pred = torch.randn(2, 1, 1)
+        x_pred = PLModuleInput(
+            past_target=past_pred,
+            historic_future_covariates=hfc_pred,
+            future_covariates=fc_pred,
+        )
+
+        # only one predicted step in predict mode
+        assert x_pred.stage is ModuleStage.PREDICT
+        out_pred = module(x_pred)
+        assert out_pred.prediction.shape == (2, 1, 1, 1)
+
+        out_step = module(x_pred.replace(state=out_pred.state))
+        assert out_step.prediction.shape == (2, 1, 1, 1)

@@ -1,4 +1,3 @@
-import itertools
 import warnings
 from collections.abc import Sequence
 from itertools import product
@@ -8,6 +7,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.logging import raise_log
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.data.tabularization import _get_feature_times
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -205,10 +205,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            ["datetime", "integer"],
-            [0, 1, 3],
-        ),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_training(self, config):
         """
@@ -264,10 +261,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            ["datetime", "integer"],
-            [0, 1, 3],
-        ),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_prediction(self, config):
         """
@@ -322,7 +316,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_output_chunk_length_output_chunk_shift(self, config):
         """
@@ -356,7 +350,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_lags(self, config):
         """
@@ -390,7 +384,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_training_single_time(self, config):
         """
@@ -446,7 +440,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_prediction_single_time(self, config):
         """
@@ -501,7 +495,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_extend_time_index_range_idx(self, config):
         """
@@ -560,7 +554,7 @@ class TestGetFeatureTimes:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(["datetime", "integer"], [0, 1, 3]),
+        param_product(["datetime", "integer"], [0, 1, 3]),
     )
     def test_feature_times_future_lags(self, config):
         """
@@ -878,6 +872,37 @@ class TestGetFeatureTimes:
             == str(err.value)
         )
 
+    def test_feature_times_series_too_short_no_lags_or_no_check_inputs(self):
+        """Tests that `_get_feature_times` checks series length when `lags=None` or `check_inputs=False`."""
+        series = linear_timeseries(start=1, length=2, freq=1)
+        with pytest.raises(ValueError) as err:
+            _get_feature_times(
+                target_series=series,
+                past_covariates=linear_timeseries(start=1, length=10, freq=1),
+                lags_past_covariates=[-5, -2],
+                output_chunk_length=5,
+                is_training=True,
+            )
+        assert (
+            "`target_series` must have at least "
+            "`output_chunk_shift + output_chunk_length` = 5 "
+            "time steps; instead, it only has 2."
+        ) == str(err.value)
+
+        with pytest.raises(ValueError) as err:
+            _get_feature_times(
+                target_series=series,
+                lags=[-20, -10],
+                output_chunk_length=5,
+                is_training=True,
+                check_inputs=False,
+            )
+        assert (
+            "`target_series` must have at least "
+            "`-min(lags) + output_chunk_shift + output_chunk_length` = 25 "
+            "time steps; instead, it only has 2."
+        ) == str(err.value)
+
     def test_feature_times_series_too_short_error(self):
         """
         Tests that `_get_feature_times` throws correct error
@@ -901,7 +926,7 @@ class TestGetFeatureTimes:
                 is_training=True,
             )
         assert (
-            "`target_series` must have at least `-min(lags) + output_chunk_length + output_chunk_shift` = 25 "
+            "`target_series` must have at least `-min(lags) + output_chunk_shift + output_chunk_length` = 25 "
             "time steps; instead, it only has 2."
         ) == str(err.value)
         # `past_covariates` too short when training:

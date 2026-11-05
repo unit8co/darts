@@ -45,15 +45,12 @@ import itertools
 import json
 import math
 import pickle
-import re
-import sys
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from copy import deepcopy
 from inspect import signature
-from io import StringIO
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Self
 
 import narwhals as nw
 import numpy as np
@@ -80,11 +77,6 @@ from darts.utils.utils import (
     infer_freq_intersection,
     n_steps_between,
 )
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 if TYPE_CHECKING:
     import matplotlib.axes
@@ -201,11 +193,6 @@ class TimeSeries:
             Whether to copy the `times` and `values` objects. If `copy=False`, mutating the series data will affect the
             original data. Additionally, if `times` lack a frequency or step size, it will be assigned to the original
             object.
-
-        Returns
-        -------
-        TimeSeries
-            The resulting series.
 
         Examples
         --------
@@ -390,7 +377,9 @@ class TimeSeries:
             if copy:
                 static_covariates = static_covariates.copy()
         elif isinstance(static_covariates, pd.Series):
-            static_covariates = static_covariates.to_frame().T
+            # a Series with mixed types (e.g. numerical and categorical covariates) has `object` dtype, and
+            # transposing it gives `object` columns; infer the actual dtype of each covariate
+            static_covariates = static_covariates.to_frame().T.infer_objects()
         else:  # None
             pass
 
@@ -1431,8 +1420,6 @@ class TimeSeries:
 
         The JSON String representation can be generated with :func:`TimeSeries.to_json()`.
 
-        At the moment this only supports deterministic time series (i.e., made of 1 sample).
-
         If the JSON string contains static covariates, hierarchy, or metadata, they will be automatically
         loaded. The optional parameters `static_covariates`, `hierarchy`, and `metadata` can be used to
         override or provide these values if they are not present in the JSON string.
@@ -1497,21 +1484,35 @@ class TimeSeries:
         """
         parsed = json.loads(json_str)
 
-        static_covariates_ = parsed.pop("static_covariates", None)
+        static_covariates_ = parsed.get("static_covariates")
         if static_covariates_ is not None and static_covariates is None:
-            static_covariates = pd.DataFrame(**static_covariates_)
+            static_covariates = pd.DataFrame(**static_covariates_, copy=False)
 
-        hierarchy_ = parsed.pop("hierarchy", None)
+        hierarchy_ = parsed.get("hierarchy")
         if hierarchy is None:
             hierarchy = hierarchy_
 
-        metadata_ = parsed.pop("metadata", None)
+        metadata_ = parsed.get("metadata")
         if metadata is None:
             metadata = metadata_
 
-        df = pd.read_json(StringIO(json.dumps(parsed)), orient="split")
-        return cls.from_dataframe(
-            df=df,
+        times = parsed.get("index")
+        if times is None:
+            times = generate_index(
+                start=parsed["time_start"],
+                freq=parsed["time_freq"],
+                length=len(parsed["data"]),
+                name=parsed["time_name"],
+            )
+        dtype = parsed.get("dtype", "float64")
+        values = np.array(
+            parsed["data"],
+            dtype=dtype,
+        )
+        return cls.from_times_and_values(
+            times=times,
+            values=values,
+            columns=parsed["columns"],
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
@@ -2049,7 +2050,7 @@ class TimeSeries:
         self._assert_deterministic()
         return self._values[-1, :, 0].copy()
 
-    def values(self, copy: bool = True, sample: int = 0) -> np.ndarray:
+    def values(self, copy: bool = True, sample: int | None = None) -> np.ndarray:
         """Return a 2-D array of shape (time, component), containing the series' values for one `sample`.
 
         Parameters
@@ -2058,13 +2059,24 @@ class TimeSeries:
             Whether to return a copy of the values, otherwise returns a view.
             Leave it to True unless you know what you are doing.
         sample
-            For stochastic series, the sample for which to return values. Default: 0 (first sample).
+            For stochastic series, the sample for which to return values.
+            If omitted, sample 0 is returned with a warning. Default: None
 
         Returns
         -------
         numpy.ndarray
             The values composing the time series.
         """
+        if sample is None:
+            if self.is_stochastic:
+                logger.warning(
+                    "`TimeSeries.values()` on stochastic series only extracts values of a single sample "
+                    "(sample 0 by default). For meaningful results, use `TimeSeries.all_values()` to extract "
+                    "all sample values or any other series statistic / aggregate such as `mean()`, "
+                    "`quantile()`, ..."
+                )
+            sample = 0
+
         if self.is_deterministic and sample != 0:
             raise_log(
                 ValueError(
@@ -2663,17 +2675,18 @@ class TimeSeries:
             raise_log(ValueError("n should be a positive integer."))
         self._raise_if_not_within(start_ts)
 
-        if isinstance(start_ts, int | np.int64):
-            return self[pd.RangeIndex(start=start_ts, stop=start_ts + n)]
-        elif isinstance(start_ts, pd.Timestamp):
+        if isinstance(start_ts, int | np.int64) and self._has_datetime_index:
+            # integers are positional indices for datetime-indexed series
+            point_index = start_ts
+        elif isinstance(start_ts, int | np.int64 | pd.Timestamp):
             # get first timestamp greater or equal to start_ts
             tss = self._get_first_timestamp_after(start_ts)
             point_index = self.get_index_at_point(tss)
-            return self[point_index : point_index + n]
         else:
             raise_log(
                 ValueError("start_ts must be an int or a pandas Timestamp."),
             )
+        return self[point_index : point_index + n]
 
     def slice_n_points_before(self, end_ts: pd.Timestamp | int, n: int) -> Self:
         """Return a slice of the series ending at `end_ts` (inclusive) and having at most `n` points.
@@ -2694,17 +2707,18 @@ class TimeSeries:
             raise_log(ValueError("n should be a positive integer."))
         self._raise_if_not_within(end_ts)
 
-        if isinstance(end_ts, int | np.int64):
-            return self[pd.RangeIndex(start=end_ts - n + 1, stop=end_ts + 1)]
-        elif isinstance(end_ts, pd.Timestamp):
-            # get last timestamp smaller or equal to start_ts
+        if isinstance(end_ts, int | np.int64) and self._has_datetime_index:
+            # integers are positional indices for datetime-indexed series
+            point_index = end_ts
+        elif isinstance(end_ts, int | np.int64 | pd.Timestamp):
+            # get last timestamp smaller or equal to end_ts
             tss = self._get_last_timestamp_before(end_ts)
             point_index = self.get_index_at_point(tss)
-            return self[max(0, point_index - n + 1) : point_index + 1]
         else:
             raise_log(
                 ValueError("start_ts must be an int or a pandas Timestamp."),
             )
+        return self[max(0, point_index - n + 1) : point_index + 1]
 
     def slice_intersect(self, other: Self) -> Self:
         """Return a slice of the series where the time index was intersected with the `other` series.
@@ -2833,6 +2847,9 @@ class TimeSeries:
             self.values(copy=False), how=how
         )
 
+        if first_finite_row is None:
+            return self[:0]
+
         return self.__class__(
             times=self._time_index[first_finite_row : last_finite_row + 1],
             values=self._values[first_finite_row : last_finite_row + 1],
@@ -2868,29 +2885,35 @@ class TimeSeries:
         """
         if not (np.isnan(self._values)).any():
             return self.copy()
-        stripped_series = self.strip()
+        stripped_series = self.strip(how=mode)
+        if len(stripped_series) == 0:
+            return stripped_series
         gaps = stripped_series.gaps(mode=mode)
-        relevant_gaps = gaps[gaps["gap_size"] > max_gap_size]
+        if gaps.empty:
+            return stripped_series
+        relevant_gaps = gaps[gaps["gap_size"] > max_gap_size].to_dict(orient="list")
+
+        # add a dummy gap after the end of the series to be end-inclusive
+        final_gap_time = stripped_series.end_time() + self._freq
+        relevant_gaps["gap_start"].append(final_gap_time)
+        relevant_gaps["gap_end"].append(final_gap_time)
 
         curr_slice_start = stripped_series.start_time()
-        max_size = pd.Timedelta(days=0) if self._has_datetime_index else 0
-        max_slice_start = None
-        max_slice_end = None
-        for index, row in relevant_gaps.iterrows():
+        max_size = 0
+        max_slice_start = curr_slice_start
+        for gap_start, gap_end in zip(
+            relevant_gaps["gap_start"], relevant_gaps["gap_end"]
+        ):
             # evaluate size of the current slice. the slice ends one time step before row['gap_start']
-            curr_slice_end = row["gap_start"] - self.freq
-            size = curr_slice_end - curr_slice_start
+            size = n_steps_between(gap_start, curr_slice_start, self.freq)
             if size > max_size:
                 max_size = size
                 max_slice_start = curr_slice_start
-                max_slice_end = row["gap_start"] - self._freq
-            curr_slice_start = row["gap_end"] + self._freq
+            curr_slice_start = gap_end + self._freq
 
-        if stripped_series.end_time() - curr_slice_start > max_size:
-            max_slice_start = curr_slice_start
-            max_slice_end = self.end_time()
-
-        return stripped_series[max_slice_start:max_slice_end]
+        # slice by position, since integer slices are always positional
+        start_pos = stripped_series.get_index_at_point(max_slice_start)
+        return stripped_series[start_pos : start_pos + max_size]
 
     def rescale_with_value(self, value_at_first_step: float) -> Self:
         """Return a new series, which is a multiple of this series such that the first value is `value_at_first_step`.
@@ -4020,8 +4043,9 @@ class TimeSeries:
             ----------
             transformation
                 The transformation dictionary.
-            builtins
-                The built-in transformations read from the WindowTransformer class.
+            forecasting_safe
+                Whether the transformation must not use future values at the current
+                timestep. When True, ``"center"`` is required to be False.
 
             Returns
             -------
@@ -4209,13 +4233,12 @@ class TimeSeries:
             else:
                 comps_to_transform = original_components
 
-            df_cols = ts_df.columns
-
             if not self.is_deterministic:
+                # stochastic DataFrame columns are named `{component}_s{sample}`
                 filter_df_columns = [
-                    df_col
-                    for df_col in df_cols
-                    if re.sub("_s.*$", "", df_col) in comps_to_transform
+                    f"{comp_name}_s{sample_id}"
+                    for comp_name in comps_to_transform
+                    for sample_id in range(n_samples)
                 ]
 
             else:
@@ -4355,9 +4378,7 @@ class TimeSeries:
         return transformed_time_series
 
     def to_json(self) -> str:
-        """Return a JSON string representation of the deterministic series.
-
-        At the moment this function works only on deterministic time series (i.e., made of 1 sample).
+        """Return a JSON string representation of the series.
 
         The JSON string includes the series values, time index, component names, as well as static covariates,
         hierarchy, and metadata (if any).
@@ -4371,13 +4392,20 @@ class TimeSeries:
         --------
         TimeSeries.from_json : Create a TimeSeries from a JSON string.
         """
-        result = json.loads(
-            self.to_dataframe().to_json(orient="split", date_format="iso")
-        )
-        if self.static_covariates is not None:
-            result["static_covariates"] = json.loads(
-                self.static_covariates.to_json(orient="split")
-            )
+        # avoid serializing the time index; instead restore at load time
+        start_time = self.start_time()
+        result: dict[str, Any] = {
+            "data": self.all_values(copy=False).tolist(),
+            "columns": self._components.to_list(),
+            "dtype": str(self.dtype),
+            "time_freq": self._freq_str if self._has_datetime_index else self._freq,
+            "time_name": self._time_index.name,
+            "time_start": str(start_time) if self._has_datetime_index else start_time,
+        }
+
+        static_covariates = self.static_covariates
+        if static_covariates is not None:
+            result["static_covariates"] = static_covariates.to_dict(orient="split")
         if self.hierarchy is not None:
             result["hierarchy"] = self.hierarchy
         if self.metadata is not None:
@@ -5402,10 +5430,6 @@ class TimeSeries:
 
     def __pow__(self, n):
         if isinstance(n, int | float | np.integer):
-            if n < 0:
-                raise_log(
-                    ValueError("Attempted to raise a series to a negative power."),
-                )
             n = float(n)
         elif isinstance(n, TimeSeries | np.ndarray) or _is_xarray(n):
             n = self._extract_values(n)  # elementwise power
@@ -5421,14 +5445,9 @@ class TimeSeries:
 
     def __truediv__(self, other):
         if isinstance(other, int | float | np.integer):
-            if other == 0:
-                raise_log(ZeroDivisionError("Cannot divide by 0."))
+            pass
         elif isinstance(other, TimeSeries | np.ndarray) or _is_xarray(other):
             other = self._extract_values(other)
-            if (other == 0).any():
-                raise_log(
-                    ZeroDivisionError("Cannot divide by a TimeSeries with a value 0."),
-                )
         else:
             raise_log(
                 TypeError(
@@ -5441,7 +5460,16 @@ class TimeSeries:
         return ts
 
     def __rtruediv__(self, n):
-        return n * (self ** (-1))
+        if not isinstance(n, int | float | np.integer):
+            raise_log(
+                TypeError(
+                    "unsupported operand type(s) for / or truediv():"
+                    f" '{type(n).__name__}' and '{type(self).__name__}'."
+                ),
+            )
+        ts = self.copy()
+        np.divide(n, ts._values, out=ts._values)
+        return ts
 
     def __abs__(self):
         ts = self.copy()
@@ -6249,6 +6277,9 @@ def _finite_rows_boundaries(
                     f"received {how}"
                 )
             )
+
+    if not finite_rows.any():
+        return None, None
 
     first_finite_row = finite_rows.argmax()
     last_finite_row = len(finite_rows) - finite_rows[::-1].argmax() - 1

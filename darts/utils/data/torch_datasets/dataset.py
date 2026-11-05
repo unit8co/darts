@@ -11,8 +11,8 @@ from torch.utils.data import Dataset
 from darts import TimeSeries
 from darts.logging import raise_log
 from darts.utils.data.torch_datasets.utils import (
-    TorchInferenceDatasetOutput,
-    TorchTrainingDatasetOutput,
+    TorchInferenceSample,
+    TorchTrainingSample,
 )
 from darts.utils.data.utils import (
     _SERIES_TYPES,
@@ -37,9 +37,7 @@ class TorchDataset(ABC, Dataset):
         """The total number of samples that can be extracted."""
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> TorchTrainingDatasetOutput | TorchInferenceDatasetOutput:
+    def __getitem__(self, index: int) -> TorchTrainingSample | TorchInferenceSample:
         """Returns a sample drawn from this dataset."""
 
     @staticmethod
@@ -184,8 +182,8 @@ class TorchDataset(ABC, Dataset):
                     if is_training:
                         raise_log(
                             ValueError(
-                                f"Invalid `{main_feat_type.value}`; could not find values in index "
-                                f"range: {start_time} - {end_time}."
+                                f"Invalid `{main_feat_type.value}` at series index {series_idx}; "
+                                f"could not find values in index range: {start_time} - {end_time}."
                             ),
                         )
 

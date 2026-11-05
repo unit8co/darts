@@ -1,5 +1,3 @@
-import itertools
-
 import numpy as np
 import pytest
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -12,6 +10,7 @@ from darts.dataprocessing.transformers import (
     MissingValuesFiller,
     Scaler,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 
@@ -174,7 +173,7 @@ class TestDataTransformer:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [
                 (BoxCox, dict()),

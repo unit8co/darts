@@ -13,35 +13,20 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 
+import contextvars
 import copy
 import datetime
 import inspect
 import io
 import os
 import pickle
-import sys
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
 from collections.abc import Callable, Sequence
 from itertools import product
 from random import sample
-from typing import Any, BinaryIO, Literal
-
-from darts.metrics import CLASSIFICATION_METRICS
-from darts.metrics.utils import _PARAM_LABEL_REDUCTION, _PARAM_LABELS
-from darts.typing import TimeSeriesLike
-from darts.utils.likelihood_models.base import (
-    Likelihood,
-    likelihood_component_names,
-    quantile_interval_names,
-    quantile_names,
-)
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Any, BinaryIO, Literal, Self
 
 import numpy as np
 import pandas as pd
@@ -51,8 +36,14 @@ from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_log
-from darts.metrics.utils import METRIC_OUTPUT_TYPE, METRIC_TYPE
-from darts.typing import TimeIndex
+from darts.metrics import CLASSIFICATION_METRICS
+from darts.metrics.utils import (
+    _PARAM_LABEL_REDUCTION,
+    _PARAM_LABELS,
+    METRIC_OUTPUT_TYPE,
+    METRIC_TYPE,
+)
+from darts.typing import TimeIndex, TimeSeriesLike
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _apply_data_transformers,
@@ -65,6 +56,13 @@ from darts.utils.historical_forecasts.utils import (
     _process_historical_forecast_for_backtest,
     _slice_intersect_series,
 )
+from darts.utils.likelihood_models.base import (
+    Likelihood,
+    likelihood_component_names,
+    quantile_interval_names,
+    quantile_names,
+)
+from darts.utils.serialization.base import restricted_pickle_load
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
     _generate_new_dates,
@@ -80,6 +78,18 @@ from darts.utils.utils import (
 )
 
 logger = get_logger(__name__)
+
+_MODEL_CALL_STACK_VAR: contextvars.ContextVar[tuple[OrderedDict, ...]] = (
+    contextvars.ContextVar("_model_call_stack", default=())
+)
+
+
+def _model_call_stack_top() -> OrderedDict:
+    """Top of the model creation stack for the current context."""
+    stack = _MODEL_CALL_STACK_VAR.get()
+    if not stack:
+        raise_log(ValueError("No model creation parameters on the context stack."))
+    return stack[-1]
 
 
 class ModelMeta(ABCMeta):
@@ -123,11 +133,17 @@ class ModelMeta(ABCMeta):
         # 4) update defaults with actual model call parameters and store
         all_params.update(kwargs)
 
-        # 5) save parameters in model
-        cls._model_call = all_params
+        # 5) save parameters for the model's `__init__()`; a context-local immutable stack so models can be
+        #    created concurrently (e.g. optuna with `n_jobs>1` or asyncio tasks) and nested construction
+        #    inside another model's `__init__()` keeps separate frames for outer and inner models
+        stack = _MODEL_CALL_STACK_VAR.get()
+        token = _MODEL_CALL_STACK_VAR.set(stack + (all_params,))
 
         # 6) call model
-        return super().__call__(**all_params)
+        try:
+            return super().__call__(**all_params)
+        finally:
+            _MODEL_CALL_STACK_VAR.reset(token)
 
 
 class ForecastingModel(ABC, metaclass=ModelMeta):
@@ -1507,6 +1523,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             future_covariates=future_covariates,
             num_samples=num_samples,
             train_length=train_length,
+            val_length=val_length,
             start=start,
             start_format=start_format,
             forecast_horizon=forecast_horizon,
@@ -1642,7 +1659,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @classmethod
     def gridsearch(
-        model_class,
+        cls,
         parameters: dict,
         series: TimeSeries,
         past_covariates: TimeSeries | None = None,
@@ -1656,7 +1673,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         val_series: TimeSeries | None = None,
         use_fitted_values: bool = False,
         metric: Callable[[TimeSeries, TimeSeries], METRIC_OUTPUT_TYPE] = metrics.mape,
-        reduction: Callable[[np.ndarray], float] = np.mean,
+        reduction: Callable[[np.ndarray], float] = np.nanmean,
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: int | float | None = None,
@@ -1665,16 +1682,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         predict_kwargs: dict[str, Any] | None = None,
         sample_weight: TimeSeries | str | None = None,
         random_state: int | None = None,
-    ) -> tuple["ForecastingModel", dict[str, Any], float]:
+    ) -> tuple[Self, dict[str, Any], float]:
         """
         Find the best hyper-parameters among a given set using a grid search.
 
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
         The three modes of operation evaluate every possible combination of hyper-parameter values
-        provided in the `parameters` dictionary by instantiating the `model_class` subclass
-        of ForecastingModel with each combination, and returning the best-performing model with regard
-        to the `metric` function. The `metric` function is expected to return an error value,
-        thus the model resulting in the smallest `metric` output will be chosen.
+        provided in the `parameters` dictionary by instantiating the `ForecastingModel` with each combination, and
+        returning the best-performing model with regard to the `metric` function. The `metric` function is expected to
+        return an error value, thus the model resulting in the smallest `metric` output will be chosen. Combinations
+        with a NaN score are excluded from the selection.
 
         The relationship of the training data and test data depends on the mode of operation.
 
@@ -1707,8 +1724,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Parameters
         ----------
-        model_class
-            The ForecastingModel subclass to be tuned for 'series'.
+        cls
+            The `ForecastingModel` to be tuned for `series`.
         parameters
             A dictionary containing as keys hyperparameter names, and as values lists of values for the
             respective hyperparameter.
@@ -1755,13 +1772,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Only used in expanding window mode. Whether to use the whole forecasts or only the last point of each
             forecast to compute the error.
         show_warnings
-            Only used in expanding window mode. Whether to show warnings related to the `start` parameter.
+            Whether to show warnings related to the `start` parameter (expanding window mode only), and about
+            hyperparameter combinations excluded from the selection because of a NaN `metric` score.
         val_series
             The TimeSeries instance used for validation in split mode. If provided, this series must start right after
             the end of `series`; so that a proper comparison of the forecast can be made.
         use_fitted_values
             If `True`, uses the comparison with the fitted values.
-            Raises an error if ``fitted_values`` is not an attribute of `model_class`.
+            Raises an error if ``fitted_values`` is not an attribute of the ForecastingModel.
         metric
             A metric function that returns the error between two `TimeSeries` as a float value . Must either be one of
             Darts' "aggregated over time" metrics (see `here
@@ -1769,7 +1787,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `TimeSeries` and returns the error
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
-            on the different validation series when backtesting. By default it'll compute the mean of errors.
+            on the different validation series when backtesting. By default, it'll compute the mean of errors, ignoring
+            NaN values.
         verbose
             Whether to print the progress.
         n_jobs
@@ -1812,9 +1831,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Returns
         -------
         ForecastingModel, Dict, float
-            A tuple containing an untrained `model_class` instance created from the best-performing hyper-parameters,
-            along with a dictionary containing these best hyper-parameters,
-            and metric score for the best hyper-parameters.
+            A tuple containing an untrained `ForecastingModel` instance created from the best-performing
+            hyper-parameters,along with a dictionary containing these best hyper-parameters, and metric score for the
+            best hyper-parameters.
         """
         if (forecast_horizon is not None) + (
             val_series is not None
@@ -1842,9 +1861,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
             )
 
+        for series_ in [series, val_series, past_covariates, future_covariates]:
+            if get_series_seq_type(series_) > SeriesType.SINGLE:
+                raise_log(
+                    ValueError(
+                        "All input series must be single (univariate or multivariate) `TimeSeries`."
+                    ),
+                )
+
         if use_fitted_values:
             if not hasattr(
-                model_class(**{k: v[0] for k, v in parameters.items()}),
+                cls(**{k: v[0] for k, v in parameters.items()}),
                 "fitted_values",
             ):
                 raise_log(
@@ -1876,7 +1903,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # If n_random_samples has been set, randomly select a subset of the full parameter cross product to search with
         if n_random_samples is not None:
-            params_cross_product = model_class._sample_params(
+            params_cross_product = cls._sample_params(
                 params_cross_product, n_random_samples
             )
 
@@ -1898,7 +1925,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"{current_time}_{param_combination_dict['model_name']}"
                 )
 
-            model = model_class(**param_combination_dict)
+            model = cls(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
                 if data_transformers:
                     series_, _, past_covariates_, future_covariates_ = (
@@ -2007,15 +2034,33 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             iterator, _evaluate_combination, n_jobs, {}, {}
         )
 
-        min_error = min(errors)
+        errors_arr = np.asarray(errors, dtype=series.dtype)
+        if errors_arr.size == 0:
+            raise_log(ValueError("No hyperparameter combinations to evaluate."))
+        nan_count = np.isnan(errors_arr).sum()
+        if nan_count == errors_arr.size:
+            raise_log(
+                ValueError(
+                    "All hyperparameter combinations resulted in a NaN `metric` score."
+                )
+            )
+        elif nan_count > 0 and show_warnings:
+            logger.warning(
+                f"{int(nan_count)} of {errors_arr.size} hyperparameter combinations resulted in a "
+                "NaN `metric` score and were excluded from the selection."
+            )
+
+        # `np.nanargmin` ignores NaN scores and returns the first index in case of ties
+        best_idx = int(np.nanargmin(errors_arr))
+        min_error = float(errors_arr[best_idx])
 
         best_param_combination = dict(
-            list(zip(parameters.keys(), params_cross_product[errors.index(min_error)]))
+            zip(parameters.keys(), params_cross_product[best_idx])
         )
 
         logger.info("Chosen parameters: " + str(best_param_combination))
 
-        return model_class(**best_param_combination), best_param_combination, min_error
+        return cls(**best_param_combination), best_param_combination, min_error
 
     def residuals(
         self,
@@ -2633,7 +2678,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
 
     @classmethod
-    def _sample_params(model_class, params, n_random_samples):
+    def _sample_params(cls, params, n_random_samples):
         """Select the absolute number of samples randomly if an integer has been supplied. If a float has been
         supplied, select a fraction"""
 
@@ -2657,10 +2702,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             return sample(params, int(n_random_samples * len(params)))
 
     def _extract_model_creation_params(self):
-        """extracts immutable model creation parameters from `ModelMeta` and deletes reference."""
-        model_params = copy.deepcopy(self._model_call)
-        del self.__class__._model_call
-        return model_params
+        """Extracts immutable model creation parameters captured by `ModelMeta`."""
+        return copy.deepcopy(_model_call_stack_top())
 
     def untrained_model(self):
         """Returns a new (untrained) model instance created with the same parameters."""
@@ -2668,9 +2711,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     def model_params(self) -> dict:
-        return (
-            self._model_params if hasattr(self, "_model_params") else self._model_call
-        )
+        if hasattr(self, "_model_params"):
+            return self._model_params
+        # still inside `__init__()`: return the parameters captured by `ModelMeta` for this context
+        return _model_call_stack_top()
 
     @classmethod
     def _default_save_path(cls) -> str:
@@ -2739,14 +2783,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
     @staticmethod
-    def load(path: str | os.PathLike | BinaryIO) -> "ForecastingModel":
+    def load(
+        path: str | os.PathLike | BinaryIO,
+        trusted: bool = False,
+    ) -> "ForecastingModel":
         """
         Loads a model from a given path or file handle.
+
+        .. warning::
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         Parameters
         ----------
         path
             Path or file handle from which to load the model.
+        trusted
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         """
 
         if isinstance(path, str | os.PathLike):
@@ -2754,9 +2810,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 raise_log(ValueError(f"The file {path} doesn't exist."))
 
             with open(path, "rb") as handle:
-                model = pickle.load(file=handle)
+                model = restricted_pickle_load(
+                    handle,
+                    trusted=trusted,
+                )
         elif isinstance(path, io.BufferedReader):
-            model = pickle.load(file=path)
+            model = restricted_pickle_load(
+                path,
+                trusted=trusted,
+            )
         else:
             raise_log(
                 ValueError(

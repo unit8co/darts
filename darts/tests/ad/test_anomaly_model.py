@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -29,6 +28,7 @@ from darts.ad import DifferenceScorer as Difference
 from darts.ad import NormScorer as Norm
 from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
 from darts.models import MovingAverageFilter, NaiveSeasonal, SKLearnModel
+from darts.tests.parametrize_helpers import param_product
 
 filtering_am = [
     (
@@ -106,7 +106,7 @@ class TestAnomalyDetectionModel:
 
     @pytest.mark.parametrize(
         "scorer,anomaly_model_config",
-        product(
+        param_product(
             [
                 Norm(),
                 Difference(),
@@ -130,7 +130,7 @@ class TestAnomalyDetectionModel:
 
     @pytest.mark.parametrize(
         "scorer,anomaly_model_config",
-        product(
+        param_product(
             [
                 PyODScorer(model=KNN()),
                 KMeansScorer(),

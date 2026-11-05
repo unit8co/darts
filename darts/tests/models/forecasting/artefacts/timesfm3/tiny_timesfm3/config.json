@@ -1,0 +1,57 @@
+{
+  "input_patch_len": 32,
+  "input_transform": "identity",
+  "linear_detrending_threshold": 0.5,
+  "output_patch_len": 64,
+  "quantiles": [
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9
+  ],
+  "residual_block_config": {
+    "activation": "relu",
+    "dropout": 0.0,
+    "hidden_dims": 128,
+    "identity_skip": false,
+    "output_dims": 64,
+    "prenorm": "none",
+    "use_bias": false
+  },
+  "transformer_config": {
+    "num_layers": 2,
+    "transformer": {
+      "attention_norm": "rms",
+      "causal_attention": true,
+      "debug_no_masking": false,
+      "deterministic": true,
+      "feedforward_norm": "rms",
+      "ff_activation": "relu",
+      "hidden_dims": 128,
+      "max_variates": 32,
+      "model_dims": 64,
+      "num_heads": 4,
+      "paired_token_skip_second": false,
+      "qk_norm": "rms",
+      "training": true,
+      "use_bias": false,
+      "use_memory_efficient_attention": true,
+      "use_rope_seq": true,
+      "use_rope_var": false,
+      "use_sdpa": true,
+      "v_norm": "none"
+    },
+    "use_remat": true
+  },
+  "use_frozen_running_stats": false,
+  "use_iterative_cpm_revin": true,
+  "use_linear_detrending": true,
+  "use_stitching": true,
+  "use_variate_attention": true,
+  "value_clip": 1e+20
+}

@@ -5,7 +5,7 @@ Models
 A comprehensive collection of forecasting and filtering models, including baseline models
 (NaiveSeasonal, NaiveMovingAverage, ...), statistical models (ARIMA, exponential smoothing, ...),
 machine learning models (LightGBM, CatBoost, sklearn-based, ...), neural network models (RNN,
-N-BEATS, TiDE...), and foundation models (Chronos-2, TimesFM 2.5, TiRex).
+N-BEATS, TiDE...), and foundation models (Chronos-2, TimesFM 2.5, TiRex, TiRex-2, ...).
 """
 
 from typing import TYPE_CHECKING
@@ -106,6 +106,7 @@ if TYPE_CHECKING:
         SKLearnClassifierModel as SKLearnClassifierModel,
     )
     from darts.models.forecasting.sklearn_model import SKLearnModel as SKLearnModel
+    from darts.models.forecasting.t0_model import T0Model as T0Model
     from darts.models.forecasting.tcn_model import TCNModel as TCNModel
     from darts.models.forecasting.tft_model import TFTModel as TFTModel
     from darts.models.forecasting.theta import FourTheta as FourTheta
@@ -114,6 +115,10 @@ if TYPE_CHECKING:
     from darts.models.forecasting.timesfm2p5_model import (
         TimesFM2p5Model as TimesFM2p5Model,
     )
+    from darts.models.forecasting.timesfm3_model import (
+        TimesFM3Model as TimesFM3Model,
+    )
+    from darts.models.forecasting.tirex2_model import TiRex2Model as TiRex2Model
     from darts.models.forecasting.tirex_model import TiRexModel as TiRexModel
     from darts.models.forecasting.transformer_model import (
         TransformerModel as TransformerModel,
@@ -190,7 +195,13 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "Chronos2Model": ("darts.models.forecasting.chronos2_model", "(Py)Torch"),
     "PatchTSTFMModel": ("darts.models.forecasting.patchtst_fm_model", "(Py)Torch"),
     "TimesFM2p5Model": ("darts.models.forecasting.timesfm2p5_model", "(Py)Torch"),
+    "TimesFM3Model": ("darts.models.forecasting.timesfm3_model", "(Py)Torch"),
+    "TiRex2Model": (
+        "darts.models.forecasting.tirex2_model",
+        "(Py)Torch and/or TiRex-2",
+    ),
     "TiRexModel": ("darts.models.forecasting.tirex_model", "(Py)Torch and/or TiRex-TS"),
+    "T0Model": ("darts.models.forecasting.t0_model", "(Py)Torch and/or tfc-t0[torch]"),
     # --- Forecasting: NeuralForecast ---
     "NeuralForecastModel": ("darts.models.forecasting.nf_model", "NeuralForecast"),
     # --- Forecasting: Prophet ---

@@ -5,18 +5,9 @@ Base Ensemble Model
 
 import copy
 import os
-import sys
 from abc import abstractmethod
 from collections import defaultdict
-from typing import BinaryIO
-
-from darts.models.forecasting.sklearn_model import SKLearnModel
-from darts.utils.likelihood_models.base import LikelihoodType
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import BinaryIO, Self
 
 from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_log
@@ -25,7 +16,9 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
     LocalForecastingModel,
 )
+from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
+from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import TORCH_AVAILABLE
 
@@ -588,10 +581,17 @@ class EnsembleModel(GlobalForecastingModel):
     def load(
         path: str | os.PathLike | BinaryIO,
         pl_trainer_kwargs: dict | None = None,
+        trusted: bool = False,
         **kwargs,
     ) -> "EnsembleModel":
         """
         Loads a model from a given path or file handle.
+
+        .. warning::
+            Loading uses unpickling under the hood. Never load data from an untrusted source.
+            By default, Darts uses safe loading via a restricted unpickler. See the `user guide
+            <https://unit8co.github.io/darts/userguide/safe_model_loading.html>`__ on safe model loading for
+            allow-listing custom classes and functions. Only pass `trusted=True` for files you fully trust.
 
         Parameters
         ----------
@@ -604,19 +604,25 @@ class EnsembleModel(GlobalForecastingModel):
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
             `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
             for more information about the supported kwargs.
+        trusted
+            If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
+            for files from trusted sources. Default: ``False``.
         **kwargs
             Only effective if the underlying forecasting models contain a `TorchForecastingModel`.
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
         """
-        model: EnsembleModel = GlobalForecastingModel.load(path)
+        model: EnsembleModel = GlobalForecastingModel.load(path, trusted=trusted)
 
         for i, m in enumerate(model.forecasting_models):
             if TORCH_AVAILABLE and issubclass(type(m), TorchForecastingModel):
                 path_tfm = f"{path}.{type(m).__name__}_{i}.pt"
                 model.forecasting_models[i] = TorchForecastingModel.load(
-                    path_tfm, pl_trainer_kwargs=pl_trainer_kwargs, **kwargs
+                    path_tfm,
+                    pl_trainer_kwargs=pl_trainer_kwargs,
+                    trusted=trusted,
+                    **kwargs,
                 )
         return model
 
@@ -763,7 +769,11 @@ class EnsembleModel(GlobalForecastingModel):
         for m in self.forecasting_models:
             likelihood = m.likelihood
             lkl_type = likelihood.type
-            models_likelihood.add(lkl_type)
+            if lkl_type is LikelihoodType.ZeroInflated:
+                # zero-inflated likelihoods must also wrap the same distribution
+                models_likelihood.add((lkl_type, likelihood.likelihood.type))
+            else:
+                models_likelihood.add(lkl_type)
 
             # check the quantiles
             if lkl_type is LikelihoodType.Quantile:

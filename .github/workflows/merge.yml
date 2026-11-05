@@ -12,16 +12,16 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v6
 
-      - name: "Set up Python 3.12"
+      - name: "Set up Python 3.13"
         uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: "Install uv"
         uses: astral-sh/setup-uv@v8.1.0
         with:
           version: "0.11.7"
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: "Install Dev Dependencies"
         run: |
@@ -37,7 +37,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-14, ubuntu-latest]
-        python-version: ['3.10', '3.12']
+        python-version: ['3.11', '3.13']
         flavour: ['core', 'torch', 'all']
 
     steps:
@@ -101,17 +101,17 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v6
 
-      - name: "Set up Python 3.11"
+      - name: "Set up Python 3.12"
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: "Install uv"
         uses: astral-sh/setup-uv@v8.1.0
         with:
           version: "0.11.7"
           enable-cache: true
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: "Install Dependencies"
         run: |
@@ -140,17 +140,17 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v6
 
-      - name: "Set up Python 3.11"
+      - name: "Set up Python 3.12"
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: "Install uv"
         uses: astral-sh/setup-uv@v8.1.0
         with:
           version: "0.11.7"
           enable-cache: true
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: "Install pandoc"
         run: |

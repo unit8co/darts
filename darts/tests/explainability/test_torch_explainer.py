@@ -1,5 +1,4 @@
 import copy
-import itertools
 import os
 from pathlib import Path
 
@@ -10,6 +9,7 @@ import shap
 from sklearn.datasets import make_regression
 
 from darts.tests.conftest import NF_AVAILABLE, TORCH_AVAILABLE, tfm_kwargs
+from darts.utils.serialization import safe_globals
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -35,6 +35,7 @@ from darts.models import (
     TSMixerModel,
 )
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+from darts.tests.parametrize_helpers import param_product
 from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     GaussianLikelihood,
@@ -191,7 +192,8 @@ class TestShapExplainer:
         # save and load the model to check explainer works with loaded models
         save_path = os.path.join(tmpdir_fn, "model.pt")
         model.save(save_path)
-        loaded_model = model_cls.load(save_path)
+        with safe_globals([encode_year]):
+            loaded_model = model_cls.load(save_path)
         loaded_explainer = ShapExplainer(loaded_model)
 
         assert loaded_explainer.model == loaded_model
@@ -234,7 +236,8 @@ class TestShapExplainer:
         # save and load the model to check explainer works with loaded models
         save_path = os.path.join(tmpdir_fn, "model.pt")
         model.save(save_path)
-        loaded_model = model_cls.load(save_path)
+        with safe_globals([encode_year]):
+            loaded_model = model_cls.load(save_path)
         loaded_explainer = ShapExplainer(
             model, background_series=self.multiple_multivariate_series
         )
@@ -442,7 +445,8 @@ class TestShapExplainer:
         # save and load the model to check explainer works with loaded models
         save_path = os.path.join(tmpdir_fn, "model.pt")
         model.save(save_path)
-        loaded_model = model_cls.load(save_path)
+        with safe_globals([encode_year]):
+            loaded_model = model_cls.load(save_path)
         loaded_explainer = ShapExplainer(
             model,
             background_series=background_series,
@@ -688,7 +692,7 @@ class TestShapExplainer:
 
     @pytest.mark.parametrize(
         "shap_method,single_output",
-        itertools.product(SHAP_METHODS, [True, False]),
+        param_product(SHAP_METHODS, [True, False]),
     )
     def test_explain_shap_methods(
         self,

@@ -4,7 +4,6 @@ import inspect
 import logging
 import math
 from copy import deepcopy
-from itertools import product
 from typing import Any
 from unittest.mock import patch
 
@@ -37,6 +36,7 @@ from darts.tests.conftest import (
     LGBM_AVAILABLE,
     XGB_AVAILABLE,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
@@ -480,7 +480,7 @@ class TestSKLearnModels:
         new_model.fit(self.sine_univariate1.drop_after(50), self.sine_univariate2)
         assert new_model.predict(5) == deprecated_model.predict(5)
 
-    @pytest.mark.parametrize("config", product(models, [True, False]))
+    @pytest.mark.parametrize("config", param_product(models, [True, False]))
     def test_model_construction(self, config):
         model, mode = config
         # TESTING SINGLE INT
@@ -560,7 +560,7 @@ class TestSKLearnModels:
         with pytest.raises(ValueError):
             model(lags=None, lags_future_covariates={}, multi_models=mode)
 
-    @pytest.mark.parametrize("config", product([True, False], [1, 2]))
+    @pytest.mark.parametrize("config", param_product([True, False], [1, 2]))
     def test_training_data_creation(self, config):
         """testing _get_training_data function"""
         mode, stride = config
@@ -1048,7 +1048,7 @@ class TestSKLearnModels:
             rmses = [rmse(series, ps) for ps in [ps_no_st, ps_st_cat]]
             assert rmses[1] < rmses[0]
 
-    @pytest.mark.parametrize("config", product(models, [True, False]))
+    @pytest.mark.parametrize("config", param_product(models, [True, False]))
     def test_models_runnability(self, config):
         model, mode = config
         train_y, test_y = self.sine_univariate1.split_before(0.7)
@@ -1112,7 +1112,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(models, [True, False], [sine_univariate1, sine_multivariate1]),
+        param_product(models, [True, False], [sine_univariate1, sine_multivariate1]),
     )
     def test_fit(self, config):
         # test fitting both on univariate and multivariate timeseries
@@ -1220,7 +1220,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(zip(models, range(len(models))), [True, False], [1, 5]),
+        param_product(zip(models, range(len(models))), [True, False], [1, 5]),
     )
     def test_models_accuracy_univariate(self, config):
         (model, idx), mode, ocl = config
@@ -1238,7 +1238,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(zip(models, range(len(models))), [True, False], [1, 5]),
+        param_product(zip(models, range(len(models))), [True, False], [1, 5]),
     )
     def test_models_accuracy_multivariate(self, config):
         (model, idx), mode, ocl = config
@@ -1256,7 +1256,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(zip(models, range(len(models))), [True, False], [1, 5]),
+        param_product(zip(models, range(len(models))), [True, False], [1, 5]),
     )
     def test_models_accuracy_multiseries_multivariate(self, config):
         (model, idx), mode, ocl = config
@@ -1274,13 +1274,11 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            (
-                [LinearRegressionModel]
-                + ([XGBModel] if XGB_AVAILABLE else [])
-                + ([LightGBMModel] if LGBM_AVAILABLE else [])
-                + ([CatBoostModel] if CB_AVAILABLE else [])
-            ),
+        param_product(
+            [LinearRegressionModel]
+            + ([XGBModel] if XGB_AVAILABLE else [])
+            + ([LightGBMModel] if LGBM_AVAILABLE else [])
+            + ([CatBoostModel] if CB_AVAILABLE else []),
             [True, False],
         ),
     )
@@ -1307,6 +1305,69 @@ class TestSKLearnModels:
 
         model = model_cls(lags=None, lags_past_covariates=5, multi_models=mode)
         assert model.min_train_series_length == 0 + 1 + 0 + add_min_samples
+
+    def test_fit_series_and_val_series_too_short(self):
+        """Test informative error messages when training or validation series/covariates are too short."""
+        train = tg.linear_timeseries(length=25)
+        short_ts = tg.linear_timeseries(length=6)
+
+        model = LinearRegressionModel(lags=12, output_chunk_length=6)
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^`target_series` must have at least "
+                r"`-min\(lags\) \+ output_chunk_shift \+ output_chunk_length` = 18 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            model.fit(series=short_ts)
+
+        model_no_target_lags = LinearRegressionModel(
+            lags=None, lags_past_covariates=4, output_chunk_length=8
+        )
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^`target_series` must have at least "
+                r"`output_chunk_shift \+ output_chunk_length` = 8 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            model_no_target_lags.fit(series=short_ts, past_covariates=train)
+
+        if not XGB_AVAILABLE:
+            return
+
+        m = XGBModel(lags=12, lags_past_covariates=12, output_chunk_length=6)
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^Invalid validation set: `target_series` must have at least "
+                r"`-min\(lags\) \+ output_chunk_shift \+ output_chunk_length` = 18 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            m.fit(
+                series=train,
+                past_covariates=train,
+                val_series=short_ts,
+                val_past_covariates=train,
+            )
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^Invalid validation set: `past_covariates` must have at least "
+                r"`-min\(lags_past_covariates\) \+ max\(lags_past_covariates\) \+ 1` = 12 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            m.fit(
+                series=train,
+                past_covariates=train,
+                val_series=train,
+                val_past_covariates=short_ts,
+            )
 
     @pytest.mark.parametrize("multi_models", [True, False])
     def test_predict_target_too_short(self, multi_models):
@@ -1336,7 +1397,7 @@ class TestSKLearnModels:
         # series long enough
         _ = model.predict(n=ocl, series=series)
 
-    @pytest.mark.parametrize("config", product([True, False], ["past", "future"]))
+    @pytest.mark.parametrize("config", param_product([True, False], ["past", "future"]))
     def test_predict_covs_too_short(self, config):
         """Test too short covariates for prediction."""
         multi_models, use_covs = config
@@ -1552,7 +1613,9 @@ class TestSKLearnModels:
         model_configs += [(CatBoostModel, cb_test_params)]
 
     @pytest.mark.skipif(not model_configs, reason="gradient boosting model required")
-    @pytest.mark.parametrize("config", product(model_configs, [1, 2], [True, False]))
+    @pytest.mark.parametrize(
+        "config", param_product(model_configs, [1, 2], [True, False])
+    )
     def test_multioutput_validation(self, config):
         """Check that models not supporting multi-output are properly wrapped when ocl>1"""
         (model_cls, model_kwargs), ocl, multi_models = config
@@ -1654,15 +1717,13 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            (
-                [(LinearRegressionModel, {})]
-                + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
-                + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
-                + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
-            ),
-            [True, False],  # multi_models
-            [True, False],  # multi components
+        param_product(
+            [(LinearRegressionModel, {})]
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+            + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
+            + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else []),
+            [True, False],
+            [True, False],
         ),
     )
     def test_get_estimator(self, config):
@@ -1715,15 +1776,13 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            (
-                [(LinearRegressionModel, {})]
-                + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
-                + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
-                + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
-            ),
-            [True, False],  # multi_models
-            [True, False],  # multi components
+        param_product(
+            [(LinearRegressionModel, {})]
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+            + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
+            + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else []),
+            [True, False],
+            [True, False],
         ),
     )
     def test_get_estimator_quantile(self, config):
@@ -1895,6 +1954,13 @@ class TestSKLearnModels:
             "Model supports multi-output; a single estimator "
             "forecasts all the horizons and components."
         )
+        # invalid indices are rejected also for native multi-output models
+        with pytest.raises(ValueError, match="`horizon` must be"):
+            m.get_estimator(horizon=2, target_dim=0)
+        with pytest.raises(ValueError, match="`horizon` must be"):
+            m.get_estimator(horizon=-1, target_dim=0)
+        with pytest.raises(ValueError, match="`target_dim` must be"):
+            m.get_estimator(horizon=0, target_dim=1)
 
         # univariate, deterministic, ocl > 2
         m = SKLearnModel(
@@ -2107,7 +2173,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 (LinearRegressionModel, {}),
                 (RandomForestModel, {"bootstrap": False}),
@@ -2161,7 +2227,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 (LinearRegressionModel, {}),
                 (RandomForestModel, {"bootstrap": False}),
@@ -2274,7 +2340,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [True, False],
             [
                 (1, 0, 13),
@@ -2353,7 +2419,7 @@ class TestSKLearnModels:
     @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 (XGBModel, xgb_test_params),
                 (LightGBMModel, lgbm_test_params),
@@ -2384,7 +2450,7 @@ class TestSKLearnModels:
     @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 (
                     XGBModel,
@@ -2619,7 +2685,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 ({"lags": [-3, -2, -1]}, {"lags": {"gaussian": 3}}),
                 ({"lags": 3}, {"lags": {"gaussian": 3, "sine": 3}}),
@@ -2800,7 +2866,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 {"lags": {"gaussian": [-1, -3], "sine": [-2, -4, -6]}},
                 {"lags_past_covariates": {"default_lags": 2}},
@@ -2907,7 +2973,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 {"lags": [-1, -3]},
                 {"lags_past_covariates": 2},
@@ -3068,7 +3134,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 {"lags": [-1, -3]},
                 {"lags_past_covariates": 2},
@@ -3264,7 +3330,7 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 (SKLearnModel, {}),
                 (LinearRegressionModel, {}),
@@ -3439,7 +3505,7 @@ class TestSKLearnModels:
         # check that fit predict did not mutate input series
         assert covariates_examples == covariates_examples_copy
 
-    @pytest.mark.parametrize("config", product([True, False], [True, False]))
+    @pytest.mark.parametrize("config", param_product([True, False], [True, False]))
     def test_encoders_from_covariates_input(self, config):
         multi_models, extreme_lags = config
         series = tg.linear_timeseries(length=10, freq="MS")
@@ -3866,7 +3932,7 @@ class TestSKLearnModels:
     @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
             [
                 (
@@ -4149,30 +4215,30 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
-            ([
+        param_product(
+            [
                 (LinearRegressionModel, {}),
                 (
                     LinearRegressionModel,
                     {"lags": {"sine": 2, "default_lags": 1}},
                 ),
-            ]),
-            [True, False],  # multi_models
-            [True, False],  # last_points_only
-            [True, False],  # multivariate
+            ],
+            [True, False],
+            [True, False],
+            [True, False],
             [
                 1,
                 2,
                 4,
                 5,
-            ],  # forecast_horizon
+            ],
             [
                 1,
                 2,
                 3,
-            ],  # output_chunk_length
-            [1, 2],  # stride
-            [0, 1, 2],  # start
+            ],
+            [1, 2],
+            [0, 1, 2],
         ),
     )
     def test_optimized_historical_forecasts(self, config):
@@ -4531,7 +4597,9 @@ class TestProbabilisticSKLearnModels:
         assert likelihood.type == LikelihoodType.MultiQuantile
         assert likelihood.quantiles == [0.1, 0.3, 0.5, 0.7, 0.9]
 
-    @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
+    @pytest.mark.parametrize(
+        "config", param_product(models_cls_kwargs_errs, [True, False])
+    )
     def test_fit_predict_determinism(self, config):
         (model_cls, model_kwargs, _), mode = config
         # whether the first predictions of two models initiated with the same random state are the same
@@ -4581,7 +4649,9 @@ class TestProbabilisticSKLearnModels:
         assert (pred9 == pred10).all()
         assert (pred11 == pred7).all()
 
-    @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
+    @pytest.mark.parametrize(
+        "config", param_product(models_cls_kwargs_errs, [True, False])
+    )
     def test_probabilistic_forecast_accuracy_univariate(self, config):
         (model_cls, model_kwargs, err), mode = config
         model_kwargs["multi_models"] = mode
@@ -4593,7 +4663,9 @@ class TestProbabilisticSKLearnModels:
             self.constant_noisy_ts,
         )
 
-    @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
+    @pytest.mark.parametrize(
+        "config", param_product(models_cls_kwargs_errs, [True, False])
+    )
     def test_probabilistic_forecast_accuracy_multivariate(self, config):
         (model_cls, model_kwargs, err), mode = config
         model_kwargs["multi_models"] = mode
@@ -4633,7 +4705,7 @@ class TestProbabilisticSKLearnModels:
     @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_config",
-        product(
+        param_product(
             [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
             ["quantile", "poisson", "gaussian"],
         ),

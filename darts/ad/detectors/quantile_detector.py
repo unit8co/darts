@@ -95,14 +95,14 @@ class QuantileDetector(FittableDetector, _BoundedDetectorMixin):
         # where all samples of a given component are concatenated along time
         np_series = np_series.reshape(np_series.shape[0] * np_series.shape[1], -1)
 
-        # Compute 2 thresholds (low, high) for each component:
+        # Compute 2 thresholds (low, high) for each component, ignoring missing values:
         # TODO: we could make this more efficient when low_quantile or high_quantile contain a single value
         low_threshold = [
-            np.quantile(np_series[:, i], q=lo, axis=0) if lo is not None else None
+            np.nanquantile(np_series[:, i], q=lo, axis=0) if lo is not None else None
             for i, lo in enumerate(self.low_quantile)
         ]
         high_threshold = [
-            np.quantile(np_series[:, i], q=hi, axis=0) if hi is not None else None
+            np.nanquantile(np_series[:, i], q=hi, axis=0) if hi is not None else None
             for i, hi in enumerate(self.high_quantile)
         ]
 

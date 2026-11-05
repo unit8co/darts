@@ -695,12 +695,6 @@ class SKLearnModel(GlobalForecastingModel):
         else:
             model = self.model
 
-        if not isinstance(model, MultiOutputMixin):
-            logger.warning(
-                "Model supports multi-output; a single estimator forecasts all the horizons and components."
-            )
-            return model
-
         if not 0 <= horizon < self.output_chunk_length:
             raise_log(
                 ValueError(
@@ -713,6 +707,12 @@ class SKLearnModel(GlobalForecastingModel):
                     f"`target_dim` must be `>= 0`, and `< n_target_components={self.input_dim['target']}`."
                 ),
             )
+
+        if not isinstance(model, MultiOutputMixin):
+            logger.warning(
+                "Model supports multi-output; a single estimator forecasts all the horizons and components."
+            )
+            return model
 
         # when multi_models=True, one model per horizon and target component
         idx_estimator = (
@@ -732,15 +732,20 @@ class SKLearnModel(GlobalForecastingModel):
     ) -> dict:
         """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
         validation set. This method can be overridden if the model requires a different logic to add the eval set."""
-        val_samples, val_labels, val_weight = self._create_lagged_data(
-            series=val_series,
-            past_covariates=val_past_covariates,
-            future_covariates=val_future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            sample_weight=val_sample_weight,
-            last_static_covariates_shape=self._static_covariates_shape,
-            stride=stride,
-        )
+        try:
+            val_samples, val_labels, val_weight = self._create_lagged_data(
+                series=val_series,
+                past_covariates=val_past_covariates,
+                future_covariates=val_future_covariates,
+                max_samples_per_ts=max_samples_per_ts,
+                sample_weight=val_sample_weight,
+                last_static_covariates_shape=self._static_covariates_shape,
+                stride=stride,
+            )
+        except ValueError as err:
+            raise_log(
+                ValueError(f"Invalid validation set: {err}"),
+            )
         # create validation sets for MultiOutputMixin
         if val_labels.ndim == 2 and isinstance(self.model, MultiOutputMixin):
             val_sets, val_weights = [], []
@@ -1194,8 +1199,11 @@ class SKLearnModel(GlobalForecastingModel):
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
         num_samples : int, default: 1
-            Number of times a prediction is sampled from a probabilistic model. Should be set to 1
-            for deterministic models.
+            Number of times a prediction is sampled from a probabilistic model. Must be set to 1 for deterministic
+            models. When ``num_samples > 1``, predictions within each output chunk are sampled
+            independently across output steps and components. When `n > output_chunk_length`, each sample trajectory
+            is generated autoregressively across output chunks, by feeding sampled values of a previous chunk as
+            input to forecast the distribution of the next chunk.
         verbose
             Optionally, set the prediction verbosity. Not effective for all models.
         predict_likelihood_parameters
@@ -2160,7 +2168,7 @@ class _ClassifierMixin:
             num_components = len(classes) // self._output_chunk_length
 
             # classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ..]
-            for i in range(self._output_chunk_length):
+            for i in range(num_components):
                 if any(
                     not np.array_equal(classes[i], estimator_classes)
                     for estimator_classes in classes[i::num_components]

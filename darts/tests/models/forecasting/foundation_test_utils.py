@@ -8,6 +8,7 @@ from here instead of duplicating them.
 import contextlib
 import functools
 import shutil
+import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -26,6 +27,36 @@ PATCHTST_FM_TINY_CONTEXT_LENGTH = 128
 TIMESFM2P5_TINY_DIR = (ARTEFACTS_DIR / "timesfm2p5" / "tiny_timesfm2p5").absolute()
 TIMESFM2P5_TINY_MAX_CONTEXT_LENGTH = 64
 TIMESFM2P5_TINY_MAX_PREDICTION_LENGTH = 8
+
+TIMESFM3_TINY_DIR = (ARTEFACTS_DIR / "timesfm3" / "tiny_timesfm3").absolute()
+
+
+# ── T0 tiny model ───────────────────────────────────────────────────────────
+# Create a local checkpoint for t0-alpha model.
+@functools.lru_cache(maxsize=1)
+def tiny_t0_dir() -> str:
+    """Build a tiny T0 model and save it to a temporary directory, returning the path.
+
+    ``T0Model`` loads through Darts' ``HuggingFaceConnector``, so the path is passed as
+    ``local_dir`` and the gated t0-alpha weights are never downloaded."""
+    from t0 import T0Config, T0Forecaster
+
+    directory = tempfile.mkdtemp(prefix="darts_tiny_t0_")
+    T0Forecaster.from_config(
+        T0Config(
+            embed_dim=32,
+            num_layers=2,
+            num_heads=4,
+            mlp_hidden_dim=64,
+            patch_size=8,
+            group_every_n=2,
+            dropout=0.0,
+            quantile_levels=(0.1, 0.25, 0.5, 0.75, 0.9),
+            scaler_use_arcsinh=True,
+        )
+    ).save_pretrained(directory)
+    return directory
+
 
 # ── HuggingFace mock download (Chronos-2 tiny artefact) ────────────────────
 HF_HUB_DOWNLOAD_PATCH_TARGET = (
@@ -72,6 +103,55 @@ class TiRexStub:
         for qi, q in enumerate(TIREX_QUANTILES):
             quantiles[:, :, qi] = mean + (float(q) - 0.5)
         return quantiles, mean
+
+
+# ── TiRex2 stub ──────────────────────────────────────────────────────────────
+TIREX2_QUANTILES = (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+TIREX2_LOAD_MODEL_PATCH_TARGET = "darts.models.forecasting.tirex2_model.load_model"
+TIREX2_MAX_PREDICTION_LENGTH = 320
+
+
+class TiRex2Stub(torch.nn.Module):
+    """Lightweight stub emulating the ``tirex2`` pipeline API so that
+    ``TiRex2Model`` can run without downloading the real weights.
+
+    Provides ``_predict(timeseries, prediction_length)`` which
+    returns deterministic quantile forecasts based on simple arithmetic.
+    """
+
+    quantiles: tuple[float, ...] = TIREX2_QUANTILES
+    future_len: int = TIREX2_MAX_PREDICTION_LENGTH
+
+    def __init__(self, device: str = "cpu"):
+        super().__init__()
+        self.device = device
+        self.weight = torch.nn.Parameter(torch.ones(1))
+
+    def _predict(self, timeseries, prediction_length: int, **_kwargs):
+        target0 = timeseries[0].target
+        B, C, P = (
+            len(timeseries),
+            target0.shape[0],
+            prediction_length,
+        )
+
+        # compute a simple deterministic forecast of shape (C, Q, P)
+        mean = torch.arange(1, P + 1, dtype=torch.float32, device=target0.device)
+        quantiles = torch.tensor(
+            TIREX2_QUANTILES, dtype=torch.float32, device=target0.device
+        )
+        # broadcast mean and quantiles sum minus 0.5 to shape (Q, P)
+        forecast = mean.unsqueeze(0) + quantiles.unsqueeze(1) - 0.5
+        # repeat forecast for each target variate (C, Q, P)
+        forecast = forecast.unsqueeze(0).repeat(C, 1, 1)
+
+        # repeat forecast for each batch sample
+        forecasts = [forecast] * B
+        return forecasts
+
+    @property
+    def model(self):
+        return self
 
 
 # ── TimesFM 2.5 tiny model ─────────────────────────────────────────────────

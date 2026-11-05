@@ -1,11 +1,10 @@
-import itertools
-
 import numpy as np
 import pandas as pd
 import pytest
 
 from darts import TimeSeries
 from darts.ad.utils import eval_metric_from_binary_prediction, eval_metric_from_scores
+from darts.tests.parametrize_helpers import param_product
 
 
 class TestAnomalyDetectionModel:
@@ -29,7 +28,7 @@ class TestAnomalyDetectionModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 ("AUC_ROC", (1.0, 0.0, 0.5)),
                 ("AUC_PR", (1.0, 0.5, 0.5)),
@@ -99,7 +98,7 @@ class TestAnomalyDetectionModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 ("precision", (1.0, 0.0, 0.5)),
                 ("recall", (1.0, 0.0, 0.5)),

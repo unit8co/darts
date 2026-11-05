@@ -1,11 +1,10 @@
-import itertools
-
 import numpy as np
 import pandas as pd
 import pytest
 
 from darts import TimeSeries
 from darts.tests.conftest import POLARS_AVAILABLE
+from darts.tests.parametrize_helpers import param_product
 from darts.tests.test_timeseries import (
     helper_test_append,
     helper_test_append_values,
@@ -134,9 +133,7 @@ class TestTimeSeriesMultivariate:
         helper_test_drop_before(self.series1, keep_point=False)
         helper_test_drop_before(self.series1, keep_point=True)
 
-    @pytest.mark.parametrize(
-        "config", itertools.product(["D", "2D", 1, 2], [False, True])
-    )
+    @pytest.mark.parametrize("config", param_product(["D", "2D", 1, 2], [False, True]))
     def test_intersect(self, config):
         freq, mixed_freq = config
         helper_test_intersect(freq, mixed_freq, is_univariate=False)
@@ -168,6 +165,20 @@ class TestTimeSeriesMultivariate:
 
         assert (series1.strip().time_index == self.times1[1:-1]).all()
         assert (series1.strip(how="any").time_index == self.times1[2:-2]).all()
+
+        # all-NaN multivariate series strips to empty series with preserved components
+        all_nan_series = TimeSeries.from_values(np.full((1, 2), np.nan))
+        assert len(all_nan_series.strip(how="any")) == 0
+        assert len(all_nan_series.strip()) == 0
+
+        # multivariate series where every row has at least one NaN
+        row_nans = TimeSeries.from_values(np.array([[np.nan, 1.0], [2.0, np.nan]]))
+        assert len(row_nans.strip(how="any")) == 0
+        assert len(row_nans.strip(how="all")) == 2
+
+        # empty series strips to empty series
+        empty_series = TimeSeries.from_values(np.array([]))
+        assert len(empty_series.strip()) == 0
 
     """
     Testing new multivariate methods.

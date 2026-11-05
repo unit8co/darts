@@ -45,9 +45,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         example, there's always three months in quarter. However, the number of days in a month varies per month.
         In the latter case a MIDAS transformation does not work and the transformer will raise an error.
 
-        For anchored low frequency, the transformed series must contain at least 2 samples in order to be
-        able to retrieve the original time index.
-
         Parameters
         ----------
         low_freq
@@ -137,10 +134,12 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         low_freq = params["fixed"]["_low_freq"]
         for idx, ts in enumerate(series):
             high_freq = ts.freq_str
+            high_period = pd.tseries.frequencies.get_period_alias(high_freq)
+            low_period = pd.tseries.frequencies.get_period_alias(low_freq)
+            # pandas>=3.1 also considers a frequency a sub-period of itself
             if not pd.tseries.frequencies.is_subperiod(
-                pd.tseries.frequencies.get_period_alias(high_freq),
-                pd.tseries.frequencies.get_period_alias(low_freq),
-            ):
+                high_period, low_period
+            ) or pd.tseries.frequencies.is_superperiod(high_period, low_period):
                 raise_log(
                     ValueError(
                         f"The frequency string of the series at index={idx} must be higher than the "
@@ -243,9 +242,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             first_idx = first_up_sampled.index.get_loc(df.index[0])
             last_idx = first_idx + series_size - 1
 
-            start_chunk = np.empty((first_idx, 1, 1))
+            start_chunk = np.empty((first_idx, n_cols_in, n_samples))
             start_chunk.fill(np.nan)
-            end_chunk = np.empty((max_size - 1 - last_idx, 1, 1))
+            end_chunk = np.empty((max_size - 1 - last_idx, n_cols_in, n_samples))
             end_chunk.fill(np.nan)
             arr = np.concatenate([start_chunk, arr, end_chunk])
             # arr has shape (n time steps, n components, n samples)
@@ -344,7 +343,6 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         feature_sep = params["fixed"]["_sep"]
         high_freq = params["fitted"]["high_freq"]
         orig_ts_start_time = params["fitted"]["start"]
-        orig_ts_end_time = params["fitted"]["end"]
         MIDAS._verify_series(series, low_freq=low_freq)
 
         # retrieve the number of component introduced by midas
@@ -356,7 +354,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         if len(series) == 0:
             # placeholders for empty series
             start_time = pd.Timestamp("2020-01-01")
-            shift = 0
+            first_finite_row = 0
             series_values = np.empty((0, n_orig_components, series.n_samples))
         else:
             series_values = series.all_values(copy=False).reshape(
@@ -370,27 +368,21 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             # adding one to make the end bound inclusive
             series_values = series_values[first_finite_row : last_finite_row + 1]
 
-            start_time = series.start_time()
-            shift = 0
-            # adjust the start if was shifted due to the frequency change
-            if len(series._time_index) > 1:
-                low_freq_timedelta = series._time_index[1] - series.start_time()
-                start_to_start_shift = series.start_time() - orig_ts_start_time
-                start_to_end_shift = series.start_time() - orig_ts_end_time
-                # shift is caused by the low frequency anchoring, fitted and inversed ts have the same start
-                if np.abs(start_to_start_shift) <= low_freq_timedelta:
-                    start_time = orig_ts_start_time
-                # shift is caused by the low frequency anchoring, inversed ts starts after the end of the fitted ts
-                elif pd.Timedelta(0) < start_to_end_shift <= low_freq_timedelta:
-                    start_time = orig_ts_end_time
-                    shift = 1
+            start_time = MIDAS._get_high_freq_period_start(
+                low_freq_time=series.start_time(),
+                low_freq=low_freq,
+                high_freq=high_freq,
+                n_midas=n_midas_components,
+                orig_ts_start_time=orig_ts_start_time,
+            )
 
+        # the first `first_finite_row` high frequency time steps were removed above (only NaNs)
         time_index = generate_index(
             start=start_time,
-            length=len(series_values) + shift,
+            length=first_finite_row + len(series_values),
             freq=high_freq,
             name=series._time_index.name,
-        )[shift:]
+        )[first_finite_row:]
 
         inversed_midas_ts = MIDAS._create_midas_df(
             series=series,
@@ -402,6 +394,38 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             feature_sep=feature_sep,
         )
         return inversed_midas_ts
+
+    @staticmethod
+    def _get_high_freq_period_start(
+        low_freq_time: pd.Timestamp,
+        low_freq: str,
+        high_freq: str,
+        n_midas: int,
+        orig_ts_start_time: pd.Timestamp,
+    ) -> pd.Timestamp:
+        """Returns the first high frequency time step of the low frequency period labeled `low_freq_time`.
+
+        The high frequency time steps lie on the grid of the fitted series (anchored at `orig_ts_start_time`). The
+        grid starts one full low frequency period (`n_midas` steps) before the fitted series to also cover a first
+        period that was incomplete in the fitted series. The periods are computed with the same resampling as in
+        `ts_transform()`, so it works for low frequencies labeled either at the start (e.g. "QS") or at the end
+        (e.g. "QE") of the period.
+        """
+        high_freq_grid = generate_index(
+            start=generate_index(
+                end=orig_ts_start_time, length=n_midas + 1, freq=high_freq
+            )[0],
+            end=low_freq_time + pd.tseries.frequencies.to_offset(low_freq),
+            freq=high_freq,
+        )
+        period_starts = (
+            pd.Series(high_freq_grid, index=high_freq_grid).resample(low_freq).first()
+        )
+        start_time = period_starts.get(low_freq_time)
+        if start_time is None or pd.isna(start_time):
+            # the low frequency period is not on the fitted grid (e.g. before the fitted series)
+            return low_freq_time
+        return start_time
 
     @staticmethod
     def _verify_series(

@@ -1,4 +1,3 @@
-import itertools
 import logging
 import random
 from itertools import product
@@ -18,12 +17,14 @@ from darts.models import (
     ExponentialSmoothing,
     LinearRegressionModel,
     NaiveDrift,
+    NaiveMean,
     NaiveSeasonal,
     RandomForestModel,
     SKLearnClassifierModel,
     Theta,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.parametrize_helpers import param_product, param_zip
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
@@ -102,7 +103,7 @@ def compare_best_against_random(model_class, params, series, stride=1):
 class TestBacktesting:
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [False, True],
             [
@@ -196,7 +197,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [False, True],
             [
@@ -310,7 +311,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [
                 ([metrics.mape], [0.0, 100.0]),
@@ -407,7 +408,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [
                 ([metrics.mape], [0.0, 100.0]),
@@ -499,7 +500,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [True, False],
             [
                 ([metrics.mape], [0.0, 100.0]),
@@ -577,6 +578,27 @@ class TestBacktesting:
                 bt[0], np.array([score_hi_expected] * 2)
             )
             assert isinstance(bt[1], np.ndarray)
+
+    @pytest.mark.parametrize("config", param_product([0, 2], [False, True]))
+    def test_backtest_val_length(self, config):
+        val_length, last_points_only = config
+        series = TimeSeries.from_values([1.0, 4.0, 2.0, 9.0, 6.0, 3.0, 10.0, 7.0])
+        model = NaiveMean()
+        kwargs = {
+            "train_length": 4,
+            "val_length": val_length,
+            "last_points_only": last_points_only,
+            "show_warnings": False,
+        }
+        forecasts = model.historical_forecasts(series, **kwargs)
+        expected = model.backtest(
+            series,
+            historical_forecasts=forecasts,
+            metric=metrics.mae,
+            last_points_only=last_points_only,
+        )
+        assert expected == (2.5 if val_length else 2.3125)
+        assert model.backtest(series, metric=metrics.mae, **kwargs) == expected
 
     def test_backtest_forecasting(self):
         linear_series = lt(length=50)
@@ -954,14 +976,14 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 "det",
                 "sampled",
                 "lkl_params",
-            ],  # prediction method
-            [False, True],  # is multivariate
-            [True, False],  # auto-regression
+            ],
+            [False, True],
+            [True, False],
         ),
     )
     def test_backtest_classification(self, config, caplog):
@@ -1210,6 +1232,95 @@ class TestBacktesting:
         )
         assert len(percentage_sampled_result) == 37
 
+    @staticmethod
+    def _nan_if_constant_mae(actual, pred):
+        # `NaiveSeasonal(K=1)` forecasts a constant series, which we treat as "not scorable"
+        if isinstance(pred, TimeSeries):
+            if np.ptp(pred.values()) == 0:
+                return np.nan
+            return metrics.mae(actual, pred)
+        # expanding window mode passes a sequence of series
+        return [
+            TestBacktesting._nan_if_constant_mae(a, p) for a, p in zip(actual, pred)
+        ]
+
+    @pytest.mark.parametrize("nan_first", [True, False])
+    @pytest.mark.parametrize("mode", ["split", "expanding"])
+    def test_gridsearch_nan_score_not_selected(self, mode, nan_first):
+        series = lt(length=10)
+        # K=1 scores NaN, K=3 has a finite score
+        k_values = [1, 3, 5] if nan_first else [3, 1, 5]
+        kwargs = (
+            {"series": series[:-5], "val_series": series[-5:]}
+            if mode == "split"
+            else {"series": series, "forecast_horizon": 3, "start": 5}
+        )
+        best_model, best_params, best_score = NaiveSeasonal.gridsearch(
+            parameters={"K": k_values},
+            metric=self._nan_if_constant_mae,
+            **kwargs,
+        )
+        assert best_params["K"] != 1
+        assert best_model.K == best_params["K"]
+        assert not np.isnan(best_score)
+
+    def test_gridsearch_nan_score_warning(self, caplog):
+        series = lt(length=10)
+        kwargs = {
+            "parameters": {"K": [1, 3, 5]},
+            "series": series[:-5],
+            "val_series": series[-5:],
+            "metric": self._nan_if_constant_mae,
+        }
+        with caplog.at_level(logging.WARNING):
+            NaiveSeasonal.gridsearch(**kwargs)
+        assert "1 of 3 hyperparameter combinations" in caplog.text
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            NaiveSeasonal.gridsearch(show_warnings=False, **kwargs)
+        assert "hyperparameter combinations" not in caplog.text
+
+    def test_gridsearch_default_reduction_ignores_nan_windows(self):
+        # intermittent series: `NaiveSeasonal(K=1)` forecasts a non-zero value for the zero actuals,
+        # so the default `mape` is NaN for some (but not all) windows
+        series = TimeSeries.from_values(np.tile([5.0, 0.0, 3.0, 4.0], 15))
+        kwargs = {
+            "parameters": {"K": [1]},
+            "series": series,
+            "forecast_horizon": 1,
+            "start": 20,
+        }
+        # default `reduction=np.nanmean` scores the combination on its valid windows
+        _, best_params, score = NaiveSeasonal.gridsearch(**kwargs)
+        assert best_params == {"K": 1}
+        assert np.isfinite(score) and score > 0
+
+        # `reduction=np.mean` propagates the NaN windows, and no combination has a valid score
+        with pytest.raises(ValueError, match="resulted in a NaN `metric` score"):
+            NaiveSeasonal.gridsearch(reduction=np.mean, **kwargs)
+
+    def test_gridsearch_all_nan_scores_raises(self):
+        series = lt(length=50)
+        with pytest.raises(ValueError, match="resulted in a NaN `metric` score"):
+            NaiveSeasonal.gridsearch(
+                parameters={"K": [1]},
+                series=series[:-5],
+                val_series=series[-5:],
+                metric=self._nan_if_constant_mae,
+            )
+
+    def test_gridsearch_empty_grid_raises(self):
+        series = lt(length=50)
+        # 10% of 3 combinations is rounded down to 0 combinations
+        with pytest.raises(ValueError, match="No hyperparameter combinations"):
+            NaiveSeasonal.gridsearch(
+                parameters={"K": [1, 3, 5]},
+                series=series[:-5],
+                val_series=series[-5:],
+                n_random_samples=0.1,
+            )
+
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_gridsearch_n_jobs(self):
         """
@@ -1278,7 +1389,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "model_cls,parameters",
-        zip([NaiveSeasonal, ARIMA], [{"K": [1, 2]}, {"p": [18, 4]}]),
+        param_zip([NaiveSeasonal, ARIMA], [{"K": [1, 2]}, {"p": [18, 4]}]),
     )
     def test_gridsearch_bad_covariates(self, model_cls, parameters):
         """Passing unsupported covariate should raise an exception"""
@@ -1319,9 +1430,22 @@ class TestBacktesting:
                 "Model cannot be fit/trained with `future_covariates`."
             )
 
+    def test_gridsearch_multiple_series_raises(self):
+        """`gridsearch` only supports single `TimeSeries` objects"""
+        dummy_series = get_dummy_series(ts_length=20)
+        with pytest.raises(ValueError) as msg:
+            Theta.gridsearch(
+                parameters={"theta": [1, 2]},
+                series=[dummy_series] * 2,
+                forecast_horizon=1,
+            )
+        assert str(msg.value).startswith(
+            "All input series must be single (univariate or multivariate) `TimeSeries`."
+        )
+
     @pytest.mark.parametrize(
         "config",
-        itertools.product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_gridsearch_sample_weight(self, config):
         """check that passing sample weights work and that it yields different results than without sample weights."""
@@ -1353,7 +1477,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 metrics.ase,
                 metrics.mase,
@@ -1466,14 +1590,14 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [
                 [metrics.mae],  # mae does not support time_reduction
                 [metrics.mae, metrics.ae],  # ae supports time_reduction
                 [metrics.miw],  # quantile interval metric
                 [metrics.miw, metrics.iw],
             ],
-            [True, False],  # last_points_only
+            [True, False],
         ),
     )
     def test_metric_quantiles_lpo(self, config):
@@ -1660,11 +1784,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 2],  # number of target components (uni / multivariate)
-            [[0.1, 0.5, 0.9], [0.5]],  # quantiles (multiple / single)
-            [None, np.nanmean],  # component_reduction
-        ),
+        param_product([1, 2], [[0.1, 0.5, 0.9], [0.5]], [None, np.nanmean]),
     )
     def test_backtest_overlap_end_empty_intersection(self, config):
         """When overlap_end=True and predict_likelihood_parameters=True, the
@@ -1725,7 +1845,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_backtest_sample_weight(self, config):
         """check that passing sample weights work and that it yields different results than without sample weights."""
@@ -1760,7 +1880,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_backtest_start_end(self, config):
         """backtest with start='end' produces nan since forecasts don't overlap with the series."""
@@ -1782,7 +1902,7 @@ class TestBacktesting:
 
     @pytest.mark.parametrize(
         "config",
-        product([True, False], [True, False]),
+        param_product([True, False], [True, False]),
     )
     def test_backtest_start_end_reduction_none(self, config):
         """backtest with start='end' and reduction=None returns per-forecast nan arrays."""

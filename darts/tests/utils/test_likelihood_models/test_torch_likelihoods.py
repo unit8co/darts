@@ -9,16 +9,30 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import numpy as np
 import torch
+from scipy import stats
 
 from darts.utils.likelihood_models.torch import (
+    BernoulliLikelihood,
     BetaLikelihood,
     CauchyLikelihood,
+    ContinuousBernoulliLikelihood,
+    DirichletLikelihood,
     ExponentialLikelihood,
+    GammaLikelihood,
     GaussianLikelihood,
+    GeometricLikelihood,
+    GumbelLikelihood,
+    HalfNormalLikelihood,
+    LaplaceLikelihood,
+    LogNormalLikelihood,
+    NegativeBinomialLikelihood,
     PoissonLikelihood,
     QuantileRegression,
     WeibullLikelihood,
+    ZeroInflatedLikelihood,
+    _ZeroInflatedDistribution,
 )
 
 # equality between likelihoods is only dependent on the main distribution parameters
@@ -52,6 +66,22 @@ likelihood_models = {
 
 
 class TestTorchLikelihoodModel:
+    @pytest.mark.parametrize("quantiles", [[0.5], [0.1, 0.5, 0.9]])
+    def test_quantile_sampling(self, quantiles, monkeypatch):
+        likelihood = QuantileRegression(quantiles=quantiles)
+        probs = torch.linspace(0, 1, 12).reshape(2, 3, 2, 1)
+        monkeypatch.setattr(torch, "rand", lambda size: probs)
+        offsets = torch.arange(12).reshape(2, 3, 2, 1)
+        model_output = offsets + 10 * torch.tensor(quantiles)
+
+        samples = likelihood.sample(model_output)
+
+        expected = offsets.squeeze(-1) + 10 * probs.squeeze(-1).clamp(
+            quantiles[0], quantiles[-1]
+        )
+        assert samples.shape == (2, 3, 2)
+        torch.testing.assert_close(samples, expected)
+
     def test_intra_class_equality(self):
         for _, model_pair in likelihood_models.items():
             assert model_pair[0] == model_pair[0]
@@ -65,6 +95,118 @@ class TestTorchLikelihoodModel:
                 likelihood_models[first_model_name][0]
                 != likelihood_models[second_model_name][0]
             )
+
+    @pytest.mark.parametrize(
+        "likelihood",
+        [
+            BernoulliLikelihood(),
+            BernoulliLikelihood(prior_p=0.5),
+            BetaLikelihood(),
+            CauchyLikelihood(),
+            ContinuousBernoulliLikelihood(),
+            DirichletLikelihood(),
+            DirichletLikelihood(prior_alphas=[1.0, 2.0]),
+            ExponentialLikelihood(),
+            ExponentialLikelihood(prior_lambda=0.5),
+            GammaLikelihood(),
+            GaussianLikelihood(),
+            GaussianLikelihood(prior_mu=0.0, prior_sigma=1.0),
+            GeometricLikelihood(),
+            GumbelLikelihood(),
+            HalfNormalLikelihood(),
+            LaplaceLikelihood(),
+            LogNormalLikelihood(),
+            NegativeBinomialLikelihood(),
+            PoissonLikelihood(),
+            PoissonLikelihood(prior_lambda=2.0),
+            QuantileRegression([0.1, 0.5, 0.9]),
+            WeibullLikelihood(),
+        ],
+    )
+    def test_compute_loss_uses_all_samples(self, likelihood):
+        # the loss of a batch must be the average of the losses of its individual samples
+        np.random.seed(0)
+        torch.manual_seed(42)
+        batch_size, n_times, n_components = 4, 3, 2
+        model_output = torch.randn(
+            batch_size, n_times, n_components, likelihood.num_parameters
+        )
+        if isinstance(likelihood, QuantileRegression):
+            target = torch.randn(batch_size, n_times, n_components)
+        else:
+            params = likelihood._params_from_output(model_output)
+            target = likelihood._distr_from_params(params).sample()
+
+        loss = likelihood.compute_loss(model_output, target, None)
+        loss_per_sample = torch.stack([
+            likelihood.compute_loss(model_output[i : i + 1], target[i : i + 1], None)
+            for i in range(batch_size)
+        ])
+        assert torch.allclose(loss, loss_per_sample.mean(), rtol=1e-03)
+
+    @pytest.mark.parametrize(
+        "likelihood",
+        [
+            BernoulliLikelihood(),
+            BetaLikelihood(),
+            CauchyLikelihood(),
+            ContinuousBernoulliLikelihood(),
+            ExponentialLikelihood(),
+            GammaLikelihood(),
+            GaussianLikelihood(),
+            GeometricLikelihood(),
+            GumbelLikelihood(),
+            HalfNormalLikelihood(),
+            LaplaceLikelihood(),
+            LogNormalLikelihood(),
+            NegativeBinomialLikelihood(),
+            PoissonLikelihood(),
+            QuantileRegression([0.1, 0.5, 0.9]),
+            WeibullLikelihood(),
+            ZeroInflatedLikelihood(ExponentialLikelihood()),
+            ZeroInflatedLikelihood(GaussianLikelihood()),
+            ZeroInflatedLikelihood(NegativeBinomialLikelihood()),
+        ],
+    )
+    def test_predict_likelihood_parameters_component_order(self, likelihood):
+        # parameters must be grouped by component, in the same order as `component_names()`
+        # (<comp_0>_<param_0>, <comp_0>_<param_1>, ..., <comp_1>_<param_0>, ...)
+        torch.manual_seed(42)
+        n_components = 3
+        model_output = torch.randn(2, 4, n_components, likelihood.num_parameters)
+
+        params = likelihood.predict_likelihood_parameters(model_output)
+        params_per_component = torch.cat(
+            [
+                likelihood.predict_likelihood_parameters(model_output[:, :, i : i + 1])
+                for i in range(n_components)
+            ],
+            dim=-1,
+        )
+        assert params.shape == (2, 4, n_components * likelihood.num_parameters)
+        assert torch.allclose(params, params_per_component)
+
+    def test_negative_binomial_mean_and_variance(self):
+        # the network outputs `mu` (mean) and `alpha` (dispersion): mean = mu, var = mu + alpha * mu**2
+        likelihood = NegativeBinomialLikelihood()
+        mu = torch.tensor([0.5, 3.0, 50.0, 1e4], dtype=torch.float64)
+        alpha = torch.tensor([0.1, 0.2, 0.5, 2.0], dtype=torch.float64)
+        distr = likelihood._distr_from_params((mu, alpha))
+        assert torch.allclose(distr.mean, mu)
+        assert torch.allclose(distr.variance, mu + alpha * mu**2)
+
+        # the returned parameters `r` and `p` describe the same distribution
+        model_output = torch.stack([mu, alpha], dim=-1).reshape(1, 1, 4, 2)
+        # inverse of softplus
+        model_output = model_output + torch.log(-torch.expm1(-model_output))
+        params = likelihood.predict_likelihood_parameters(model_output).reshape(4, 2)
+        r, p = params[:, 0], params[:, 1]
+        assert torch.allclose(r, 1 / alpha)
+        assert torch.allclose(r * p / (1 - p), mu)
+
+        # loss stays finite for large means and small dispersion
+        target = torch.tensor([0.0, 3.0, 60.0, 2e4], dtype=torch.float64)
+        assert torch.isfinite(distr.log_prob(target)).all()
 
 
 class TestTorchLikelihoodInputValidation:
@@ -109,3 +251,173 @@ class TestTorchLikelihoodInputValidation:
                 target=torch.zeros(target_shape),
                 sample_weight=torch.zeros(target_shape),
             )
+
+
+def _float64(value):
+    return torch.tensor(value, dtype=torch.float64)
+
+
+class TestZeroInflatedDistribution:
+    @pytest.mark.parametrize(
+        "base_distr,ref_log_prob,values",
+        [
+            (
+                torch.distributions.Poisson(_float64(2.5)),
+                lambda y: stats.poisson.logpmf(y, 2.5),
+                [0.0, 1.0, 3.0, 7.0],
+            ),
+            (
+                # torch's `probs` is the success probability; scipy's `p` is the failure probability
+                torch.distributions.NegativeBinomial(_float64(2.0), _float64(0.4)),
+                lambda y: stats.nbinom.logpmf(y, 2.0, 0.6),
+                [0.0, 1.0, 3.0, 7.0],
+            ),
+            (
+                torch.distributions.Gamma(_float64(2.0), _float64(1.5)),
+                lambda y: stats.gamma.logpdf(y, 2.0, scale=1 / 1.5),
+                [0.0, 0.3, 1.0, 4.0],
+            ),
+            (
+                torch.distributions.LogNormal(_float64(0.5), _float64(0.8)),
+                lambda y: stats.lognorm.logpdf(y, 0.8, scale=np.exp(0.5)),
+                [0.0, 0.3, 1.0, 4.0],
+            ),
+            (
+                torch.distributions.Normal(_float64(1.0), _float64(2.0)),
+                lambda y: stats.norm.logpdf(y, 1.0, 2.0),
+                [0.0, -1.5, 0.3, 4.0],
+            ),
+        ],
+    )
+    def test_log_prob(self, base_distr, ref_log_prob, values):
+        gate = 0.3
+        distr = _ZeroInflatedDistribution(base_distr, _float64(gate))
+        expected = []
+        for y in values:
+            if y != 0:
+                expected.append(np.log(1 - gate) + ref_log_prob(y))
+            elif base_distr.support.is_discrete:
+                expected.append(np.log(gate + (1 - gate) * np.exp(ref_log_prob(0.0))))
+            else:
+                expected.append(np.log(gate))
+        np.testing.assert_allclose(
+            distr.log_prob(_float64(values)).numpy(), expected, rtol=1e-6
+        )
+
+    def test_mean(self):
+        base = torch.distributions.Poisson(torch.tensor([2.0, 5.0]))
+        distr = _ZeroInflatedDistribution(base, torch.tensor([0.25, 0.5]))
+        assert torch.allclose(distr.mean, torch.tensor([1.5, 2.5]))
+
+    def test_sample_zero_fraction(self):
+        torch.manual_seed(42)
+        p_0, lmbda = 0.5, 3.0
+        rate = torch.full((20000,), lmbda)
+        distr = _ZeroInflatedDistribution(
+            torch.distributions.Poisson(rate), torch.full((20000,), p_0)
+        )
+        zero_fraction = (distr.sample() == 0).float().mean()
+        # ZI-poisson: zero probability = p_0 + (1 - p_0) e**(-lamdba)
+        expected = p_0 + p_0 * torch.exp(torch.tensor(-lmbda))
+        assert abs(zero_fraction - expected) < 0.01
+
+
+class TestZeroInflatedLikelihood:
+    @pytest.mark.parametrize(
+        "likelihood",
+        [
+            QuantileRegression(),
+            DirichletLikelihood(),
+            BernoulliLikelihood(),
+            ZeroInflatedLikelihood(PoissonLikelihood()),
+            PoissonLikelihood(prior_lambda=2.0),
+            GaussianLikelihood(prior_mu=0.0),
+            GaussianLikelihood(beta_nll=0.5),
+        ],
+    )
+    def test_unsupported_likelihoods(self, likelihood):
+        with pytest.raises(ValueError, match="does not support"):
+            ZeroInflatedLikelihood(likelihood)
+
+    def test_parameter_names(self):
+        likelihood = ZeroInflatedLikelihood(NegativeBinomialLikelihood())
+        assert likelihood.num_parameters == 3
+        assert likelihood.component_names(components=["a", "b"]) == [
+            "a_r",
+            "a_p",
+            "a_zi_p",
+            "b_r",
+            "b_p",
+            "b_zi_p",
+        ]
+
+    def test_equality(self):
+        assert ZeroInflatedLikelihood(PoissonLikelihood()) == ZeroInflatedLikelihood(
+            PoissonLikelihood()
+        )
+        assert ZeroInflatedLikelihood(PoissonLikelihood()) != ZeroInflatedLikelihood(
+            GammaLikelihood()
+        )
+        assert ZeroInflatedLikelihood(PoissonLikelihood()) != PoissonLikelihood()
+
+    def test_predict_likelihood_parameters(self):
+        torch.manual_seed(42)
+        likelihood = ZeroInflatedLikelihood(NegativeBinomialLikelihood())
+        model_output = torch.randn(2, 4, 3, 3)
+        params = likelihood.predict_likelihood_parameters(model_output)
+
+        base_params = NegativeBinomialLikelihood().predict_likelihood_parameters(
+            model_output[..., :2]
+        )
+        gate = torch.sigmoid(model_output[..., 2:])
+        expected = torch.cat([base_params.reshape(2, 4, 3, 2), gate], dim=3)
+        assert torch.allclose(params, expected.reshape(2, 4, 9))
+
+    def test_sample(self):
+        torch.manual_seed(42)
+        likelihood = ZeroInflatedLikelihood(PoissonLikelihood())
+        # gate logit 0 -> zi_p = 0.5; base rate softplus(3) ~ 3.05
+        model_output = torch.zeros(20000, 1, 1, 2)
+        model_output[..., 0] = 3.0
+        samples = likelihood.sample(model_output)
+        assert samples.shape == (20000, 1, 1)
+        rate = torch.nn.functional.softplus(torch.tensor(3.0))
+        expected = 0.5 + 0.5 * torch.exp(-rate)
+        assert abs((samples == 0).float().mean() - expected) < 0.01
+
+    @pytest.mark.parametrize(
+        "base_likelihood",
+        [
+            BetaLikelihood(),
+            CauchyLikelihood(),
+            ContinuousBernoulliLikelihood(),
+            ExponentialLikelihood(),
+            GammaLikelihood(),
+            GaussianLikelihood(),
+            GeometricLikelihood(),
+            GumbelLikelihood(),
+            HalfNormalLikelihood(),
+            LaplaceLikelihood(),
+            LogNormalLikelihood(),
+            NegativeBinomialLikelihood(),
+            PoissonLikelihood(),
+            WeibullLikelihood(),
+        ],
+    )
+    def test_loss_with_zero_targets(self, base_likelihood):
+        torch.manual_seed(42)
+        likelihood = ZeroInflatedLikelihood(base_likelihood)
+        model_output = torch.randn(
+            4, 3, 2, likelihood.num_parameters, requires_grad=True
+        )
+        with torch.no_grad():
+            params = likelihood._params_from_output(model_output)
+            target = likelihood._distr_from_params(params).sample()
+        target[:, 0, 0] = 0.0
+
+        loss = likelihood.compute_loss(model_output, target, None)
+        loss.backward()
+        assert torch.isfinite(loss)
+        assert torch.isfinite(model_output.grad).all()
+        # every sample of the batch contributes to the gradient
+        assert (model_output.grad.abs().sum(dim=(1, 2, 3)) > 0).all()

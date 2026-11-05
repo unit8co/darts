@@ -308,6 +308,27 @@ class FFT(LocalForecastingModel):
         """Helper function, used to make FFT model pickable."""
         return 0
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # remove ``trend_function`` from pickling; bound methods serialize as ``builtins.getattr``,
+        # which is an allow-list bypass; restore the function at load time
+        state.pop("trend_function", None)
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+        if "trend_coefficients" not in state:  # pragma: no cover
+            return
+
+        # rebuild ``trend_function``
+        if self.trend == "poly":
+            self.trend_function = self._poly_trend(self.trend_coefficients)
+        elif self.trend == "exp":
+            self.trend_function = self._exp_trend
+        else:
+            self.trend_function = self._null_trend
+
     def fit(self, series: TimeSeries, verbose: bool | None = None):
         series = fill_missing_values(series)
         super().fit(series, verbose=verbose)

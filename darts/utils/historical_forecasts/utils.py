@@ -5,6 +5,7 @@ Optimized Historical Forecasts Utils
 
 import inspect
 from collections.abc import Callable, Sequence
+from copy import deepcopy
 from types import SimpleNamespace
 from typing import Any, Literal, TypeAlias, TypeVar
 
@@ -1030,7 +1031,7 @@ def _adjust_historical_forecasts_time_index(
                     f"Please check that the `series` and `*_covariates` are long enough."
                 ),
             )
-        return (desired_pred_time, desired_pred_time)
+        return desired_pred_time, desired_pred_time
 
     # retrieve actual start
     # find valid start position relative to the hfc start time, otherwise raise an error
@@ -1044,20 +1045,28 @@ def _adjust_historical_forecasts_time_index(
     )
     start_time = series._time_index[start_idx]
 
-    if start_idx != start_idx_orig and show_warnings:
-        if start_idx_orig >= 0:
-            start_time_orig = series._time_index[start_idx_orig]
-        else:
-            start_time_orig = series.start_time() + start_idx_orig * series.freq
+    if start_time > historical_forecasts_time_index[1]:
+        start_value_msg = _get_start_value_msg(
+            series=series,
+            start=start,
+            start_format=start_format,
+            start_idx_orig=start_idx_orig,
+        )
+        raise_log(
+            ValueError(
+                f"`start` {start_value_msg} is after the last historical forecastable time index "
+                f"`{historical_forecasts_time_index[1]}` for series at index: {series_idx}. "
+                f"Please check the time index of `series` and `*_covariates`."
+            ),
+        )
 
-        if start_format == "position" or (
-            not isinstance(start, pd.Timestamp) and series._has_datetime_index
-        ):
-            start_value_msg = (
-                f"position `{start}` corresponding to time `{start_time_orig}`"
-            )
-        else:
-            start_value_msg = f"time `{start_time_orig}`"
+    if start_idx != start_idx_orig and show_warnings:
+        start_value_msg = _get_start_value_msg(
+            series=series,
+            start=start,
+            start_format=start_format,
+            start_idx_orig=start_idx_orig,
+        )
         logger.warning(
             f"`start` {start_value_msg} is before the first predictable/trainable historical "
             f"forecasting point for series at index: {series_idx}. Using the first historical forecasting "
@@ -1069,6 +1078,29 @@ def _adjust_historical_forecasts_time_index(
         historical_forecasts_time_index[1],
     )
     return historical_forecasts_time_index
+
+
+def _get_start_value_msg(
+    series: TimeSeries,
+    start: pd.Timestamp | float | int | Literal["end"] | None,
+    start_format: Literal["position", "value"],
+    start_idx_orig: int,
+) -> str:
+    """Get a resolved start value message for warnings and exceptions."""
+    if start_idx_orig >= 0:
+        start_time_orig = series._time_index[start_idx_orig]
+    else:
+        start_time_orig = series.start_time() + start_idx_orig * series.freq
+
+    if start_format == "position" or (
+        not isinstance(start, pd.Timestamp) and series._has_datetime_index
+    ):
+        start_value_msg = (
+            f"position `{start}` corresponding to time `{start_time_orig}`"
+        )
+    else:
+        start_value_msg = f"time `{start_time_orig}`"
+    return start_value_msg
 
 
 def _adjust_historical_forecasts_time_index_training(
@@ -1373,12 +1405,12 @@ def _convert_data_transformers(
     if data_transformers is None:
         return dict()
     else:
-        return {
-            key_: val_
-            if isinstance(val_, Pipeline)
-            else Pipeline(transformers=[val_], copy=copy)
-            for key_, val_ in data_transformers.items()
-        }
+        res = {}
+        for key_, val_ in data_transformers.items():
+            if not isinstance(val_, Pipeline):
+                val_ = Pipeline(transformers=[val_])
+            res[key_] = deepcopy(val_) if copy else val_
+        return res
 
 
 def _apply_data_transformers(

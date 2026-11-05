@@ -1,5 +1,4 @@
 import copy
-import itertools
 import math
 import os
 
@@ -16,10 +15,12 @@ from darts.models import (
     LinearRegressionModel,
     NaiveSeasonal,
     NLinearModel,
+    SKLearnClassifierModel,
 )
 from darts.models.forecasting.conformal_models import _get_calibration_hfc_start
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import (
@@ -234,6 +235,18 @@ class TestConformalModel:
         # works also with different likelihood
         _ = ConformalQRModel(model=model_prob_poisson, quantiles=q)
 
+    @pytest.mark.parametrize("model_cls", [ConformalNaiveModel, ConformalQRModel])
+    def test_rejects_classification_models(self, model_cls):
+        # target series with class labels `[0, 1, 2]`
+        series = (tg.sine_timeseries(length=20) + 1).map(lambda x: np.round(x))
+
+        # classification models are not supported
+        model_clf = SKLearnClassifierModel(
+            lags=IN_LEN, output_chunk_length=OUT_LEN
+        ).fit(series)
+        with pytest.raises(ValueError, match="must be a regression model"):
+            model_cls(model=model_clf, quantiles=q)
+
     def test_unsupported_properties(self):
         """Tests only here for coverage, maybe at some point we support these properties."""
         model = ConformalNaiveModel(train_model(self.ts_pass_train), quantiles=q)
@@ -268,7 +281,7 @@ class TestConformalModel:
             assert val == model_fresh._model_params[param]
 
     @pytest.mark.parametrize(
-        "config", itertools.product(models_cls_kwargs_errs, [{}, pred_lklp])
+        "config", param_product(models_cls_kwargs_errs, [{}, pred_lklp])
     )
     def test_save_load_model(self, tmpdir_fn, config):
         # check if save and load methods work and if loaded model creates same forecasts as original model
@@ -377,9 +390,13 @@ class TestConformalModel:
         )
         assert pred.static_covariates is None
 
-        # using a different `n`, gives different results, since we can generate more residuals for the horizon
-        pred1 = model.predict(n=self.horizon - 1, **pred_lklp)
-        assert not pred1 == pred[: len(pred1)]
+        # using a different `n`, gives different results, since we can generate more residuals for the horizon;
+        # this short series only has a few residuals per step, so a narrower interval is used to keep the
+        # conformal rank `ceil((n_residuals + 1) * alpha)` below the number of residuals
+        model_narrow = model_cls(model.model, quantiles=[0.3, 0.5, 0.7])
+        pred_narrow = model_narrow.predict(n=self.horizon, **pred_lklp)
+        pred1 = model_narrow.predict(n=self.horizon - 1, **pred_lklp)
+        assert not pred1 == pred_narrow[: len(pred1)]
 
         # wrong dimension
         with pytest.raises(ValueError):
@@ -457,7 +474,7 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             [(ConformalNaiveModel, {"quantiles": [0.1, 0.5, 0.9]}, "regression")],
             [
                 {"lags_past_covariates": IN_LEN},
@@ -620,7 +637,7 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config,ts",
-        itertools.product(
+        param_product(
             models_cls_kwargs_errs,
             [ts_w_static_cov, ts_shared_static_cov, ts_comps_static_cov],
         ),
@@ -644,12 +661,8 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [True, False],  # univariate series
-            [True, False],  # single series
-            [True, False],  # use covariates
-            [True, False],  # datetime index
-            [1, 3, 5],  # different horizons
+        param_product(
+            [True, False], [True, False], [True, False], [True, False], [1, 3, 5]
         ),
     )
     def test_predict(self, config):
@@ -730,18 +743,18 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 3, 5],  # horizon
-            [True, False],  # univariate series
-            [True, False],  # single series
+        param_product(
+            [1, 3, 5],
+            [True, False],
+            [True, False],
             [q, [0.2, 0.3, 0.5, 0.7, 0.8]],
             [
                 (ConformalNaiveModel, "regression"),
                 (ConformalNaiveModel, "regression_prob"),
                 (ConformalQRModel, "regression_qr"),
-            ],  # model type
-            [True, False],  # symmetric non-conformity score
-            [None, 1],  # train length
+            ],
+            [True, False],
+            [None, 1],
         ),
     )
     def test_conformal_model_predict_accuracy(self, config):
@@ -837,14 +850,14 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 3, 5],  # horizon
-            [True, False],  # univariate series
-            [True, False],  # single series,
-            [0, 1],  # output chunk shift
-            [None, 1],  # train length
-            [False, True],  # use covariates
-            [q, [0.2, 0.3, 0.5, 0.7, 0.8]],  # quantiles
+        param_product(
+            [1, 3, 5],
+            [True, False],
+            [True, False],
+            [0, 1],
+            [None, 1],
+            [False, True],
+            [q, [0.2, 0.3, 0.5, 0.7, 0.8]],
         ),
     )
     def test_naive_conformal_model_historical_forecasts(self, config):
@@ -964,13 +977,7 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 3, 5],  # horizon
-            [0, 1],  # output chunk shift
-            [None, 1],  # cal length,
-            [1, 2],  # cal stride
-            [False, True],  # use start
-        ),
+        param_product([1, 3, 5], [0, 1], [None, 1], [1, 2], [False, True]),
     )
     def test_stridden_conformal_model(self, config):
         """Checks correctness of naive conformal model historical forecasts for:
@@ -1181,6 +1188,14 @@ class TestConformalModel:
             assert (diffs_rel < tol_rel).all().all()
 
     @staticmethod
+    def helper_conformal_quantile(res, alpha):
+        """Split conformal quantile over the last axis: the `ceil((n + 1) * alpha)`-th smallest of the `n`
+        scores, or the largest score if that rank exceeds `n`."""
+        n = res.shape[-1]
+        rank = min(math.ceil(round((n + 1) * alpha, 8)), n)
+        return np.sort(res, axis=-1)[..., rank - 1]
+
+    @staticmethod
     def helper_compute_pred_cal(
         residuals,
         pred_vals,
@@ -1235,18 +1250,22 @@ class TestConformalModel:
                 if is_naive and symmetric:
                     # identical correction for upper and lower bounds
                     # metric is `ae()`
-                    q_hat_n = np.quantile(res_n, q=alpha, method="higher", axis=1)
+                    q_hat_n = TestConformalModel.helper_conformal_quantile(res_n, alpha)
                     q_hats.append((-q_hat_n, q_hat_n))
                 elif is_naive:
                     # correction separately for upper and lower bounds
                     # metric is `err()`
-                    q_hat_hi = np.quantile(res_n, q=alpha, method="higher", axis=1)
-                    q_hat_lo = np.quantile(-res_n, q=alpha, method="higher", axis=1)
+                    q_hat_hi = TestConformalModel.helper_conformal_quantile(
+                        res_n, alpha
+                    )
+                    q_hat_lo = TestConformalModel.helper_conformal_quantile(
+                        -res_n, alpha
+                    )
                     q_hats.append((-q_hat_lo, q_hat_hi))
                 elif symmetric:  # CQR symmetric
                     # identical correction for upper and lower bounds
                     # metric is `incs_qr(symmetric=True)`
-                    q_hat_n = np.quantile(res_n, q=alpha, method="higher", axis=1)
+                    q_hat_n = TestConformalModel.helper_conformal_quantile(res_n, alpha)
                     q_hats.append((-q_hat_n, q_hat_n))
                 else:  # CQR asymmetric
                     # correction separately for upper and lower bounds
@@ -1256,11 +1275,11 @@ class TestConformalModel:
                     # residuals have shape (n components * n intervals * 2)
                     # the factor 2 comes from the metric being computed for lower, and upper bounds separately
                     # (comp_1_qlow_1, comp_1_qlow_2, ... comp_n_qlow_m, comp_1_qhigh_1, ...)
-                    q_hat_lo = np.quantile(
-                        res_n[:half_idx], q=alpha, method="higher", axis=1
+                    q_hat_lo = TestConformalModel.helper_conformal_quantile(
+                        res_n[:half_idx], alpha
                     )
-                    q_hat_hi = np.quantile(
-                        res_n[half_idx:], q=alpha, method="higher", axis=1
+                    q_hat_hi = TestConformalModel.helper_conformal_quantile(
+                        res_n[half_idx:], alpha
                     )
                     q_hats.append((
                         -q_hat_lo[alpha_idx :: len(alphas)],
@@ -1320,11 +1339,7 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 3, 5],  # horizon
-            [0, 1],  # output chunk shift
-            [False, True],  # use covariates
-        ),
+        param_product([1, 3, 5], [0, 1], [False, True]),
     )
     def test_too_short_input_predict(self, config):
         """Checks conformal model predict with minimum required input and too short input."""
@@ -1380,13 +1395,8 @@ class TestConformalModel:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [False, True],  # last points only
-            [False, True],  # overlap end
-            [None, 2],  # train length
-            [0, 1],  # output chunk shift
-            [1, 3, 5],  # horizon
-            [True, False],  # use covs
+        param_product(
+            [False, True], [False, True], [None, 2], [0, 1], [1, 3, 5], [True, False]
         ),
     )
     def test_too_short_input_hfc(self, config):
@@ -1555,6 +1565,37 @@ class TestConformalModel:
                 )
             )
         assert residuals == expected_residuals
+
+    @pytest.mark.parametrize("symmetric", [True, False])
+    def test_finite_sample_conformal_quantile(self, symmetric):
+        """With `n` calibration scores, the interval uses the `ceil((n + 1) * alpha)`-th smallest score, which
+        guarantees a coverage of at least `alpha` for exchangeable scores."""
+        series = TimeSeries.from_values(np.random.default_rng(0).standard_normal(60))
+        base = LinearRegressionModel(lags=1).fit(series[:30])
+        cal_length = 12
+        quantiles = [0.1, 0.5, 0.9]
+        model = ConformalNaiveModel(
+            base, quantiles=quantiles, symmetric=symmetric, cal_length=cal_length
+        )
+        pred = model.predict(n=1, series=series, **pred_lklp).values()[0]
+
+        hfc = base.historical_forecasts(
+            series,
+            start=len(series) - cal_length,
+            start_format="position",
+            forecast_horizon=1,
+            retrain=False,
+            last_points_only=True,
+        )
+        errors = (series.slice_intersect(hfc) - hfc).values()[:, 0]
+        # 80% interval: the symmetric scores use alpha=0.8 and each asymmetric tail uses alpha=0.9;
+        # ceil(13 * 0.8) = 11 and ceil(13 * 0.9) = 12
+        if symmetric:
+            q_hat = np.sort(np.abs(errors))[10]
+            q_lo, q_hi = q_hat, q_hat
+        else:
+            q_lo, q_hi = np.sort(-errors)[11], np.sort(errors)[11]
+        np.testing.assert_allclose(pred, [pred[1] - q_lo, pred[1], pred[1] + q_hi])
 
     def test_predict_probabilistic_equals_quantile(self):
         """Tests that sampled quantiles predictions have approx. the same quantiles as direct quantile predictions."""

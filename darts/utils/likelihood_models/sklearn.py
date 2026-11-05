@@ -142,13 +142,13 @@ class GaussianLikelihood(SKLearnLikelihood):
 
     def sample(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_components * output_chunk_length, n_series * n_samples, 2)
-        # [mu, sigma] on the last dimension, grouped by component
+        # [mu, variance] on the last dimension, grouped by component
         n_entries, n_samples, n_params = model_output.shape
 
         # get samples (n_components * output_chunk_length, n_series * n_samples)
         samples = np.random.normal(
             model_output[:, :, 0],  # mean
-            model_output[:, :, 1],  # variance
+            np.sqrt(model_output[:, :, 1]),  # variance -> standard deviation
         )
         # reshape to (n_series * n_samples, n_components * output_chunk_length)
         samples = samples.transpose()
@@ -158,8 +158,12 @@ class GaussianLikelihood(SKLearnLikelihood):
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_components * output_chunk_length, n_series * n_samples, 2)
-        # [mu, sigma] on the last dimension, grouped by component
+        # [mu, variance] on the last dimension, grouped by component
         n_samples = model_output.shape[1]
+
+        # the estimator returns the variance; report the standard deviation `sigma`
+        model_output = model_output.copy()
+        model_output[:, :, 1] = np.sqrt(model_output[:, :, 1])
 
         # reshape to (n_series * n_samples, output_chunk_length, n_components)
         params_reshaped = model_output.transpose(1, 0, 2).reshape(
@@ -301,6 +305,8 @@ class QuantileRegression(SKLearnLikelihood):
         # model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         # sample uniformly between [0, 1] (for each batch example) and return the
         # linear interpolation between the fitted quantiles closest to the sampled value.
+        # Note: Samples are drawn independently across both the time dimension (output_chunk_length)
+        # and component dimension (n_components).
         k, n_times, n_components, n_quantiles = model_output.shape
 
         # obtain samples
@@ -330,8 +336,8 @@ class QuantileRegression(SKLearnLikelihood):
 
         # repeat the model output on the edges
         repeat_count = [1] * n_quantiles
-        repeat_count[0] = 2
-        repeat_count[-1] = 2
+        repeat_count[0] += 1
+        repeat_count[-1] += 1
         repeat_count = np.array(repeat_count)
         shifted_output = np.repeat(model_output, repeat_count, axis=-1)
 

@@ -19,6 +19,8 @@ You will find here some more detailed information about Darts.
 
    userguide/covariates.md
 
+   userguide/safe_model_loading.md
+
    userguide/hyperparameter_optimization.md
 
    userguide/faq.md

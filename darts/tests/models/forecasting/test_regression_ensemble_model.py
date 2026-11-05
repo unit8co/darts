@@ -1,6 +1,4 @@
-import itertools
 import logging
-from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -25,6 +23,7 @@ from darts.models.forecasting.forecasting_model import (
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_sklearn_models import train_test_split
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
 
 if TORCH_AVAILABLE:
@@ -620,7 +619,7 @@ class TestRegressionEnsembleModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 (
                     2,
@@ -677,7 +676,7 @@ class TestRegressionEnsembleModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 (
                     2,
@@ -739,7 +738,7 @@ class TestRegressionEnsembleModels:
 
     @pytest.mark.parametrize(
         "config",
-        product(
+        param_product(
             [
                 (
                     -1,
@@ -1450,7 +1449,7 @@ class TestRegressionEnsembleModels:
         assert pred.start_time() == self.sine_series.end_time() + self.sine_series.freq
 
     @pytest.mark.parametrize(
-        "config", itertools.product([True, False], [True, False], [True, False])
+        "config", param_product([True, False], [True, False], [True, False])
     )
     def test_train_n_points_scenarios(self, config):
         multi_series, use_hfc, use_auto_calc = config
@@ -1490,10 +1489,7 @@ class TestRegressionEnsembleModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [1, 2],
-            [0, 1],
-        ),
+        param_product([1, 2], [0, 1]),
     )
     def test_coverage_expected_lags(self, config):
         ocl, ocs = config

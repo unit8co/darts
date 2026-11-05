@@ -9,15 +9,9 @@ Base Detector
 #     - add more complex detectors
 #         - create an ensemble fittable detector
 
-import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Any, Literal
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
+from typing import Any, Literal, Self
 
 import numpy as np
 

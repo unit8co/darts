@@ -1,9 +1,10 @@
 import copy
-import itertools
 import math
 import os
 import pathlib
+import threading
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 import numpy as np
@@ -32,6 +33,7 @@ from darts.models import (
     NaiveMovingAverage,
     NaiveSeasonal,
     RandomForestModel,
+    RegressionEnsembleModel,
     SKLearnModel,
     Theta,
 )
@@ -54,13 +56,10 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
+from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import (
-    ModelMode,
-    SeasonalityMode,
-    TrendMode,
-    generate_index,
-)
+from darts.utils._modes import ADDITIVE, EXPONENTIAL, MULTIPLICATIVE
+from darts.utils.utils import generate_index
 
 # (forecasting models, maximum error) tuples
 models = [
@@ -72,9 +71,9 @@ models = [
     (Theta(-1), 12),
     (FourTheta(1), 17),
     (FourTheta(-1), 12),
-    (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 6.0),
-    (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 10),
-    (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 12),
+    (FourTheta(trend_mode=EXPONENTIAL), 6.0),
+    (FourTheta(model_mode=MULTIPLICATIVE), 10),
+    (FourTheta(season_mode=ADDITIVE), 12),
     (FFT(trend="poly"), 13),
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
@@ -342,7 +341,7 @@ class TestLocalForecastingModels:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
+        param_product(
             encoder_support_models, [ts_gaussian, None]
         ),  # tuple of (model class, future covs)
     )
@@ -715,9 +714,9 @@ class TestLocalForecastingModels:
                 Theta(
                     theta=12,
                     seasonality_period=3,
-                    season_mode=SeasonalityMode.ADDITIVE,
+                    season_mode=ADDITIVE,
                 ),
-                "Theta(theta=12, seasonality_period=3, season_mode=SeasonalityMode.ADDITIVE)",
+                "Theta(theta=12, seasonality_period=3, season_mode=additive)",
             ),
         ],
     )
@@ -730,7 +729,7 @@ class TestLocalForecastingModels:
         [  # tuple of (model, expected representation)
             (
                 ExponentialSmoothing(),
-                "ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, "
+                "ExponentialSmoothing(trend=additive, damped=False, seasonal=additive, "
                 + "seasonal_periods=None, error=add, random_errors=None, random_state=None, min_train_length=None, "
                 + "kwargs=None)",
             ),  # no params changed
@@ -818,3 +817,62 @@ class TestForecastingModelInputValidation:
         # invalid values are rejected
         with pytest.raises(ValueError, match="`min_train_length` must be"):
             model_cls(min_train_length=0)
+
+
+class TestModelCreationParams:
+    def test_concurrent_model_creation_is_thread_safe(self):
+        barrier = threading.Barrier(2, timeout=10)
+
+        barrier_enabled = [True]
+
+        class _SlowNaiveSeasonal(NaiveSeasonal):
+            def __init__(self, K: int = 1):
+                if barrier_enabled[0]:
+                    barrier.wait()
+                super().__init__(K=K)
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future1 = executor.submit(lambda: _SlowNaiveSeasonal(K=1))
+            future2 = executor.submit(lambda: _SlowNaiveSeasonal(K=2))
+            model1 = future1.result()
+            model2 = future2.result()
+
+        assert model1.model_params["K"] == 1
+        assert model1.K == 1
+        barrier_enabled[0] = False
+        assert model1.untrained_model().model_params["K"] == 1
+
+        assert model2.model_params["K"] == 2
+        assert model2.K == 2
+        assert model2.untrained_model().model_params["K"] == 2
+
+    def test_nested_model_creation_keeps_outer_params(self):
+        class _Outer(NaiveSeasonal):
+            def __init__(self, K: int = 1):
+                self.inner = NaiveSeasonal(K=2)
+                super().__init__(K=K)
+
+        outer = _Outer(K=3)
+        assert outer.model_params == {"K": 3}
+        assert outer.inner.model_params == {"K": 2}
+
+        ensemble = RegressionEnsembleModel(
+            [NaiveSeasonal(K=1), NaiveSeasonal(K=2)], regression_train_n_points=10
+        )
+        assert "forecasting_models" in ensemble.model_params
+        assert ensemble.model_params["regression_train_n_points"] == 10
+        assert ensemble.forecasting_models[0].model_params["K"] == 1
+        assert ensemble.forecasting_models[1].model_params["K"] == 2
+        assert "lags" not in ensemble.model_params
+
+    def test_failed_model_creation_does_not_leak_params(self):
+        class _FailingModel(NaiveSeasonal):
+            def __init__(self, K: int = 1):
+                raise ValueError("Fail")
+
+        with pytest.raises(ValueError):
+            _FailingModel(K=4)
+
+        subsequent = NaiveSeasonal(K=5)
+        assert subsequent.model_params == {"K": 5}
+        assert subsequent.untrained_model().model_params == {"K": 5}
