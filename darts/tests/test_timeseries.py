@@ -1840,6 +1840,87 @@ class TestTimeSeries:
         )
         assert resampled_timeseries.to_series().at[pd.Timestamp("20200101233000")] == 0
 
+    def test_reindex_timeseries(self):
+        times = pd.date_range("2020-01-02", periods=3, freq="D")
+        vals = np.arange(12, dtype=float).reshape(3, 2, 2)
+        static_covs = pd.DataFrame({"sc": [1.0, 2.0]}, index=["c0", "c1"])
+        hierarchy = {"c0": ["c1"]}
+        metadata = {"source": "unit_test"}
+        ts = TimeSeries.from_times_and_values(
+            times=times,
+            values=vals,
+            columns=["c0", "c1"],
+            static_covariates=static_covs,
+            hierarchy=hierarchy,
+            metadata=metadata,
+        )
+
+        target_times = pd.date_range("2020-01-01", periods=5, freq="D")
+
+        # default reindex (method=None, fill_value=np.nan)
+        reindexed = ts.reindex(target_times)
+        assert reindexed.time_index.equals(target_times)
+        assert reindexed.shape == (5, 2, 2)
+        assert np.isnan(reindexed.all_values()[0]).all()
+        assert np.isnan(reindexed.all_values()[-1]).all()
+        np.testing.assert_array_equal(reindexed.all_values()[1:4], vals)
+        assert reindexed.static_covariates.equals(ts.static_covariates)
+        assert reindexed.hierarchy == ts.hierarchy
+        assert reindexed.metadata == ts.metadata
+
+        # reindex with another TimeSeries and custom fill_value
+        target_ts = TimeSeries.from_times_and_values(target_times, np.zeros(5))
+        reindexed_fill = ts.reindex(target_ts, fill_value=-1.0)
+        assert reindexed_fill.time_index.equals(target_times)
+        assert (reindexed_fill.all_values()[0] == -1.0).all()
+        assert (reindexed_fill.all_values()[-1] == -1.0).all()
+        np.testing.assert_array_equal(reindexed_fill.all_values()[1:4], vals)
+
+        # reindex with ffill / pad and fill_value for leading NaNs
+        for method in ("ffill", "pad"):
+            reindexed_ffill = ts.reindex(target_times, method=method, fill_value=-9.0)
+            assert (reindexed_ffill.all_values()[0] == -9.0).all()
+            np.testing.assert_array_equal(reindexed_ffill.all_values()[1:4], vals)
+            np.testing.assert_array_equal(reindexed_ffill.all_values()[4], vals[-1])
+
+        # reindex with bfill / backfill and fill_value for trailing NaNs
+        for method in ("bfill", "backfill"):
+            reindexed_bfill = ts.reindex(target_times, method=method, fill_value=-9.0)
+            np.testing.assert_array_equal(reindexed_bfill.all_values()[0], vals[0])
+            np.testing.assert_array_equal(reindexed_bfill.all_values()[1:4], vals)
+            assert (reindexed_bfill.all_values()[4] == -9.0).all()
+
+        # reindex with nearest and tolerance kwargs
+        reindexed_nearest = ts.reindex(
+            target_times, method="nearest", tolerance=pd.Timedelta("1D")
+        )
+        np.testing.assert_array_equal(reindexed_nearest.all_values()[0], vals[0])
+        np.testing.assert_array_equal(reindexed_nearest.all_values()[-1], vals[-1])
+
+        # RangeIndex support (both slicing and padding)
+        range_ts = TimeSeries.from_times_and_values(
+            pd.RangeIndex(2, 5), np.array([10.0, 20.0, 30.0])
+        )
+        range_reindexed = range_ts.reindex(pd.RangeIndex(1, 6), fill_value=0.0)
+        assert range_reindexed.time_index.equals(pd.RangeIndex(1, 6))
+        np.testing.assert_array_equal(
+            range_reindexed.values().flatten(), np.array([0.0, 10.0, 20.0, 30.0, 0.0])
+        )
+
+        # invalid method raises ValueError
+        with pytest.raises(ValueError, match="Unknown method"):
+            ts.reindex(target_times, method="invalid_method")
+
+        # mismatched index type raises ValueError
+        with pytest.raises(ValueError, match="index type must match"):
+            ts.reindex(pd.RangeIndex(0, 5))
+        with pytest.raises(ValueError, match="index type must match"):
+            range_ts.reindex(target_times)
+
+        # invalid times type raises ValueError
+        with pytest.raises(ValueError, match="The `times` argument must be"):
+            ts.reindex([1, 2, 3])
+
     def test_short_series_creation(self):
         # test missing freq argument error when filling missing dates on short time series
         with pytest.raises(ValueError):

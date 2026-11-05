@@ -53,6 +53,15 @@ SUPPORTED_RESAMPLE_METHODS = [
     "var",
 ]
 
+SUPPORTED_REINDEX_METHODS = [
+    None,
+    "backfill",
+    "bfill",
+    "ffill",
+    "nearest",
+    "pad",
+]
+
 
 class NotImportedModule:
     """Helper class for handling import errors of optional dependencies."""

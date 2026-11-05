@@ -69,6 +69,7 @@ from darts.utils._formatting import (
     make_paragraph,
 )
 from darts.utils.utils import (
+    SUPPORTED_REINDEX_METHODS,
     SUPPORTED_RESAMPLE_METHODS,
     _maybe_cast_array_dtype,
     dataframe_col_to_time_index,
@@ -3776,6 +3777,91 @@ class TimeSeries:
         else:
             raise_log(ValueError(f"Unknown method: {method}"))
         return self.__class__.from_xarray(new_xa)
+
+    def reindex(
+        self,
+        times: TimeIndex | pd.Index | Self,
+        method: str | None = None,
+        fill_value: Any = np.nan,
+        copy: bool = True,
+        **kwargs,
+    ) -> Self:
+        """Return a new series conformed onto a target time index, filling in missing values.
+
+        Parameters
+        ----------
+        times
+            A `pandas.DatetimeIndex`, `pandas.RangeIndex` (or `pandas.Index` that can be converted to a
+            `RangeIndex`), or a `TimeSeries` whose `time_index` will be used as the new time axis.
+        method
+            A method to fill holes in the reindexed TimeSeries, by default ``None`` (do not fill gaps).
+            For more information, see the `xarray reindex() documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.reindex.html>`__.
+            Supported methods: [None, "backfill", "bfill", "ffill", "nearest", "pad"].
+        fill_value
+            Value to use for newly missing values when ``method=None`` (or where ``method`` cannot fill,
+            such as leading values with ``method="ffill"``). Default is ``np.nan``.
+        copy
+            Whether to copy the underlying data in the returned `TimeSeries`.
+        kwargs
+            Additional keyword arguments passed to `xarray.DataArray.reindex`, such as `tolerance`.
+            For more information, see the `xarray reindex() documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.reindex.html>`__.
+
+        Returns
+        -------
+        TimeSeries
+            A new series aligned to the target time index.
+
+        Examples
+        --------
+        >>> times = pd.date_range("2020-01-02", periods=3, freq="D")
+        >>> ts = TimeSeries.from_times_and_values(times, [10.0, 20.0, 30.0])
+        >>> target_times = pd.date_range("2020-01-01", periods=5, freq="D")
+        >>> reindexed_ts = ts.reindex(target_times, method="ffill", fill_value=0.0)
+        >>> print(reindexed_ts.values())
+        [[ 0.]
+         [10.]
+         [20.]
+         [30.]
+         [30.]]
+        """
+        if isinstance(times, TimeSeries):
+            times = times.time_index
+
+        if not isinstance(times, pd.Index) or not (
+            isinstance(times, TimeIndex) or np.issubdtype(times.dtype, np.integer)
+        ):
+            raise_log(
+                ValueError(
+                    "The `times` argument must be a `pandas.RangeIndex`, `pandas.DatetimeIndex`, "
+                    "integer `pandas.Index`, or `TimeSeries`."
+                ),
+            )
+
+        if self._has_datetime_index != isinstance(times, pd.DatetimeIndex):
+            raise_log(
+                ValueError(
+                    "The `times` index type must match the series' `time_index` type "
+                    "(both `DatetimeIndex` or both integer/range indexed)."
+                ),
+            )
+
+        if method not in SUPPORTED_REINDEX_METHODS:
+            raise_log(
+                ValueError(
+                    f"Unknown method: `{method}`. Must be one of {SUPPORTED_REINDEX_METHODS}."
+                ),
+            )
+
+        new_xa = self.data_array(copy=False).reindex(
+            indexers={self._time_dim: times},
+            method=method,
+            fill_value=fill_value,
+            copy=copy,
+            **kwargs,
+        )
+        return self.__class__.from_xarray(new_xa, copy=copy)
 
     def is_within_range(self, ts: pd.Timestamp | int) -> bool:
         """Whether the given timestamp or integer is within the time interval of the series.
