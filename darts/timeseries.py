@@ -106,7 +106,7 @@ class TimeSeries:
         times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
-        freq: str | int | None = None,
+        freq: str | pd.offsets.BaseOffset | int | None = None,
         components: Sequence | str | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
@@ -340,7 +340,7 @@ class TimeSeries:
                     ),
                 )
 
-            freq_str: str | None = freq.freqstr
+            freq_str: str = freq.freqstr
         else:
             freq: int = times.step
             freq_str = str(freq)
@@ -5022,7 +5022,7 @@ class TimeSeries:
         cls,
         times: TimeIndex | pd.Index,
         values: np.ndarray,
-        freq: str | int | None = None,
+        freq: pd.offsets.BaseOffset | str | int | None = None,
     ) -> tuple[TimeIndex, np.ndarray]:
         """Return the time index and values with missing dates inserted.
 
@@ -5112,7 +5112,9 @@ class TimeSeries:
         return times, values[idx_sorted]
 
     @staticmethod
-    def _observed_freq_datetime_index(index: pd.DatetimeIndex) -> set:
+    def _observed_freq_datetime_index(
+        index: pd.DatetimeIndex,
+    ) -> set[pd.offsets.BaseOffset]:
         """Return all observed/inferred frequencies of a `pandas.DatetimeIndex`.
 
         The frequencies are inferred from all combinations of three consecutive time steps.
@@ -5129,13 +5131,16 @@ class TimeSeries:
         # for each unique index, take one example including the left time stamp, and one including the right
         steps = np.column_stack([index[unq_td_index + i] for i in range(3)])
 
-        # find all unique inferred frequencies (as frequency strings)
+        # find all unique inferred frequencies
         with _infer_freq_returns_offset():
-            inferred_freqs = [to_offset(pd.infer_freq(step)) for step in steps]
-        return {freq.freqstr for freq in inferred_freqs if freq is not None}
+            observed_freqs = {pd.infer_freq(step) for step in steps}
+        observed_freqs = {
+            to_offset(freq) for freq in observed_freqs if freq is not None
+        }
+        return observed_freqs
 
     @staticmethod
-    def _observed_freq_integer_index(index: pd.Index) -> set:
+    def _observed_freq_integer_index(index: pd.Index) -> set[int]:
         """Return all observed/inferred frequencies of a ``pandas.Index`` (an integer-valued index).
 
         The inferred frequencies are given by all unique differences between two consecutive elements.
@@ -5179,7 +5184,7 @@ class TimeSeries:
         cls,
         times: TimeIndex | pd.Index,
         values: np.ndarray,
-        freq: str | int,
+        freq: pd.offsets.BaseOffset | str | int,
     ) -> tuple[TimeIndex, np.ndarray]:
         """Return `times` resampled with frequency `freq` and values with `np.nan` for the newly inserted dates.
 

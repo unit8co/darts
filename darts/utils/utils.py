@@ -360,21 +360,6 @@ def drop_after_index(
     return slice_index(index, index[0], split_point)
 
 
-def _infer_freq_returns_offset() -> contextlib.AbstractContextManager:
-    """Context manager making `pd.infer_freq()` and `DatetimeIndex.inferred_freq` return a frequency offset.
-
-    This is the default behavior starting from pandas 4.0. For pandas>=3.1, it opts into the future behavior
-    which also avoids a `Pandas4Warning`. For lower pandas versions (where the option does not exist), the
-    frequencies are still returned as strings.
-    """
-    option = "future.infer_freq_returns_offset"
-    try:
-        pd.get_option(option)
-    except pd.errors.OptionError:
-        return contextlib.nullcontext()
-    return pd.option_context(option, True)
-
-
 def n_steps_between(
     end: pd.Timestamp | int,
     start: pd.Timestamp | int,
@@ -822,3 +807,18 @@ def _maybe_cast_array_dtype(vals: np.ndarray, dtype):
     if vals.dtype != dtype:
         vals = vals.astype(dtype)
     return vals
+
+
+def _infer_freq_returns_offset() -> contextlib.AbstractContextManager:
+    """Context manager making `pd.infer_freq()` and `DatetimeIndex.inferred_freq` return a frequency offset.
+
+    This is the default behavior starting from pandas 4.0.0. For pandas>=3.1.0, it opts into the future behavior
+    which also avoids a `Pandas4Warning`. For lower pandas versions (where the option does not exist), the
+    frequencies are still returned as strings.
+    """
+    option = "future.infer_freq_returns_offset"
+    try:
+        pd.get_option(option)
+    except pd.errors.OptionError:  # pragma: no cover
+        return contextlib.nullcontext()
+    return pd.option_context(option, True)
