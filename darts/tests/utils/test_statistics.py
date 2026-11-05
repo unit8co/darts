@@ -1,4 +1,5 @@
-import sys
+import logging
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,6 +9,7 @@ from statsmodels.tsa.stattools import acf
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset
+from darts.utils._modes import ADDITIVE, MULTIPLICATIVE
 from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.statistics import (
     check_seasonality,
@@ -21,6 +23,7 @@ from darts.utils.statistics import (
     remove_from_series,
     remove_seasonality,
     remove_trend,
+    seasonality_and_trend_strength,
     stationarity_test_adf,
     stationarity_test_kpss,
     stationarity_tests,
@@ -30,9 +33,6 @@ from darts.utils.timeseries_generation import (
     gaussian_timeseries,
     linear_timeseries,
 )
-from darts.utils.utils import ModelMode, SeasonalityMode
-
-py_312_or_higher = sys.version_info >= (3, 12, 0)
 
 
 class TestTimeSeries:
@@ -119,6 +119,31 @@ class TestTimeSeries:
         tests = granger_causality_tests(series_cause_2, series_effect_2, 10)
         assert tests[1][0]["ssr_ftest"][1] > 0.01
 
+        # Supports iterable maxlag
+        tests = granger_causality_tests(
+            series_cause_2, series_effect_2, maxlag=[1, 10], check_stationarity=False
+        )
+        assert list(tests.keys()) == [1, 10]
+
+    def test_granger_causality_check_stationarity(self, caplog):
+        np.random.seed(42)
+        non_stat_series = linear_timeseries(start=0, end=500)
+        stat_series = gaussian_timeseries(start=0, end=500)
+
+        # Default check_stationarity=True logs warning for non-stationary ts_cause
+        with caplog.at_level(logging.WARNING):
+            _ = granger_causality_tests(non_stat_series, stat_series, maxlag=2)
+            assert "ts_cause doesn't seem to be stationary" in caplog.text
+        caplog.clear()
+
+        # check_stationarity=False does not log stationarity warning
+        with caplog.at_level(logging.WARNING):
+            _ = granger_causality_tests(
+                non_stat_series, stat_series, maxlag=2, check_stationarity=False
+            )
+            assert "ts_cause doesn't seem to be stationary" not in caplog.text
+        caplog.clear()
+
     def test_stationarity_tests(self):
         np.random.seed(42)
         series_1 = constant_timeseries(start=0, end=9999).stack(
@@ -167,22 +192,20 @@ class TestSeasonalDecompose:
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test default (naive) method additive
-        calc_trend, _ = extract_trend_and_seasonality(
-            self.ts, freq=6, model=ModelMode.ADDITIVE
-        )
+        calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6, model=ADDITIVE)
         diff = self.trend - calc_trend
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test STL method
         calc_trend, _ = extract_trend_and_seasonality(
-            self.ts, freq=6, method="STL", model=ModelMode.ADDITIVE
+            self.ts, freq=6, method="STL", model=ADDITIVE
         )
         diff = self.trend - calc_trend
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
         # test MSTL method
         calc_trend, calc_seasonality = extract_trend_and_seasonality(
-            self.ts, freq=[3, 6], method="MSTL", model=ModelMode.ADDITIVE
+            self.ts, freq=[3, 6], method="MSTL", model=ADDITIVE
         )
         assert len(calc_seasonality.components) == 2
         diff = self.trend - calc_trend
@@ -193,7 +216,7 @@ class TestSeasonalDecompose:
 
         # test MSTL method with single freq
         calc_trend, calc_seasonality = extract_trend_and_seasonality(
-            self.ts, freq=6, method="MSTL", model=ModelMode.ADDITIVE
+            self.ts, freq=6, method="MSTL", model=ADDITIVE
         )
         assert len(calc_seasonality.components) == 1
         diff = self.trend - calc_trend
@@ -202,21 +225,36 @@ class TestSeasonalDecompose:
         # make sure non MSTL methods fail with multiple freqs
         with pytest.raises(ValueError):
             calc_trend, calc_seasonality = extract_trend_and_seasonality(
-                self.ts, freq=[1, 4, 6], method="STL", model=ModelMode.ADDITIVE
+                self.ts, freq=[1, 4, 6], method="STL", model=ADDITIVE
             )
 
         # check if error is raised when using multiplicative model
         with pytest.raises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
-                self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
+                self.ts, freq=6, method="STL", model=MULTIPLICATIVE
             )
 
         with pytest.raises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
-                self.ts, freq=[3, 6], method="MSTL", model=ModelMode.MULTIPLICATIVE
+                self.ts, freq=[3, 6], method="MSTL", model=MULTIPLICATIVE
             )
 
         assert self.ts == series_copy
+
+    @pytest.mark.parametrize("season_mode", [ADDITIVE, MULTIPLICATIVE])
+    def test_extract_return_residual(
+        self, season_mode: Literal["additive", "multiplicative"]
+    ):
+        calc_trend, calc_season, calc_residual = extract_trend_and_seasonality(
+            self.ts, freq=6, model=season_mode, return_residual=True
+        )
+        if season_mode == ADDITIVE:
+            recon = calc_trend + calc_season + calc_residual
+        else:
+            recon = calc_trend * calc_season * calc_residual
+        diff = self.ts - recon
+
+        assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
     def test_remove_seasonality(self):
         # test default (naive) method
@@ -225,7 +263,7 @@ class TestSeasonalDecompose:
         assert np.mean(diff.values() ** 2).item() < 0.5
 
         # test default (naive) method additive
-        calc_trend = remove_seasonality(self.ts, freq=6, model=SeasonalityMode.ADDITIVE)
+        calc_trend = remove_seasonality(self.ts, freq=6, model=ADDITIVE)
         diff = self.trend - calc_trend
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
@@ -234,7 +272,7 @@ class TestSeasonalDecompose:
             self.ts,
             freq=6,
             method="STL",
-            model=SeasonalityMode.ADDITIVE,
+            model=ADDITIVE,
             low_pass=9,
         )
         diff = self.trend - calc_trend
@@ -243,7 +281,7 @@ class TestSeasonalDecompose:
         # check if error is raised
         with pytest.raises(ValueError):
             calc_trend = remove_seasonality(
-                self.ts, freq=6, method="STL", model=SeasonalityMode.MULTIPLICATIVE
+                self.ts, freq=6, method="STL", model=MULTIPLICATIVE
             )
 
     def test_remove_trend(self):
@@ -253,7 +291,7 @@ class TestSeasonalDecompose:
         assert np.mean(diff.values() ** 2).item() < 1.5
 
         # test naive method additive
-        calc_season = remove_trend(self.ts, freq=6, model=ModelMode.ADDITIVE)
+        calc_season = remove_trend(self.ts, freq=6, model=ADDITIVE)
         diff = self.season - calc_season
         assert np.isclose(np.mean(diff.values() ** 2), 0.0)
 
@@ -262,7 +300,7 @@ class TestSeasonalDecompose:
             self.ts,
             freq=6,
             method="STL",
-            model=ModelMode.ADDITIVE,
+            model=ADDITIVE,
             low_pass=9,
         )
         diff = self.season - calc_season
@@ -271,8 +309,50 @@ class TestSeasonalDecompose:
         # check if error is raised
         with pytest.raises(ValueError):
             calc_season = remove_trend(
-                self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
+                self.ts, freq=6, method="STL", model=MULTIPLICATIVE
             )
+
+    @pytest.mark.parametrize(
+        "method,kwargs",
+        [("STL", {}), ("STL", {"low_pass": 9}), ("naive", {})],
+    )
+    def test_seasonality_and_trend_strength(self, method, kwargs):
+        series_copy = self.ts.copy()
+        trend_strength, seasonal_strength = seasonality_and_trend_strength(
+            self.ts, freq=6, method=method, **kwargs
+        )
+        assert type(trend_strength) is float
+        assert type(seasonal_strength) is float
+        assert trend_strength > 0.99
+        assert seasonal_strength > 0.99
+        assert self.ts == series_copy
+
+    def test_seasonality_and_trend_strength_noise(self):
+        np.random.seed(42)
+        trend_strength, seasonal_strength = seasonality_and_trend_strength(
+            gaussian_timeseries(length=240), freq=12
+        )
+        # STL fits some structure to pure noise (seasonal strength is ~0.4), but far
+        # below the > 0.99 of a series with an actual trend and seasonality
+        assert trend_strength < 0.4
+        assert seasonal_strength < 0.7
+
+    def test_seasonality_and_trend_strength_constant(self):
+        with np.errstate(divide="raise", invalid="raise"):
+            strengths = seasonality_and_trend_strength(
+                constant_timeseries(value=2, length=100), freq=6
+            )
+        assert strengths == (0.0, 0.0)
+
+    def test_seasonality_and_trend_strength_multiplicative(self):
+        ts_mult = self.trend * (self.season * 0.5 + 1)
+        kwargs = {"freq": 6, "model": "multiplicative", "method": "naive"}
+        strengths = seasonality_and_trend_strength(ts_mult, **kwargs)
+        assert strengths[0] > 0.95
+        assert strengths[1] > 0.95
+        # strengths are computed on the log scale and do not depend on the series scale
+        rescaled = seasonality_and_trend_strength(ts_mult * 1000, **kwargs)
+        assert rescaled == pytest.approx(strengths)
 
 
 class TestPlot:
@@ -370,42 +450,62 @@ class TestStatisticsInputValidation:
             check_seasonality(self.ts, m=10, max_lag=5)
 
     def test_extract_trend_and_seasonality_invalid_model(self):
-        if py_312_or_higher:
-            exc = ValueError
-            msg = "Unknown value for model_mode"
-        else:
-            exc = TypeError
-            msg = None
-        with pytest.raises(exc, match=msg):
+        with pytest.raises(ValueError, match="Unknown value for `model`"):
             extract_trend_and_seasonality(self.ts, freq=6, model="invalid")
 
     def test_extract_trend_and_seasonality_none_model(self):
-        with pytest.raises(
-            ValueError, match="The model must be either MULTIPLICATIVE or ADDITIVE"
-        ):
-            extract_trend_and_seasonality(self.ts, freq=6, model=SeasonalityMode.NONE)
+        with pytest.raises(ValueError, match="Unknown value for `model`: None"):
+            extract_trend_and_seasonality(self.ts, freq=6, model=None)
 
     def test_extract_trend_and_seasonality_invalid_method(self):
-        with pytest.raises(ValueError, match="Unknown value for method"):
+        with pytest.raises(ValueError, match="Unknown value for `method`"):
             extract_trend_and_seasonality(
-                self.ts, freq=6, model=ModelMode.ADDITIVE, method="invalid"
+                self.ts, freq=6, model=ADDITIVE, method="invalid"
             )
 
     def test_remove_from_series_invalid_model(self):
-        if py_312_or_higher:
-            exc = ValueError
-            msg = "Unknown value for model_mode"
-        else:
-            exc = TypeError
-            msg = None
-        with pytest.raises(exc, match=msg):
+        with pytest.raises(ValueError, match="Unknown value for `model`"):
             remove_from_series(self.ts, self.ts_other, model="invalid")
 
     def test_remove_seasonality_none_model(self):
-        with pytest.raises(
-            ValueError, match="The model must be either MULTIPLICATIVE or ADDITIVE"
-        ):
-            remove_seasonality(self.ts, freq=6, model=SeasonalityMode.NONE)
+        with pytest.raises(ValueError, match="Unknown value for `model`: None"):
+            remove_seasonality(self.ts, freq=6, model=None)
+
+    def test_seasonality_and_trend_strength_univariate(self):
+        with pytest.raises(AssertionError, match="univariate TimeSeries"):
+            seasonality_and_trend_strength(self.ts.stack(self.ts_other), freq=6)
+
+    def test_seasonality_and_trend_strength_deterministic(self):
+        stochastic = TimeSeries.from_values(np.ones((5, 1, 3)))
+        with pytest.raises(AssertionError, match="deterministic TimeSeries"):
+            seasonality_and_trend_strength(stochastic, freq=6)
+
+    def test_seasonality_and_trend_strength_missing_values(self):
+        values = np.arange(1.0, 101.0)
+        values[10] = np.nan
+        with pytest.raises(ValueError, match="must not contain missing values"):
+            seasonality_and_trend_strength(TimeSeries.from_values(values), freq=6)
+
+    def test_seasonality_and_trend_strength_multiplicative_non_positive_values(self):
+        index = pd.date_range("20130101", periods=50)
+        series = TimeSeries.from_series(pd.Series(np.arange(-4.0, 46.0), index=index))
+        with pytest.raises(ValueError):
+            seasonality_and_trend_strength(
+                series, freq=6, model="multiplicative", method="naive"
+            )
+
+    def test_seasonality_and_trend_strength_multiplicative_non_positive_trend(self):
+        # positive values whose extrapolated trend at the edge of the series is negative
+        series = TimeSeries.from_series(
+            pd.Series(
+                np.exp(-0.5 * np.arange(40)),
+                index=pd.date_range("20130101", periods=40),
+            )
+        )
+        with pytest.raises(ValueError, match="strictly positive"):
+            seasonality_and_trend_strength(
+                series, freq=6, model="multiplicative", method="naive"
+            )
 
     @pytest.mark.parametrize(
         "plot_fn,extra_kwargs",

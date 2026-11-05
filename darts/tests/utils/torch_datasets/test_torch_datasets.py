@@ -976,64 +976,36 @@ class TestDataset:
                 shift=3,
             )
         assert str(exc.value) == (
-            "The input `series` are too short to extract even a single sample. "
-            "Expected min length: `6`, received max length: `5`."
+            "The input `series` at index 0 is too short to extract even a single sample. "
+            "Expected min length: `6`, received length: `5`."
         )
 
-        # two target series both too short, will hint at max length of both
+        # two target series, first is long enough, second is too short;
         with pytest.raises(ValueError) as exc:
             _ = ShiftedTorchTrainingDataset(
-                series=[self.target1[:3], self.target1[:4]],
+                series=[self.target1[:6], self.target1[:5]],
                 input_chunk_length=3,
                 output_chunk_length=3,
                 shift=3,
             )
         assert str(exc.value) == (
-            "The input `series` are too short to extract even a single sample. "
-            "Expected min length: `6`, received max length: `4`."
-        )
-
-        # two target series, first is long enough, second is too short;
-        # error is raised only when going through the dataset
-        ds = ShiftedTorchTrainingDataset(
-            series=[self.target1[:6], self.target1[:5]],
-            input_chunk_length=3,
-            output_chunk_length=3,
-            shift=3,
-        )
-        # first sample of first series is okay
-        _ = ds[0]
-        # first sample of second series failed
-        with pytest.raises(ValueError) as exc:
-            _ = ds[1]
-        assert str(exc.value) == (
-            "The dataset contains target `series` that are too short to extract "
-            "even a single example. Expected min length: `6`, received length `5` "
-            "(at series sequence idx `1`)."
+            "The input `series` at index 1 is too short to extract even a single sample. "
+            "Expected min length: `6`, received length: `5`."
         )
 
     def test_horizon_training_dataset_too_short(self):
         # two target series, first is long enough, second is too short;
-        # horizon based only detects too short series when going through the dataset
-        ds = HorizonBasedTorchTrainingDataset(
-            series=[self.target1[:6], self.target1[:5]],
-            output_chunk_length=3,
-            lookback=1,
-            lh=(1, 1),
-        )
-        # first sample of first series is okay
-        _ = ds[0]
-        # first sample of second series failed
         with pytest.raises(ValueError) as exc:
-            _ = ds[1]
+            _ = HorizonBasedTorchTrainingDataset(
+                series=[self.target1[:6], self.target1[:5]],
+                output_chunk_length=3,
+                lookback=1,
+                lh=(1, 1),
+            )
         assert str(exc.value) == (
-            "The dataset contains target `series` that are too short to extract "
-            "even a single example. Expected min length: `6`, received length `5` "
-            "(at series sequence idx `1`)."
+            "The input `series` at index 1 is too short to extract even a single sample. "
+            "Expected min length: `6`, received length: `5`."
         )
-        # dataset end
-        with pytest.raises(IndexError):
-            _ = ds[2]
 
     def test_horizon_training_dataset_invalid_lh(self):
         # lh elements must be >= 1
@@ -1243,7 +1215,7 @@ class TestDataset:
             _ = ds[5]
 
         assert str(exc.value) == (
-            "Invalid `past_covariates`; could not find values in index range: "
+            "Invalid `past_covariates` at series index 0; could not find values in index range: "
             "2010-12-08 00:00:00 - 2010-12-17 00:00:00."
         )
 
@@ -1263,7 +1235,7 @@ class TestDataset:
         with pytest.raises(ValueError) as exc:
             _ = ds[5]
         assert str(exc.value) == (
-            "Invalid `past_covariates`; could not find values in index range: 75 - 84."
+            "Invalid `past_covariates` at series index 0; could not find values in index range: 75 - 84."
         )
 
         # we should get the correct covariate slice even when target and covariates are not aligned
@@ -1493,7 +1465,7 @@ class TestDataset:
             _ = ds[0]
         assert (
             str(exc.value)
-            == "Invalid `future_covariates`; could not find values in index range: 6 - 7."
+            == "Invalid `future_covariates` at series index 0; could not find values in index range: 6 - 7."
         )
 
     def test_dual_covariates_sequential_dataset(self):
@@ -1760,7 +1732,7 @@ class TestDataset:
         with pytest.raises(ValueError) as exc:
             _ = ds[0]
         assert str(exc.value) == (
-            "Invalid `past_covariates`; could not find values in index range: "
+            "Invalid `past_covariates` at series index 0; could not find values in index range: "
             "2000-01-01 00:00:00 - 2000-01-03 00:00:00."
         )
 
@@ -1964,7 +1936,7 @@ class TestDataset:
         with pytest.raises(ValueError) as exc:
             _ = ds[0]
         assert str(exc.value) == (
-            "Invalid `future_covariates`; could not find values in index range: "
+            "Invalid `future_covariates` at series index 0; could not find values in index range: "
             "2000-01-04 00:00:00 - 2000-01-06 00:00:00."
         )
 
@@ -2639,7 +2611,7 @@ class TestDataset:
             _ = ds[0]
         assert (
             str(err.value)
-            == "Invalid `sample_weight`; could not find values in index range: "
+            == "Invalid `sample_weight` at series index 0; could not find values in index range: "
             "2000-04-07 00:00:00 - 2000-04-09 00:00:00."
         )
 
@@ -2654,7 +2626,7 @@ class TestDataset:
             _ = ds[len(ds) - 1]
         assert (
             str(err.value)
-            == "Invalid `sample_weight`; could not find values in index range: "
+            == "Invalid `sample_weight` at series index 0; could not find values in index range: "
             "2000-01-02 00:00:00 - 2000-01-04 00:00:00."
         )
 

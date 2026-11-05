@@ -58,12 +58,8 @@ from darts.models.forecasting.forecasting_model import (
 )
 from darts.tests.parametrize_helpers import param_product
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import (
-    ModelMode,
-    SeasonalityMode,
-    TrendMode,
-    generate_index,
-)
+from darts.utils._modes import ADDITIVE, EXPONENTIAL, MULTIPLICATIVE
+from darts.utils.utils import generate_index
 
 # (forecasting models, maximum error) tuples
 models = [
@@ -76,9 +72,9 @@ models = [
     (Theta(-1, seasonality_period=12), 12),
     (FourTheta(1, seasonality_period=12), 17),
     (FourTheta(-1, seasonality_period=12), 12),
-    (FourTheta(trend_mode=TrendMode.EXPONENTIAL, seasonality_period=12), 6.0),
-    (FourTheta(model_mode=ModelMode.MULTIPLICATIVE, seasonality_period=12), 10),
-    (FourTheta(season_mode=SeasonalityMode.ADDITIVE, seasonality_period=12), 12),
+    (FourTheta(trend_mode=EXPONENTIAL, seasonality_period=12), 6.0),
+    (FourTheta(model_mode=MULTIPLICATIVE, seasonality_period=12), 10),
+    (FourTheta(season_mode=ADDITIVE, seasonality_period=12), 12),
     (FFT(trend="poly"), 13),
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
@@ -719,9 +715,9 @@ class TestLocalForecastingModels:
                 Theta(
                     theta=12,
                     seasonality_period=3,
-                    season_mode=SeasonalityMode.ADDITIVE,
+                    season_mode=ADDITIVE,
                 ),
-                "Theta(theta=12, seasonality_period=3, season_mode=SeasonalityMode.ADDITIVE)",
+                "Theta(theta=12, seasonality_period=3, season_mode=additive)",
             ),
         ],
     )
@@ -734,7 +730,7 @@ class TestLocalForecastingModels:
         [  # tuple of (model, expected representation)
             (
                 ExponentialSmoothing(),
-                "ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, "
+                "ExponentialSmoothing(trend=additive, damped=False, seasonal=additive, "
                 + "seasonal_periods=None, error=add, random_errors=None, random_state=None, min_train_length=None, "
                 + "kwargs=None)",
             ),  # no params changed

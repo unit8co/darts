@@ -1659,7 +1659,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @classmethod
     def gridsearch(
-        model_class,
+        cls,
         parameters: dict,
         series: TimeSeries,
         past_covariates: TimeSeries | None = None,
@@ -1682,17 +1682,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         predict_kwargs: dict[str, Any] | None = None,
         sample_weight: TimeSeries | str | None = None,
         random_state: int | None = None,
-    ) -> tuple["ForecastingModel", dict[str, Any], float]:
+    ) -> tuple[Self, dict[str, Any], float]:
         """
         Find the best hyper-parameters among a given set using a grid search.
 
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
         The three modes of operation evaluate every possible combination of hyper-parameter values
-        provided in the `parameters` dictionary by instantiating the `model_class` subclass
-        of ForecastingModel with each combination, and returning the best-performing model with regard
-        to the `metric` function. The `metric` function is expected to return an error value,
-        thus the model resulting in the smallest `metric` output will be chosen. Combinations with a NaN score are
-        excluded from the selection.
+        provided in the `parameters` dictionary by instantiating the `ForecastingModel` with each combination, and
+        returning the best-performing model with regard to the `metric` function. The `metric` function is expected to
+        return an error value, thus the model resulting in the smallest `metric` output will be chosen. Combinations
+        with a NaN score are excluded from the selection.
 
         The relationship of the training data and test data depends on the mode of operation.
 
@@ -1725,8 +1724,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Parameters
         ----------
-        model_class
-            The ForecastingModel subclass to be tuned for 'series'.
+        cls
+            The `ForecastingModel` to be tuned for `series`.
         parameters
             A dictionary containing as keys hyperparameter names, and as values lists of values for the
             respective hyperparameter.
@@ -1780,7 +1779,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             the end of `series`; so that a proper comparison of the forecast can be made.
         use_fitted_values
             If `True`, uses the comparison with the fitted values.
-            Raises an error if ``fitted_values`` is not an attribute of `model_class`.
+            Raises an error if ``fitted_values`` is not an attribute of the ForecastingModel.
         metric
             A metric function that returns the error between two `TimeSeries` as a float value . Must either be one of
             Darts' "aggregated over time" metrics (see `here
@@ -1788,7 +1787,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `TimeSeries` and returns the error
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
-            on the different validation series when backtesting. By default it'll compute the mean of errors, ignoring
+            on the different validation series when backtesting. By default, it'll compute the mean of errors, ignoring
             NaN values.
         verbose
             Whether to print the progress.
@@ -1832,9 +1831,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Returns
         -------
         ForecastingModel, Dict, float
-            A tuple containing an untrained `model_class` instance created from the best-performing hyper-parameters,
-            along with a dictionary containing these best hyper-parameters,
-            and metric score for the best hyper-parameters.
+            A tuple containing an untrained `ForecastingModel` instance created from the best-performing
+            hyper-parameters,along with a dictionary containing these best hyper-parameters, and metric score for the
+            best hyper-parameters.
         """
         if (forecast_horizon is not None) + (
             val_series is not None
@@ -1872,7 +1871,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if use_fitted_values:
             if not hasattr(
-                model_class(**{k: v[0] for k, v in parameters.items()}),
+                cls(**{k: v[0] for k, v in parameters.items()}),
                 "fitted_values",
             ):
                 raise_log(
@@ -1904,7 +1903,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # If n_random_samples has been set, randomly select a subset of the full parameter cross product to search with
         if n_random_samples is not None:
-            params_cross_product = model_class._sample_params(
+            params_cross_product = cls._sample_params(
                 params_cross_product, n_random_samples
             )
 
@@ -1926,7 +1925,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     f"{current_time}_{param_combination_dict['model_name']}"
                 )
 
-            model = model_class(**param_combination_dict)
+            model = cls(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
                 if data_transformers:
                     series_, _, past_covariates_, future_covariates_ = (
@@ -2061,7 +2060,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         logger.info("Chosen parameters: " + str(best_param_combination))
 
-        return model_class(**best_param_combination), best_param_combination, min_error
+        return cls(**best_param_combination), best_param_combination, min_error
 
     def residuals(
         self,
@@ -2679,7 +2678,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
 
     @classmethod
-    def _sample_params(model_class, params, n_random_samples):
+    def _sample_params(cls, params, n_random_samples):
         """Select the absolute number of samples randomly if an integer has been supplied. If a float has been
         supplied, select a fraction"""
 
