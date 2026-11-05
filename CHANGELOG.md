@@ -16,6 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#3319](https://github.com/unit8co/darts/pull/3319) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 - Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
 - Improvements to `TimeSeries` :
+  - Added `TimeSeries.reindex()` to align a series to a target time index with optional padding/filling (`"ffill"`, `"bfill"`, `"nearest"`, or `fill_value`). [#3338](https://github.com/unit8co/darts/pull/3338) by [Masashi Iida](https://github.com/iida-masashi).
   - `__pow__` now supports raising to negative powers (as series, arrays or scalars). E.g. `series ** (-2)`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
   - `__truediv__` now supports dividing by zeros (as series, arrays or scalars). E.g. `series / 0.`. [#3298](https://github.com/unit8co/darts/pull/3298) by [Gabriel Demetrios Lafis](https://github.com/galafis).
   - Added a warning when calling `values()` on stochastic series without specifying a sample. [#3307](https://github.com/unit8co/darts/pull/3307) by [Pallav Biyala](https://github.com/Pallav-Biyala).
