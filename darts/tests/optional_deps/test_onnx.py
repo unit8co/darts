@@ -225,7 +225,8 @@ class TestOnnx:
         pred_onnx = self._onnx_pred(onnx_filename, model, n=2)
         self._assert_forecasts_equal(pred_onnx, pred)
 
-    def test_onnx_roll_size_smaller_than_output_chunk_length(self, tmpdir_fn):
+    @pytest.mark.parametrize("n", [1, 2, 5, 6])
+    def test_onnx_roll_size_smaller_than_output_chunk_length(self, tmpdir_fn, n):
         """First autoregressive step must pass output_chunk_length future covariates."""
         model = BlockRNNModel(
             input_chunk_length=4,
@@ -238,7 +239,6 @@ class TestOnnx:
         future_cov = self.ts_fc
         model.fit(series=series, future_covariates=future_cov)
 
-        n = 5
         roll_size = 1
         pred = model.predict(
             n=n,
@@ -273,7 +273,8 @@ class TestOnnx:
             in str(msg.value)
         )
 
-    def test_onnx_icl_smaller_than_roll_size_with_covariates(self, tmpdir_fn):
+    @pytest.mark.parametrize("n", [6, 8])
+    def test_onnx_icl_smaller_than_roll_size_with_covariates(self, tmpdir_fn, n):
         """Autoregression with `input_chunk_length < roll_size` must consume extra covariates."""
         model = NLinearModel(
             input_chunk_length=1,
@@ -286,7 +287,6 @@ class TestOnnx:
         future_cov = self.ts_fc
         model.fit(series=series, past_covariates=past_cov, future_covariates=future_cov)
 
-        n = 8
         pred = model.predict(
             n=n,
             series=series,
