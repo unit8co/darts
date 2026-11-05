@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added parameter `check_stationarity` to `darts.utils.statistics.granger_causality_tests()` to allow skipping stationarity pre-checks on already stationary or detrended series. [#3323](https://github.com/unit8co/darts/pull/3323) by [Mordris](https://github.com/Mordris).
 - Added `darts.utils.statistics.seasonality_and_trend_strength()` to compute the STL-based trend and seasonal strengths of a series, as defined in [Forecasting: Principles and Practice](https://otexts.com/fpp3/stlfeatures.html). [#3321](https://github.com/unit8co/darts/pull/3321) by [fixfon](https://github.com/fixfon).
 - Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#3319](https://github.com/unit8co/darts/pull/3319) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 - Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
@@ -24,9 +25,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - ExponentialSmoothing parameters `trend` and `seasonal`.
   - Theta and FourTheta parameters `season_mode`, `model_mode`, `trend_mode`.
   - `darts.utils.statistics` parameter `model`.
+- Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
 
 **Fixed**
 
+- Fixed `SKLearnModel.get_estimator()` accepting out-of-range `horizon` and `target_dim` values for models with native multi-output support. A `ValueError` is now raised, as for all other models. [#3327](https://github.com/unit8co/darts/pull/3327) by [Luke J](https://github.com/LukeTheoJohnson).
 - Fixed `MIDAS` failing on short multivariate or probabilistic series when padding to a complete low-frequency period. [#3304](https://github.com/unit8co/darts/pull/3304) by [Aryan R. Ganjoo](https://github.com/AryanRG).
 - Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).
 - Fixed `SKLearnClassifierModel` models skipping class-label validation when fitting a series with more target components than `output_chunk_length`. Downstream probability prediction could then fail unexpectedly. [#3271](https://github.com/unit8co/darts/pull/3271) by [Zhe Chen](https://github.com/zhechen-cs).

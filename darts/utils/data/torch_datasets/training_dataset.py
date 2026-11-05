@@ -180,17 +180,22 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             size_of_both_chunks -= max_icl - min_icl
 
         # compute the maximum available samples over all series
-        max_available_indices = max(len(ts) for ts in series) - size_of_both_chunks + 1
-        max_available_samples = ceil(max_available_indices / stride)
-
-        if max_available_indices <= 0:
-            raise_log(
-                ValueError(
-                    f"The input `series` are too short to extract even a single sample. "
-                    f"Expected min length: `{size_of_both_chunks}`, received max length: "
-                    f"`{max(len(ts) for ts in series)}`."
+        max_length = 0
+        for idx, series_ in enumerate(series):
+            series_length = len(series_)
+            if series_length < size_of_both_chunks:
+                raise_log(
+                    ValueError(
+                        f"The input `series` at index {idx} is too short to extract even a "
+                        f"single sample. Expected min length: `{size_of_both_chunks}`, received "
+                        f"length: `{series_length}`."
+                    )
                 )
-            )
+            if series_length > max_length:
+                max_length = series_length
+
+        max_available_indices = max_length - size_of_both_chunks + 1
+        max_available_samples = ceil(max_available_indices / stride)
 
         if max_samples_per_ts is None:
             max_samples_per_ts = max_available_samples
@@ -323,15 +328,6 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         n_samples_in_ts = ceil(
             (len(series) - self.size_of_both_chunks + 1) / self.stride
         )
-
-        if n_samples_in_ts < 1:
-            raise_log(
-                ValueError(
-                    f"The dataset contains target `series` that are too short to extract "
-                    f"even a single example. Expected min length: `{self.size_of_both_chunks}`, "
-                    f"received length `{len(series)}` (at series sequence idx `{series_idx}`)."
-                ),
-            )
 
         # determine the index at the end of the output chunk
         # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
