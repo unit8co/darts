@@ -29,6 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `Theta.fit()` and `FourTheta.fit()` raising a `ValueError` when fitting on a seasonal series containing zero or negative values with `season_mode="multiplicative"`; both models now fall back to `"additive"` seasonality with a warning. [#3340](https://github.com/unit8co/darts/pull/3340) by [Masashi Iida](https://github.com/iida-masashi).
 - Fixed `SKLearnModel.get_estimator()` accepting out-of-range `horizon` and `target_dim` values for models with native multi-output support. A `ValueError` is now raised, as for all other models. [#3327](https://github.com/unit8co/darts/pull/3327) by [Luke J](https://github.com/LukeTheoJohnson).
 - Fixed `MIDAS` failing on short multivariate or probabilistic series when padding to a complete low-frequency period. [#3304](https://github.com/unit8co/darts/pull/3304) by [Aryan R. Ganjoo](https://github.com/AryanRG).
 - Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).

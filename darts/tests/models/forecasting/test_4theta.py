@@ -46,16 +46,55 @@ class TestFourTheta:
         params = json.loads(json.dumps(dict(model.model_params)))
         assert Theta(**params).model_params == model.model_params
 
-    def test_negative_series(self):
+    def test_negative_series(self, caplog):
         sine_series = st(length=50)
         model = FourTheta(
             model_mode=MULTIPLICATIVE,
             trend_mode=EXPONENTIAL,
-            season_mode=ADDITIVE,
+            season_mode=MULTIPLICATIVE,
+            seasonality_period=12,
             normalization=False,
         )
-        model.fit(sine_series)
+        with caplog.at_level(logging.WARNING):
+            model.fit(sine_series)
+            assert "Fallback to additive and linear model" in caplog.text
+        caplog.clear()
+        assert (
+            model.model_mode == ADDITIVE
+            and model.trend_mode == LINEAR
+            and model.season_mode == ADDITIVE
+        )
+        assert np.isfinite(model.predict(6).values()).all()
+
+        theta_model = Theta(seasonality_period=12, season_mode=MULTIPLICATIVE)
+        with caplog.at_level(logging.WARNING):
+            theta_model.fit(sine_series)
+            assert "Fallback to additive seasonality" in caplog.text
+        caplog.clear()
+        assert theta_model.season_mode == ADDITIVE
+        assert np.isfinite(theta_model.predict(6).values()).all()
+
+    def test_fallback_when_deseasonalized_series_is_non_positive(self, caplog):
+        # Strictly positive series where removing additive seasonality yields non-positive values
+        t = np.arange(36, dtype=float)
+        values = 0.6 + 0.5 * np.sin(2 * np.pi * t / 12)
+        # strictly positive, but dips below 0 after subtracting positive seasonal peak
+        values[3] = 0.1
+        series = TimeSeries.from_values(values.reshape(-1, 1))
+        model = FourTheta(
+            theta=2,
+            model_mode=MULTIPLICATIVE,
+            trend_mode=EXPONENTIAL,
+            season_mode=ADDITIVE,
+            seasonality_period=12,
+            normalization=False,
+        )
+        with caplog.at_level(logging.WARNING):
+            model.fit(series)
+            assert "Fallback to additive and linear model" in caplog.text
+        caplog.clear()
         assert model.model_mode == ADDITIVE and model.trend_mode == LINEAR
+        assert np.isfinite(model.predict(6).values()).all()
 
     def test_fallback_when_drift_is_non_positive(self, caplog):
         # Positive values, but the fitted linear drift crosses zero.
