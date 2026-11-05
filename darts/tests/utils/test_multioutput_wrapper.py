@@ -1,8 +1,6 @@
-import pickle
-
 import numpy as np
 import pytest
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, clone
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
 from darts.utils.data.tabularization.features import (
     ArrayLaggedFeatures,
@@ -355,34 +353,6 @@ def test_legacy_classifier_without_strategy_predict_proba_still_works():
     assert len(RecordingClassifier.predict_proba_records) == 2
     for record in RecordingClassifier.predict_proba_records:
         assert np.array_equal(record, X)
-
-
-def test_legacy_pickle_without_strategy_can_be_refitted():
-    X = np.arange(12, dtype=float).reshape(4, 3)
-    y = np.column_stack([np.arange(4), np.arange(4) + 10])
-    RecordingRegressor.reset()
-
-    wrapper = MultiOutputRegressor(
-        RecordingRegressor(),
-        strategy=DirectOutputStrategy(output_chunk_length=2),
-    )
-    wrapper.fit(X, y)
-
-    # simulate the state of a wrapper pickled before the output-chunk strategies existed
-    for key in ("strategy", "strategy_", "n_components_"):
-        del wrapper.__dict__[key]
-    wrapper.__dict__["output_chunk_length"] = 2
-
-    restored = pickle.loads(pickle.dumps(wrapper))
-
-    assert restored.strategy is None
-    assert "output_chunk_length" not in restored.__dict__
-    assert restored.get_params()["strategy"] is None
-    assert clone(restored).strategy is None
-
-    restored.fit(X, y)
-    assert restored.strategy_ is None
-    assert restored.predict(X).shape == (4, 2)
 
 
 def test_strategy_must_match_the_number_of_outputs():

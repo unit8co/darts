@@ -71,7 +71,6 @@ from darts.logging import get_logger, raise_deprecation_warning, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.data.tabularization.features import LaggedFeatures
-from darts.utils.data.tabularization.lags import ResolvedLagConfig
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_component_names,
     _create_lagged_data_autoregression,
@@ -293,97 +292,12 @@ class SKLearnModel(GlobalForecastingModel):
         self.multi_models = self._config.strategy.name == "direct"
         self.pred_dim = self._config.strategy.pred_dim
 
-    def __setstate__(self, state):
-        # Older pickles stored the resolved lags directly on the instance. Drop those
-        # views, rebuild the config from the captured constructor arguments and, for
-        # fitted models, recover the resolved lag state so predictions stay unchanged.
-        legacy_lags = state.pop("lags", None)
-        legacy_component_lags = state.pop("component_lags", None)
-        self.__dict__.update(state)
-
-        if "_config" not in self.__dict__:
-            self._config = self._build_config_from_model_params()
-        if "_resolved_config" not in self.__dict__:
-            self._resolved_config = (
-                self._build_resolved_config_from_legacy_state(
-                    legacy_lags, legacy_component_lags
-                )
-                if self.__dict__.get("_fit_called", False)
-                else None
-            )
-
-    def _build_config_from_model_params(self) -> ForecastConfig | None:
-        params = getattr(self, "_model_params", None)
-        if not params:
-            return None
-        return ForecastConfig.from_user(
-            lags=params.get("lags"),
-            lags_past_covariates=params.get("lags_past_covariates"),
-            lags_future_covariates=params.get("lags_future_covariates"),
-            output_chunk_length=params.get(
-                "output_chunk_length", self.__dict__.get("_output_chunk_length", 1)
-            ),
-            output_chunk_shift=params.get(
-                "output_chunk_shift", self.__dict__.get("_output_chunk_shift", 0)
-            ),
-            multi_models=params.get("multi_models", True),
-            lags_future_covariates_stepwise=params.get(
-                "lags_future_covariates_stepwise", False
-            ),
-        )
-
-    def _ensure_config(self) -> ForecastConfig:
-        config = getattr(self, "_config", None)
-        if config is None:
-            config = self._build_config_from_model_params()
-            if config is None:
-                raise_log(
-                    ValueError(
-                        "The model's forecast configuration is not available. Re-create "
-                        "the model from its constructor arguments."
-                    ),
-                )
-            self._config = config
-        return config
-
     @property
     def _strategy(self) -> OutputChunkStrategy:
         """The output-chunk strategy, resolved when the model has been fitted."""
         if self._resolved_config is not None:
             return self._resolved_config.strategy
-        return self._ensure_config().strategy
-
-    def _build_resolved_config_from_legacy_state(
-        self,
-        legacy_lags: dict[str, list[int]] | None,
-        legacy_component_lags: dict[str, dict[str, list[int]]] | None,
-    ) -> ResolvedForecastConfig | None:
-        """Recover the resolved lags of a model pickled with an earlier Darts version.
-
-        Earlier versions stored ``lags``/``component_lags`` as instance state. The
-        public views are gone now, so the fitted component mapping is converted
-        into the resolved config that the rest of the model consumes.
-        """
-        if not legacy_lags:
-            return None
-        config = self._ensure_config()
-        component_lags = legacy_component_lags or {}
-        kinds = ("target", "past", "future")
-        resolved_lags = ResolvedLagConfig(
-            target=component_lags.get("target"),
-            past=component_lags.get("past"),
-            future=component_lags.get("future"),
-            future_stepwise={},
-            is_component_specific={kind: kind in component_lags for kind in kinds},
-            legacy_lags={
-                kind: tuple(legacy_lags[kind]) for kind in kinds if kind in legacy_lags
-            },
-        )
-        return ResolvedForecastConfig(
-            lags=resolved_lags,
-            strategy=config.strategy,
-            output_chunk_shift=config.output_chunk_shift,
-        )
+        return self._config.strategy
 
     def _apply_resolved_config(self, resolved: ResolvedForecastConfig) -> None:
         self._resolved_config = resolved
@@ -395,13 +309,13 @@ class SKLearnModel(GlobalForecastingModel):
         """The extreme lags per type, derived from the forecast config."""
         if self._resolved_config is not None:
             return self._resolved_config.lags.legacy_lags_dict()
-        return self._ensure_config().lags.legacy_lags_dict()
+        return self._config.lags.legacy_lags_dict()
 
     def _get_component_lags_dict(self) -> dict[str, dict[str, list[int]]]:
         """The component-specific lags per type, derived from the forecast config."""
         if self._resolved_config is not None:
             return self._resolved_config.lags.legacy_component_lags_dict()
-        return self._ensure_config().lags.legacy_component_lags_dict()
+        return self._config.lags.legacy_component_lags_dict()
 
     def _is_component_specific(self, lags_type: str) -> bool:
         """Whether ``lags_type`` uses component-specific lags."""
@@ -409,7 +323,7 @@ class SKLearnModel(GlobalForecastingModel):
             return self._resolved_config.lags.is_component_specific.get(
                 lags_type, False
             )
-        return lags_type in self._ensure_config().lags.legacy_component_lags_dict()
+        return lags_type in self._config.lags.legacy_component_lags_dict()
 
     def _get_extreme_lags(self, lags_type: str) -> list[int] | None:
         """The extreme lags per type; ignores the component-specific mapping."""
@@ -736,7 +650,7 @@ class SKLearnModel(GlobalForecastingModel):
             # ``_create_lagged_data`` is also used on unfitted instances (e.g. by
             # tests). Resolve the config against the components at hand instead of
             # relying on the state written by ``fit()``.
-            resolved_config = self._ensure_config().resolve(
+            resolved_config = self._config.resolve(
                 target_components=get_single_series(series).components,
                 past_components=(
                     get_single_series(past_covariates).components
@@ -955,8 +869,7 @@ class SKLearnModel(GlobalForecastingModel):
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
-        # older pickles may not have the config; rebuild it from model_params
-        config = self._ensure_config()
+        config = self._config
         strategy = config.strategy
 
         # guarantee that all inputs are either list of TimeSeries or None

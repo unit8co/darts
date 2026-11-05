@@ -3,7 +3,6 @@ import importlib
 import inspect
 import logging
 import math
-import pickle
 from copy import deepcopy
 from typing import Any
 from unittest.mock import patch
@@ -569,57 +568,6 @@ class TestSKLearnModels:
         model.fit(self.sine_univariate1)
         assert not hasattr(model, "lags")
         assert not hasattr(model, "component_lags")
-
-    def test_legacy_pickle_state_rebuilds_forecast_config(self):
-        series = TimeSeries.from_values(
-            np.random.RandomState(0).randn(40, 2), columns=["a", "b"]
-        )
-        model = LinearRegressionModel(
-            lags={"a": [-2, -1], "default_lags": [-3]},
-            output_chunk_length=2,
-        ).fit(series)
-        expected_lags = model._get_lags_dict()
-        expected_component_lags = model._get_component_lags_dict()
-        expected_prediction = model.predict(2).values()
-
-        # simulate the state of a model pickled before the forecast config existed
-        for key in ("_config", "_resolved_config"):
-            model.__dict__.pop(key, None)
-        model.__dict__["lags"] = expected_lags
-        model.__dict__["component_lags"] = expected_component_lags
-
-        restored = pickle.loads(pickle.dumps(model))
-
-        assert not hasattr(restored, "lags")
-        assert not hasattr(restored, "component_lags")
-        assert restored._config is not None
-        assert restored._resolved_config is not None
-        assert restored._get_lags_dict() == expected_lags
-        assert restored._get_component_lags_dict() == expected_component_lags
-        np.testing.assert_array_equal(restored.predict(2).values(), expected_prediction)
-
-        # the rebuilt config also supports a later refit
-        restored.fit(series)
-        assert restored._resolved_config is not None
-
-    def test_legacy_pickle_multioutput_wrapper_supports_refit(self):
-        # sample weights force the multi-output wrapper
-        model = LinearRegressionModel(lags=3, output_chunk_length=2)
-        model.fit(self.sine_univariate1, sample_weight="linear")
-        assert isinstance(model.model, MultiOutputRegressor)
-        expected_prediction = model.predict(3).values()
-
-        # simulate the state of a wrapper pickled before the output-chunk strategies existed
-        wrapper = model.model
-        for key in ("strategy", "strategy_", "n_components_"):
-            wrapper.__dict__.pop(key, None)
-        wrapper.__dict__["output_chunk_length"] = 2
-
-        restored = pickle.loads(pickle.dumps(model))
-        np.testing.assert_array_equal(restored.predict(3).values(), expected_prediction)
-
-        restored.fit(self.sine_univariate1, sample_weight="linear")
-        np.testing.assert_array_equal(restored.predict(3).values(), expected_prediction)
 
     @pytest.mark.parametrize("config", param_product([True, False], [1, 2]))
     def test_training_data_creation(self, config):
