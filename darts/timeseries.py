@@ -3777,6 +3777,44 @@ class TimeSeries:
             raise_log(ValueError(f"Unknown method: {method}"))
         return self.__class__.from_xarray(new_xa)
 
+    def reindex(
+        self,
+        times: TimeIndex | pd.Index | Self,
+        method: str | None = None,
+        fill_value: float | None = np.nan,
+        copy: bool = True,
+    ) -> Self:
+        """Return a new series aligned to a target time index.
+
+        Parameters
+        ----------
+        times
+            The target ``DatetimeIndex`` or ``RangeIndex``, or a ``TimeSeries`` whose time index is used.
+        method
+            Optional fill method for missing timestamps. Supported methods include ``"ffill"`` / ``"pad"``,
+            ``"bfill"`` / ``"backfill"``, and ``"nearest"``. If ``None``, missing values are filled with
+            ``fill_value``.
+        fill_value
+            Value used to fill missing timestamps when ``method`` is ``None`` or cannot fill them.
+        copy
+            Whether to copy the underlying values when the target index matches the current index.
+
+        Returns
+        -------
+        TimeSeries
+            A series with the target time index.
+        """
+        if isinstance(times, TimeSeries):
+            times = times.time_index
+
+        new_xa = self.data_array(copy=False).reindex(
+            {self._time_dim: times},
+            method=method,
+            fill_value=fill_value,
+            copy=copy,
+        )
+        return self.__class__.from_xarray(new_xa, copy=copy)
+
     def is_within_range(self, ts: pd.Timestamp | int) -> bool:
         """Whether the given timestamp or integer is within the time interval of the series.
 
