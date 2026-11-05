@@ -3710,7 +3710,7 @@ class TimeSeries:
             Additional keyword arguments for the specified `method`. Some methods require additional arguments.
             Xarray's errors will be raised on invalid keyword arguments.
         kwargs
-            some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
+            some keyword arguments for the `xarray.resample` method, notably `offset` or `origin` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more information, see the `xarray resample() documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`__.
@@ -3722,9 +3722,11 @@ class TimeSeries:
 
         Examples
         --------
-        >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=6, freq="15min")
-        >>> pd_series = pd.Series(range(6), index=times)
-        >>> ts = TimeSeries.from_series(pd_series)
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> times = generate_index("2020-01-01 23:30:00", length=6, freq="15min")
+        >>> ts = TimeSeries.from_times_and_values(times, list(range(6)))
         >>> print(ts.time_index)
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-01 23:45:00',
                        '2020-01-02 00:00:00', '2020-01-02 00:15:00',
@@ -3737,20 +3739,20 @@ class TimeSeries:
         >>> print(resampled_nokwargs_ts.values())
         [[nan]
         [ 2.]]
-        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30min"))
+        >>> resampled_ts = ts.resample(freq="1h", offset="30min")
         >>> print(resampled_ts.time_index)
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
                       dtype='datetime64[ns]', name='time', freq='H')
         >>> print(resampled_ts.values())
         [[0.]
         [4.]]
-        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30min"))
+        >>> resampled_ts = ts.resample(freq="1h", offset="30min")
         >>> downsampled_mean_ts = ts.resample(freq="30min", method="mean")
         >>> print(downsampled_mean_ts.values())
         [[0.5]
         [2.5]
         [4.5]]
-        >>> downsampled_reduce_ts = ts.resample(freq="30min", method="reduce", method_args={"func": np.mean})
+        >>> downsampled_reduce_ts = ts.resample(freq="30min", method="reduce", method_kwargs={"func": np.mean})
         >>> print(downsampled_reduce_ts.values())
         [[0.5]
         [2.5]
@@ -3781,39 +3783,65 @@ class TimeSeries:
 
     def reindex(
         self,
-        times: TimeIndex | pd.Index | Self,
+        times: TimeIndex | Self,
         method: str | None = None,
         fill_value: float | None = np.nan,
         copy: bool = True,
+        **kwargs,
     ) -> Self:
-        """Return a new series aligned to a target time index.
+        """Return a new series conformed onto a target time index, filling in missing values.
 
         Parameters
         ----------
         times
-            The target ``DatetimeIndex`` or ``RangeIndex``, or a ``TimeSeries`` whose time index is used.
+            A `pandas.DatetimeIndex`, `pandas.RangeIndex`, or a `TimeSeries` whose `time_index` will be used as the new
+            time index.
         method
-            Optional fill method for missing timestamps. Supported methods include ``"ffill"`` / ``"pad"``,
-            ``"bfill"`` / ``"backfill"``, and ``"nearest"``. If ``None``, missing values are filled with
-            ``fill_value``.
+            A method to fill holes in the re-indexed TimeSeries, by default ``None`` (do not fill gaps).
+            For more information, see the `xarray reindex() documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.reindex.html>`__.
+            For example one of: [None, "backfill", "bfill", "ffill", "nearest", "pad"].
         fill_value
-            Value used to fill missing timestamps when ``method`` is ``None`` or cannot fill them.
+            Value to use for newly missing values when ``method=None`` (or where ``method`` cannot fill,
+            such as leading values with ``method="ffill"``). Default is ``np.nan``.
         copy
-            Whether to copy the underlying values when the target index matches the current index.
+            Whether to copy the underlying data in the returned `TimeSeries`.
+        kwargs
+            Additional keyword arguments passed to `xarray.DataArray.reindex`, such as `tolerance`.
+            For more information, see the `xarray reindex() documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.reindex.html>`__.
 
         Returns
         -------
         TimeSeries
-            A series with the target time index.
+            A new series aligned to the target time index.
+
+        Examples
+        --------
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> times = generate_index("2020-01-02", length=3, freq="D")
+        >>> ts = TimeSeries.from_times_and_values(times, [10.0, 20.0, 30.0])
+        >>> target_times = generate_index("2020-01-01", length=5, freq="D")
+        >>> reindexed_ts = ts.reindex(target_times, method="ffill", fill_value=0.0)
+        >>> reindexed_ts
+        component      0
+        time
+        2020-01-01   0.0
+        2020-01-02  10.0
+        2020-01-03  20.0
+        2020-01-04  30.0
+        2020-01-05  30.0
         """
         if isinstance(times, TimeSeries):
             times = times.time_index
 
         new_xa = self.data_array(copy=False).reindex(
-            {self._time_dim: times},
+            indexers={self._time_dim: times},
             method=method,
             fill_value=fill_value,
-            copy=copy,
+            copy=False,
+            **kwargs,
         )
         return self.__class__.from_xarray(new_xa, copy=copy)
 
