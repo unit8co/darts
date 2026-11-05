@@ -1840,6 +1840,112 @@ class TestTimeSeries:
         )
         assert resampled_timeseries.to_series().at[pd.Timestamp("20200101233000")] == 0
 
+    @pytest.mark.parametrize("index_type", ["dt", "int"])
+    def test_reindex_timeseries(self, index_type):
+        if index_type == "dt":
+            source_start, target_start, freq = "2020-01-01", "2019-12-31", "D"
+        else:
+            source_start, target_start, freq = 1, 0, 1
+
+        source_times = generate_index(source_start, length=3, freq=freq)
+        series = TimeSeries.from_series(pd.Series([1.0, 2.0, 3.0], index=source_times))
+        target_times = generate_index(target_start, length=5, freq=freq)
+        target_series = TimeSeries.from_series(
+            pd.Series(np.zeros(len(target_times)), index=target_times)
+        )
+
+        # reindex with expansion creates missing values
+        out = series.reindex(target_times)
+        np.testing.assert_equal(
+            out.all_values(copy=False)[:, 0, 0],
+            [np.nan, 1.0, 2.0, 3.0, np.nan],
+        )
+        assert out.time_index.equals(target_times)
+
+        # works also with TimeSeries input
+        out = series.reindex(target_series, fill_value=0.0)
+        np.testing.assert_equal(
+            out.all_values(copy=False)[:, 0, 0],
+            [0.0, 1.0, 2.0, 3.0, 0.0],
+        )
+        assert out.time_index.equals(target_times)
+
+        # reindex with expansion and ffill, fill_value
+        out = series.reindex(target_times, method="ffill", fill_value=0.0)
+        np.testing.assert_equal(
+            out.all_values(copy=False)[:, 0, 0],
+            [0.0, 1.0, 2.0, 3.0, 3.0],
+        )
+        assert out.time_index.equals(target_times)
+
+        # reindex with expansion and bfill
+        out = series.reindex(target_times, method="bfill")
+        np.testing.assert_equal(
+            out.all_values(copy=False)[:, 0, 0],
+            [1.0, 1.0, 2.0, 3.0, np.nan],
+        )
+        assert out.time_index.equals(target_times)
+
+        if index_type == "dt":
+            start, freq_sparse, freq = "2020-01-01 18:00", "2D", "12h"
+        else:
+            start, freq_sparse, freq = 19, 48, 12
+
+        # reindex with sparse times
+        sparse_times = generate_index(source_start, length=2, freq=freq_sparse)
+        sparse_series = TimeSeries.from_series(
+            pd.Series([1.0, 3.0], index=sparse_times)
+        )
+        nearest_times = generate_index(start, length=2, freq=freq)
+        out = sparse_series.reindex(
+            nearest_times,
+            method="nearest",
+        )
+        np.testing.assert_equal(out.values(copy=False)[:, 0], [1.0, 3.0])
+        assert out.time_index.equals(nearest_times)
+
+    def test_reindex_preserves_samples_and_metadata(self):
+        times = pd.date_range("2020-01-01", periods=3, freq="D")
+        values = np.arange(12, dtype=float).reshape(3, 2, 2)
+        series = TimeSeries(
+            times=times,
+            values=values,
+            components=["bottom", "top"],
+            static_covariates=pd.Series({"site": 1.0}),
+            hierarchy={"bottom": "top"},
+            metadata={"source": "test"},
+        )
+        target_times = pd.date_range("2019-12-31", periods=5, freq="D")
+
+        reindexed = series.reindex(target_times)
+
+        assert reindexed.all_values(copy=False).shape == (5, 2, 2)
+        assert reindexed.components.equals(series.components)
+        assert reindexed.static_covariates.equals(series.static_covariates)
+        assert reindexed.hierarchy == series.hierarchy
+        assert reindexed.metadata == series.metadata
+        np.testing.assert_equal(
+            reindexed.all_values(copy=False)[1:4],
+            series.all_values(copy=False),
+        )
+
+        inverse_reindexed = reindexed.reindex(series)
+        assert inverse_reindexed == series
+
+    def test_reindex_copy(self):
+        times = pd.date_range("2020-01-01", periods=3, freq="D")
+        series = TimeSeries.from_series(pd.Series([1.0, 2.0, 3.0], index=times))
+
+        copied = series.reindex(times, copy=True)
+        not_copied = series.reindex(times, copy=False)
+
+        assert not np.shares_memory(
+            copied.all_values(copy=False), series.all_values(copy=False)
+        )
+        assert np.shares_memory(
+            not_copied.all_values(copy=False), series.all_values(copy=False)
+        )
+
     def test_short_series_creation(self):
         # test missing freq argument error when filling missing dates on short time series
         with pytest.raises(ValueError):
