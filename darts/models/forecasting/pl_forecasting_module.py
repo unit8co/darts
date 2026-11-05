@@ -707,7 +707,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         return self.current_epoch
 
     @property
-    def output_chunk_length(self) -> int | None:
+    def output_chunk_length(self) -> int:
         """
         Number of time steps predicted at once by the model.
         """
