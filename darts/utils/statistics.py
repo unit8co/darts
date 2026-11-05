@@ -633,8 +633,9 @@ def stationarity_test_adf(
 def granger_causality_tests(
     ts_cause: TimeSeries,
     ts_effect: TimeSeries,
-    maxlag: int,
+    maxlag: int | Sequence[int],
     addconst: bool = True,
+    check_stationarity: bool = True,
 ) -> dict:
     """
     Provides four tests for granger non causality of 2 time series using
@@ -652,9 +653,13 @@ def granger_causality_tests(
         Univariate time series 'Granger caused' by ts_cause.
     maxlag
         If an integer, computes the test for all lags up to maxlag.
-        If an iterable, computes the tests only for the lags in maxlag.
+        If an sequence of integers, computes the tests only for the lags in maxlag.
     addconst
         Include a constant in the model.
+    check_stationarity
+        Whether to perform stationarity tests on `ts_cause` and `ts_effect` before running the
+        Granger causality test. If set to ``False``, the stationarity checks and any associated
+        warnings are skipped.
 
     Returns
     -------
@@ -689,14 +694,17 @@ def granger_causality_tests(
     ts_cause = ts_cause.slice_intersect(ts_effect)
     ts_effect = ts_effect.slice_intersect(ts_cause)
 
-    if not stationarity_tests(ts_cause):
-        logger.warning(
-            "ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context."
-        )
-    if not stationarity_tests(ts_effect):
-        logger.warning(
-            "ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context."
-        )
+    if check_stationarity:
+        if not stationarity_tests(ts_cause):
+            logger.warning(
+                "ts_cause doesn't seem to be stationary. Please review "
+                "granger causality validity in your problem context."
+            )
+        if not stationarity_tests(ts_effect):
+            logger.warning(
+                "ts_effect doesn't seem to be stationary. Please review "
+                "granger causality validity in your problem context."
+            )
 
     return grangercausalitytests(
         np.concatenate(
