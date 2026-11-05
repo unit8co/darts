@@ -11,6 +11,7 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
+import torch
 import torch.nn as nn
 
 from darts.models.components.transformer import (
@@ -21,6 +22,7 @@ from darts.models.forecasting.transformer_model import (
     TransformerModel,
     _TransformerModule,
 )
+from darts.utils.data.torch_datasets.utils import ModuleStage
 
 
 class TestTransformerModel:
@@ -195,6 +197,121 @@ class TestTransformerModel:
                 **tfm_kwargs,
             )
             model4.fit(self.series, epochs=1)
+
+    @staticmethod
+    def _rin_multivariate_series() -> TimeSeries:
+        # three target components on very different scales, so that normalizing a column with
+        # another column's statistics gives clearly different values
+        a = tg.sine_timeseries(length=40, column_name="a")
+        b = tg.linear_timeseries(length=40, column_name="b") * 100 + 50
+        c = tg.sine_timeseries(length=40, value_frequency=0.2, column_name="c") * 10
+        return a.stack(b).stack(c)
+
+    @pytest.mark.parametrize("rin_series", [["b"], ["a", "b"], ["c", "a"]])
+    def test_rin_named_series_subset(self, rin_series):
+        """`use_reversible_instance_norm["series"]` selecting a subset of the target components
+        by name must work with teacher forcing (regression test: the future targets fed to the
+        decoder during training were normalized across all components, which raised a shape
+        mismatch for multi-component subsets)."""
+        series = self._rin_multivariate_series()
+        model = TransformerModel(
+            input_chunk_length=6,
+            output_chunk_length=2,
+            d_model=8,
+            nhead=2,
+            num_encoder_layers=1,
+            num_decoder_layers=1,
+            dim_feedforward=8,
+            n_epochs=1,
+            random_state=42,
+            use_reversible_instance_norm={"series": rin_series},
+            **tfm_kwargs,
+        )
+        model.fit(series)
+        preds = model.predict(n=4)
+        assert len(preds) == 4
+        assert preds.components.tolist() == series.components.tolist()
+
+    @pytest.mark.parametrize("rin_series", [True, ["b"], ["a", "c"]])
+    def test_rin_teacher_forcing_targets(self, monkeypatch, rin_series):
+        """During training, the teacher-forcing future targets fed to the decoder must be
+        normalized exactly like the past targets: only the RIN-selected components, using the
+        statistics of the past target window, with all other components left untouched."""
+        series = self._rin_multivariate_series()
+        n_targets = series.n_components
+        icl, ocl = 6, 2
+
+        captured = {}
+        orig_forward = _TransformerModule.forward
+        orig_embed = _TransformerModule._embed
+
+        def forward_spy(self, x_in, *args, **kwargs):
+            # class-level `forward` is the `io_processor` wrapper: `x_in` is still un-normalized
+            if x_in.stage is ModuleStage.TRAIN:
+                captured["x_in"] = x_in
+                captured["embed_inputs"] = []
+            return orig_forward(self, x_in, *args, **kwargs)
+
+        def embed_spy(self, x, *args, **kwargs):
+            if "embed_inputs" in captured:
+                captured["embed_inputs"].append(x)
+            return orig_embed(self, x, *args, **kwargs)
+
+        monkeypatch.setattr(_TransformerModule, "forward", forward_spy)
+        monkeypatch.setattr(_TransformerModule, "_embed", embed_spy)
+
+        model = TransformerModel(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            d_model=8,
+            nhead=2,
+            num_encoder_layers=1,
+            num_decoder_layers=1,
+            dim_feedforward=8,
+            n_epochs=1,
+            random_state=42,
+            # no affine transform, so that the expected values only depend on the batch statistics
+            use_reversible_instance_norm={
+                "series": rin_series,
+                "params": {"affine": False},
+            },
+            **tfm_kwargs,
+        )
+        model.fit(series)
+
+        x_in = captured["x_in"]
+        # `_embed` is called with the encoder input first, then with the decoder input `tgt` of
+        # shape `(1 + output_chunk_length, batch_size, input_size)`: a start token followed by
+        # the (padded) future targets
+        src_raw, tgt_raw = captured["embed_inputs"][:2]
+        assert tgt_raw.shape[0] == 1 + ocl
+        decoder_targets = tgt_raw[1:, :, :n_targets].permute(1, 0, 2)
+
+        selected = (
+            list(range(n_targets))
+            if rin_series is True
+            else [series.components.get_loc(name) for name in rin_series]
+        )
+        unselected = [i for i in range(n_targets) if i not in selected]
+
+        past_target = x_in.past_target
+        future_target = x_in.future_target
+        eps = model.model.rin.eps
+        mean = past_target[:, :, selected].mean(dim=1, keepdim=True)
+        stdev = torch.sqrt(
+            past_target[:, :, selected].var(dim=1, keepdim=True, unbiased=False) + eps
+        )
+        expected_selected = (future_target[:, :, selected] - mean) / stdev
+
+        torch.testing.assert_close(decoder_targets[:, :, selected], expected_selected)
+        torch.testing.assert_close(
+            decoder_targets[:, :, unselected], future_target[:, :, unselected]
+        )
+        # the encoder input's target columns must be normalized consistently with the decoder's
+        torch.testing.assert_close(
+            src_raw[:, :, :n_targets][:, :, unselected].permute(1, 0, 2),
+            past_target[:, :, unselected],
+        )
 
 
 class TestTransformerModelInputValidation:

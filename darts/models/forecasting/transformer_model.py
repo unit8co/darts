@@ -310,9 +310,12 @@ class _TransformerModule(PLForecastingModule):
 
             # training: use teacher forcing where ground-truth future targets are fed to the decoder
             if self.rin is not None and self.rin.has_series:
-                # with RIN, io_processor only normalized past targets; apply the same to future targets
-                future_target, _, _ = self._rin_as_tuple(
-                    self.rin.transform(future_target)
+                # with RIN, io_processor only normalized the RIN-selected past target columns;
+                # apply the same (with the same statistics) to the future targets
+                target_sel, target_idx = self._select_rin_group(future_target, "series")
+                target_norm, _, _ = self._rin_as_tuple(self.rin.transform(target_sel))
+                future_target = self._merge_rin_group(
+                    future_target, target_norm, target_idx
                 )
             tgt = F.pad(future_target.permute(1, 0, 2), pad_size)
             tgt = torch.cat([start_token, tgt], dim=0)
