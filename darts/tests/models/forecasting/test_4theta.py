@@ -19,6 +19,17 @@ from darts.utils.timeseries_generation import sine_timeseries as st
 
 
 class TestFourTheta:
+    @pytest.mark.parametrize("model_cls", [Theta, FourTheta])
+    @pytest.mark.parametrize("period", [0, 12])
+    def test_inferred_seasonality(self, model_cls, period):
+        values = 10 + np.random.default_rng(0).normal(scale=0.1, size=120)
+        if period:
+            values += np.cos(2 * np.pi * np.arange(len(values)) / period)
+        model = model_cls().fit(TimeSeries.from_values(values))
+
+        assert model.is_seasonal == (period > 0)
+        assert model.season_period == period
+        assert np.isfinite(model.predict(12).values()).all()
     series = AirPassengersDataset().load()
 
     def test_input(self):
