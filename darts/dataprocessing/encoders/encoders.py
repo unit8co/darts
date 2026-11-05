@@ -84,9 +84,9 @@ The SingleEncoders from {X}{SingleEncoder} are:
         Requires `series` to have a pd.DatetimeIndex.
 
         attribute
-            An attribute of `pd.DatetimeIndex` that follows a cyclic pattern. One of ('month', 'day', 'weekday',
-            'dayofweek', 'day_of_week', 'hour', 'minute', 'second', 'microsecond', 'nanosecond', 'quarter',
-            'dayofyear', 'day_of_year', 'week', 'weekofyear', 'week_of_year').
+            An attribute of `pd.DatetimeIndex` that follows a cyclic pattern. One of ('month', 'day', 'day_of_week',
+            'hour', 'minute', 'second', 'microsecond', 'nanosecond', 'quarter', 'day_of_year', 'week', 'weekofyear',
+            'week_of_year').
         tz
             Optionally, convert the time zone naive index to a time zone `tz` before applying the encoder.
 *   `IntegerIndexEncoder`
@@ -145,7 +145,7 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 
     add_encoders = {
         'cyclic': {'future': ['month']},
-        'datetime_attribute': {'future': ['hour', 'dayofweek']},
+        'datetime_attribute': {'future': ['hour', 'day_of_week']},
         'position': {'past': ['relative'], 'future': ['relative']},
         'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
         'transformer': Scaler(),
@@ -217,7 +217,7 @@ class CyclicTemporalEncoder(SingleEncoder):
         attribute
             The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
-            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            "day_of_week", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
@@ -282,7 +282,7 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
         attribute
             The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
-            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            "day_of_week", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
@@ -333,7 +333,7 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
         attribute
             The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
-            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            "day_of_week", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
@@ -387,7 +387,7 @@ class DatetimeAttributeEncoder(SingleEncoder):
         attribute
             The attribute of the underlying pd.DatetimeIndex for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
-            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            "day_of_week", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
@@ -448,7 +448,7 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         attribute
             The attribute of the underlying pd.DatetimeIndex for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
-            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            "day_of_week", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
@@ -499,7 +499,7 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
         attribute
             The attribute of the underlying pd.DatetimeIndex for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
-            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            "day_of_week", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
@@ -957,7 +957,7 @@ class SequentialEncoder(Encoder):
                 from darts.dataprocessing.transformers import Scaler
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler(),
@@ -1394,7 +1394,7 @@ class SequentialEncoder(Encoder):
         ----------
         params
             Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:
-            * params={'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}}
+            * params={'cyclic': {'past': ['month', 'day_of_week', ...], 'future': [same as for 'past']}}
         """
         past_encoders, future_encoders = self._process_input_encoders(params)
         tz = self._process_timezone(params)
