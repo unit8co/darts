@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added parameter `check_stationarity` to `darts.utils.statistics.granger_causality_tests()` to allow skipping stationarity pre-checks on already stationary or detrended series. [#3323](https://github.com/unit8co/darts/pull/3323) by [Mordris](https://github.com/Mordris).
 - Added `darts.utils.statistics.seasonality_and_trend_strength()` to compute the STL-based trend and seasonal strengths of a series, as defined in [Forecasting: Principles and Practice](https://otexts.com/fpp3/stlfeatures.html). [#3321](https://github.com/unit8co/darts/pull/3321) by [fixfon](https://github.com/fixfon).
 - Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#3319](https://github.com/unit8co/darts/pull/3319) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 - Added a warning when calling `TimeSeries.values()` without specifying a sample for a stochastic time series.
@@ -24,6 +25,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - ExponentialSmoothing parameters `trend` and `seasonal`.
   - Theta and FourTheta parameters `season_mode`, `model_mode`, `trend_mode`.
   - `darts.utils.statistics` parameter `model`.
+- Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
 
 **Fixed**
 

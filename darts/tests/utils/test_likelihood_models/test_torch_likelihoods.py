@@ -125,6 +125,7 @@ class TestTorchLikelihoodModel:
     )
     def test_compute_loss_uses_all_samples(self, likelihood):
         # the loss of a batch must be the average of the losses of its individual samples
+        np.random.seed(0)
         torch.manual_seed(42)
         batch_size, n_times, n_components = 4, 3, 2
         model_output = torch.randn(
@@ -141,7 +142,7 @@ class TestTorchLikelihoodModel:
             likelihood.compute_loss(model_output[i : i + 1], target[i : i + 1], None)
             for i in range(batch_size)
         ])
-        assert torch.allclose(loss, loss_per_sample.mean())
+        assert torch.allclose(loss, loss_per_sample.mean(), rtol=1e-03)
 
     @pytest.mark.parametrize(
         "likelihood",

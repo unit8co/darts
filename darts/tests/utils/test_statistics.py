@@ -1,3 +1,4 @@
+import logging
 from typing import Literal
 
 import matplotlib.pyplot as plt
@@ -80,6 +81,31 @@ class TestTimeSeries:
         assert tests[1][0]["ssr_ftest"][1] > 0.99
         tests = granger_causality_tests(series_cause_2, series_effect_2, 10)
         assert tests[1][0]["ssr_ftest"][1] > 0.01
+
+        # Supports iterable maxlag
+        tests = granger_causality_tests(
+            series_cause_2, series_effect_2, maxlag=[1, 10], check_stationarity=False
+        )
+        assert list(tests.keys()) == [1, 10]
+
+    def test_granger_causality_check_stationarity(self, caplog):
+        np.random.seed(42)
+        non_stat_series = linear_timeseries(start=0, end=500)
+        stat_series = gaussian_timeseries(start=0, end=500)
+
+        # Default check_stationarity=True logs warning for non-stationary ts_cause
+        with caplog.at_level(logging.WARNING):
+            _ = granger_causality_tests(non_stat_series, stat_series, maxlag=2)
+            assert "ts_cause doesn't seem to be stationary" in caplog.text
+        caplog.clear()
+
+        # check_stationarity=False does not log stationarity warning
+        with caplog.at_level(logging.WARNING):
+            _ = granger_causality_tests(
+                non_stat_series, stat_series, maxlag=2, check_stationarity=False
+            )
+            assert "ts_cause doesn't seem to be stationary" not in caplog.text
+        caplog.clear()
 
     def test_stationarity_tests(self):
         np.random.seed(42)
