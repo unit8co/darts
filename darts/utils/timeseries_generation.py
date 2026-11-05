@@ -564,8 +564,8 @@ def datetime_attribute_timeseries(
         Either a `pd.DatetimeIndex` attribute which will serve as the basis of the new column(s), or
         a `TimeSeries` whose time axis will serve this purpose.
     attribute
-        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day",
-        "hour", "minute", "second". See all available attributes `here
+        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "day_of_week",
+        "day", "hour", "minute", "second". See all available attributes `here
         <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex>`__.
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
