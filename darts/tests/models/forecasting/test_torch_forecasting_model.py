@@ -58,6 +58,10 @@ from darts.models import (
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
+from darts.models.forecasting.pl_forecasting_module import (
+    PLForecastingModule,
+    io_processor,
+)
 from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
 from darts.tests.parametrize_helpers import param_product
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
@@ -70,6 +74,9 @@ from darts.utils.data.torch_datasets.training_dataset import (
     TorchTrainingDataset,
 )
 from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchInferenceBatch,
     TorchInferenceSample,
     TorchTrainingSample,
     _batch_collate_fn_predict,
@@ -3533,6 +3540,62 @@ class TestTorchForecastingModelFineTuning:
             assert p.requires_grad is True
 
 
+class _RollSizeTestModule(PLForecastingModule):
+    """Deterministic module: next chunk is last target plus optional future cov slice."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.dummy = torch.nn.Parameter(torch.tensor(0.0))
+
+    @io_processor
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        ocl = self.output_chunk_length
+        prediction = x_in.past_target[:, -1:, :].expand(-1, ocl, -1).clone()
+        if x_in.future_covariates is not None:
+            prediction = prediction + x_in.future_covariates[:, :ocl, :]
+        return PLModuleOutput(prediction=prediction.unsqueeze(-1))
+
+
+def _make_roll_size_inference_batch(
+    icl: int, ocl: int, n: int, *, with_cov: bool
+) -> TorchInferenceBatch:
+    min_n = n if n >= ocl else ocl
+    cov_len = min_n + ocl + icl
+    past_target = torch.arange(icl, dtype=torch.float32).view(1, icl, 1) + 1.0
+    if not with_cov:
+        return TorchInferenceBatch(past_target=past_target)
+    cov = torch.linspace(0.0, 1.0, cov_len, dtype=torch.float32).view(1, cov_len, 1)
+    return TorchInferenceBatch(
+        past_target=past_target,
+        past_covariates=torch.zeros(1, icl, 1),
+        future_past_covariates=cov,
+        historic_future_covariates=torch.zeros(1, icl, 1),
+        future_covariates=cov * 0.1,
+    )
+
+
+class TestGetBatchPredictionRollSize:
+    @staticmethod
+    def _roll_size_test_horizons(ocl: int) -> list[int]:
+        return sorted({1, ocl, ocl + 1, 2 * ocl - 1, 2 * ocl, 2 * ocl + 2})
+
+    @pytest.mark.parametrize("icl,ocl", [(1, 4), (2, 3), (4, 2)])
+    def test_get_batch_prediction_invariant_to_roll_size(self, icl, ocl):
+        """Target-only rolling: forecast must not depend on ``roll_size`` when covariates are absent."""
+        module = _RollSizeTestModule(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            train_sample_shape={"past_target": (icl, 1)},
+        )
+        module.eval()
+        for n in self._roll_size_test_horizons(ocl):
+            batch = _make_roll_size_inference_batch(icl, ocl, n, with_cov=False)
+            reference = module._get_batch_prediction(n, batch, roll_size=1)
+            for roll_size in range(2, ocl + 1):
+                prediction = module._get_batch_prediction(n, batch, roll_size=roll_size)
+                torch.testing.assert_close(prediction, reference)
+
+
 class TestTorchForecastingModelInputValidation:
     times = pd.date_range("20130101", "20130410")
     series = TimeSeries.from_series(pd.Series(range(100), index=times))
@@ -3634,6 +3697,59 @@ class TestTorchForecastingModelInputValidation:
             future_covariates=future_cov,
         )
         assert len(pred) == n
+
+    @staticmethod
+    def _manual_rollout(model, n, roll_size, series, **kwargs):
+        """One `predict()` call per chunk; chunks advance by `roll_size` and the last one ends at `n`."""
+        ocl = model.output_chunk_length
+        starts = [0]
+        while starts[-1] + ocl < n:
+            starts.append(min(starts[-1] + roll_size, n - ocl))
+        pred = None
+        for start, end in zip(starts, starts[1:] + [n]):
+            context = series if pred is None else series.append(pred)
+            chunk = model.predict(n=end - start, series=context, **kwargs)
+            pred = chunk if pred is None else pred.append(chunk)
+        return pred
+
+    @pytest.mark.parametrize(
+        "config", param_product([(1, 4), (2, 3), (4, 2)], [False, True])
+    )
+    def test_predict_roll_size_matches_manual_rollout(self, config):
+        """End-to-end `predict(roll_size=...)` matches chunked manual `predict()` calls."""
+        (icl, ocl), use_covariates = config
+        model = DLinearModel(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            n_epochs=1,
+            **tfm_kwargs_dev,
+        )
+        kwargs = {}
+        if use_covariates:
+            cov_kwargs = {
+                "length": len(self.series) + 20,
+                "start": self.series.start_time(),
+                "freq": self.series.freq,
+            }
+            kwargs = {
+                "past_covariates": tg.linear_timeseries(**cov_kwargs),
+                "future_covariates": tg.sine_timeseries(**cov_kwargs),
+            }
+        model.fit(series=self.series, **kwargs)
+
+        horizons = sorted({1, ocl, ocl + 1, 2 * ocl - 1, 2 * ocl, 2 * ocl + 2})
+        for n in horizons:
+            for roll_size in range(1, ocl + 1):
+                pred = model.predict(
+                    n=n, series=self.series, roll_size=roll_size, **kwargs
+                )
+                expected = self._manual_rollout(
+                    model, n, roll_size, self.series, **kwargs
+                )
+                assert pred.time_index.equals(expected.time_index)
+                np.testing.assert_allclose(
+                    pred.values(), expected.values(), rtol=1e-5, atol=1e-6
+                )
 
     def test_predict_from_dataset_num_samples_zero(self):
         model = DLinearModel(

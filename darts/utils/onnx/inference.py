@@ -454,6 +454,9 @@ def _get_batch_prediction(
             else None
         )
         out, state = _run_onnx_step(session, spec, _feature_dict(future_cov_slice))
+        # a single forward pass covers `n <= output_chunk_length`, so there is nothing to roll
+        if n <= ocl:
+            roll_size = ocl
         batch_predictions = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
@@ -480,7 +483,8 @@ def _get_batch_prediction(
         if icl >= roll_size:
             past_target[:, -roll_size:, :] = out[:, :roll_size, :]
         else:
-            past_target[:, :, :] = out[:, -icl:, :]
+            # the last `input_chunk_length` of the `roll_size` predictions
+            past_target[:, :, :] = out[:, roll_size - icl : roll_size, :]
 
         # set left and right boundaries for extracting future elements
         if icl >= roll_size:
@@ -528,8 +532,13 @@ def _get_batch_prediction(
             _feature_dict(future_cov_slice),
             state=state,
         )
-        batch_predictions.append(out)
-        prediction_length += ocl
+        # keep `roll_size` points of each chunk, except the last one which ends at `min_n`
+        if prediction_length + ocl < min_n:
+            batch_predictions.append(out[:, :roll_size, :])
+            prediction_length += roll_size
+        else:
+            batch_predictions.append(out)
+            prediction_length += ocl
 
     # bring predictions into desired format and drop unnecessary values
     batch_predictions = np.concatenate(batch_predictions, axis=1)
