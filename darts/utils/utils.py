@@ -73,24 +73,6 @@ class NotImportedModule:
         raise_log(ImportError(self.error_message))
 
 
-# Enums
-class SeasonalityMode(Enum):
-    MULTIPLICATIVE = "multiplicative"
-    ADDITIVE = "additive"
-    NONE = None
-
-
-class TrendMode(Enum):
-    LINEAR = "linear"
-    EXPONENTIAL = "exponential"
-
-
-class ModelMode(Enum):
-    MULTIPLICATIVE = "multiplicative"
-    ADDITIVE = "additive"
-    NONE = None
-
-
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
     """
     Build an iterable, possibly using tqdm (either in notebook or regular mode)
@@ -426,7 +408,7 @@ def n_steps_between(
     valid_time = (
         isinstance(start, pd.Timestamp)
         and isinstance(end, pd.Timestamp)
-        and isinstance(freq, pd.DateOffset)
+        and isinstance(freq, pd.offsets.BaseOffset)
     )
     if not (valid_int or valid_time):
         raise_log(
@@ -448,7 +430,7 @@ def n_steps_between(
             diff += diff % freq
         n_steps = diff // freq
     else:
-        period_alias = pd.tseries.frequencies.get_period_alias(freq.name)
+        period_alias = pd.tseries.frequencies.get_period_alias(freq.rule_code)
         if isinstance(freq, BusinessMixin) or period_alias is None:
             # for lower pandas versions ~1.5.0, business frequencies wrongly have a period alias.
             # taking the period difference as computed in `else` gives wrong results.
@@ -825,3 +807,18 @@ def _maybe_cast_array_dtype(vals: np.ndarray, dtype):
     if vals.dtype != dtype:
         vals = vals.astype(dtype)
     return vals
+
+
+def _infer_freq_returns_offset() -> contextlib.AbstractContextManager:
+    """Context manager making `pd.infer_freq()` and `DatetimeIndex.inferred_freq` return a frequency offset.
+
+    This is the default behavior starting from pandas 4.0.0. For pandas>=3.1.0, it opts into the future behavior
+    which also avoids a `Pandas4Warning`. For lower pandas versions (where the option does not exist), the
+    frequencies are still returned as strings.
+    """
+    option = "future.infer_freq_returns_offset"
+    try:
+        pd.get_option(option)
+    except pd.errors.OptionError:  # pragma: no cover
+        return contextlib.nullcontext()
+    return pd.option_context(option, True)

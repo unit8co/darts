@@ -212,7 +212,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
@@ -1163,14 +1163,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         if val_series is not None:
-            val_dataset = self._build_train_dataset(
-                series=val_series,
-                past_covariates=val_past_covariates,
-                future_covariates=val_future_covariates,
-                sample_weight=val_sample_weight,
-                max_samples_per_ts=max_samples_per_ts,
-                stride=stride,
-            )
+            try:
+                val_dataset = self._build_train_dataset(
+                    series=val_series,
+                    past_covariates=val_past_covariates,
+                    future_covariates=val_future_covariates,
+                    sample_weight=val_sample_weight,
+                    max_samples_per_ts=max_samples_per_ts,
+                    stride=stride,
+                )
+            except ValueError as err:
+                raise_log(
+                    ValueError(f"Invalid validation set: {err}"),
+                )
         else:
             val_dataset = None
 

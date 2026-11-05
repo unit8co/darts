@@ -182,7 +182,7 @@ class SKLearnModel(GlobalForecastingModel):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
@@ -695,12 +695,6 @@ class SKLearnModel(GlobalForecastingModel):
         else:
             model = self.model
 
-        if not isinstance(model, MultiOutputMixin):
-            logger.warning(
-                "Model supports multi-output; a single estimator forecasts all the horizons and components."
-            )
-            return model
-
         if not 0 <= horizon < self.output_chunk_length:
             raise_log(
                 ValueError(
@@ -713,6 +707,12 @@ class SKLearnModel(GlobalForecastingModel):
                     f"`target_dim` must be `>= 0`, and `< n_target_components={self.input_dim['target']}`."
                 ),
             )
+
+        if not isinstance(model, MultiOutputMixin):
+            logger.warning(
+                "Model supports multi-output; a single estimator forecasts all the horizons and components."
+            )
+            return model
 
         # when multi_models=True, one model per horizon and target component
         idx_estimator = (
@@ -732,15 +732,20 @@ class SKLearnModel(GlobalForecastingModel):
     ) -> dict:
         """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
         validation set. This method can be overridden if the model requires a different logic to add the eval set."""
-        val_samples, val_labels, val_weight = self._create_lagged_data(
-            series=val_series,
-            past_covariates=val_past_covariates,
-            future_covariates=val_future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            sample_weight=val_sample_weight,
-            last_static_covariates_shape=self._static_covariates_shape,
-            stride=stride,
-        )
+        try:
+            val_samples, val_labels, val_weight = self._create_lagged_data(
+                series=val_series,
+                past_covariates=val_past_covariates,
+                future_covariates=val_future_covariates,
+                max_samples_per_ts=max_samples_per_ts,
+                sample_weight=val_sample_weight,
+                last_static_covariates_shape=self._static_covariates_shape,
+                stride=stride,
+            )
+        except ValueError as err:
+            raise_log(
+                ValueError(f"Invalid validation set: {err}"),
+            )
         # create validation sets for MultiOutputMixin
         if val_labels.ndim == 2 and isinstance(self.model, MultiOutputMixin):
             val_sets, val_weights = [], []
@@ -1733,7 +1738,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
@@ -2046,7 +2051,7 @@ class RegressionModel(SKLearnModel):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
@@ -2314,7 +2319,7 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),

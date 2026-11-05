@@ -28,6 +28,10 @@ STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
 
 ArrayOrArraySequence = np.ndarray | Sequence[np.ndarray]
 
+_TARGET = "target_series"
+_PAST_COV = "past_covariates"
+_FUTURE_COV = "future_covariates"
+
 
 def create_lagged_data(
     target_series: TimeSeriesLike | None = None,
@@ -1693,7 +1697,7 @@ def _get_feature_times(
         _check_lags(lags, lags_past_covariates, lags_future_covariates)
     feature_times, min_lags, max_lags = [], [], []
     for name_i, series_i, lags_i in zip(
-        ["target_series", "past_covariates", "future_covariates"],
+        [_TARGET, _PAST_COV, _FUTURE_COV],
         [target_series, past_covariates, future_covariates],
         [lags, lags_past_covariates, lags_future_covariates],
     ):
@@ -1701,7 +1705,7 @@ def _get_feature_times(
         if isinstance(lags_i, dict):
             lags_i = list(set(chain(*lags_i.values())))
 
-        if check_inputs and (series_i is not None):
+        if series_i is not None:
             _check_series_length(
                 series=series_i,
                 lags=lags_i,
@@ -1712,7 +1716,7 @@ def _get_feature_times(
             )
         series_specified = series_i is not None
         lags_specified = lags_i is not None
-        is_label_series = is_training and name_i == "target_series"
+        is_label_series = is_training and name_i == _TARGET
         times_i = series_i.time_index if series_specified else None
         max_lag_i = -min(lags_i) if lags_specified else None
         min_lag_i = -max(lags_i) if lags_specified else None
@@ -1751,7 +1755,7 @@ def _get_feature_times(
         elif (not is_label_series) and (series_specified ^ lags_specified):
             # Warn user that series/lags input will be ignored:
             times_i = max_lag_i = None
-            lags_name = "lags" if name_i == "target_series" else f"lags_{name_i}"
+            lags_name = "lags" if name_i == _TARGET else f"lags_{name_i}"
             specified = lags_name if lags_specified else name_i
             unspecified = name_i if lags_specified else lags_name
             if show_warnings:
@@ -2113,34 +2117,39 @@ def _check_series_length(
     """
     Throws `ValueError` if `series` is too short for specified `lags` and, when `is_training`, `output_chunk_length`.
     """
-    is_target = name == "target_series"
+    is_target = name == _TARGET
     is_label_series = is_training and is_target
     lags_specified = lags is not None
-    minimum_len, minimum_len_str = None, None
+
+    if not (is_label_series or lags_specified):
+        return
+
+    if is_label_series:
+        minimum_len = (
+            (-min(lags) if lags_specified else 0)
+            + output_chunk_shift
+            + output_chunk_length
+        )
+    else:
+        minimum_len = -min(lags) + max(lags) + 1
+
+    if len(series) >= minimum_len:
+        return
+
     if is_label_series:
         minimum_len_str = (
-            "-min(lags) + output_chunk_length"
-            if lags_specified
-            else "output_chunk_length"
-        ) + " + output_chunk_shift"
-        minimum_len = (
-            output_chunk_length
-            + output_chunk_shift
-            + (-min(lags) if lags_specified else 0)
-        )
-    elif lags_specified:
-        lags_name = "lags" if name == "target_series" else f"lags_{name}"
+            "-min(lags) + " if lags_specified else ""
+        ) + "output_chunk_shift + output_chunk_length"
+    else:
+        lags_name = "lags" if name == _TARGET else f"lags_{name}"
         minimum_len_str = f"-min({lags_name}) + max({lags_name}) + 1"
-        minimum_len = -min(lags) + max(lags) + 1
-    if lags_specified:
-        if series.n_timesteps < minimum_len:
-            raise_log(
-                ValueError(
-                    f"`{name}` must have at least `{minimum_len_str}` = {minimum_len} time "
-                    f"steps; instead, it only has {series.n_timesteps}."
-                ),
-            )
-    return None
+
+    raise_log(
+        ValueError(
+            f"`{name}` must have at least `{minimum_len_str}` = {minimum_len} time "
+            f"steps; instead, it only has {series.n_timesteps}."
+        ),
+    )
 
 
 def _extract_sample_weight(sample_weight, target_series):

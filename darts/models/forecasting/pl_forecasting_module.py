@@ -545,6 +545,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
         out = module_out.prediction
         state = module_out.state
 
+        # a single forward pass covers `n <= output_chunk_length`, so there is nothing to roll
+        if n <= self.output_chunk_length:
+            roll_size = self.output_chunk_length
+
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
@@ -575,7 +579,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
             if self.input_chunk_length >= roll_size:
                 past_target[:, -roll_size:, :] = out[:, :roll_size, :]
             else:
-                past_target[:, :, :] = out[:, -self.input_chunk_length :, :]
+                # the last `input_chunk_length` of the `roll_size` predictions
+                past_target[:, :, :] = out[
+                    :, roll_size - self.input_chunk_length : roll_size, :
+                ]
 
             # set left and right boundaries for extracting future elements
             if self.input_chunk_length >= roll_size:
@@ -623,8 +630,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
             out = module_out.prediction
             state = module_out.state
 
-            batch_prediction.append(out)
-            prediction_length += self.output_chunk_length
+            # keep `roll_size` points of each chunk, except the last one which ends at `min_n`
+            if prediction_length + self.output_chunk_length < min_n:
+                batch_prediction.append(out[:, :roll_size, :])
+                prediction_length += roll_size
+            else:
+                batch_prediction.append(out)
+                prediction_length += self.output_chunk_length
 
         # bring predictions into desired format and drop unnecessary values
         batch_prediction = torch.cat(batch_prediction, dim=1)
@@ -705,7 +717,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         return self.current_epoch
 
     @property
-    def output_chunk_length(self) -> int | None:
+    def output_chunk_length(self) -> int:
         """
         Number of time steps predicted at once by the model.
         """

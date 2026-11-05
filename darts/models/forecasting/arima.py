@@ -94,7 +94,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'future': ['relative']},
                     'custom': {'future': [encode_year]},
                     'transformer': Scaler(),

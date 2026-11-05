@@ -70,6 +70,7 @@ from darts.utils._formatting import (
 )
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
+    _infer_freq_returns_offset,
     _maybe_cast_array_dtype,
     dataframe_col_to_time_index,
     expand_arr,
@@ -105,7 +106,7 @@ class TimeSeries:
         times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
-        freq: str | int | None = None,
+        freq: str | pd.offsets.BaseOffset | int | None = None,
         components: Sequence | str | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
@@ -324,7 +325,8 @@ class TimeSeries:
             # frequency must be known or it can be inferred
             freq = times.freq
             if freq is None:
-                freq = to_offset(times.inferred_freq)
+                with _infer_freq_returns_offset():
+                    freq = to_offset(times.inferred_freq)
                 times.freq = freq
 
             if freq is None:
@@ -338,7 +340,7 @@ class TimeSeries:
                     ),
                 )
 
-            freq_str: str | None = freq.freqstr
+            freq_str: str = freq.freqstr
         else:
             freq: int = times.step
             freq_str = str(freq)
@@ -3591,7 +3593,7 @@ class TimeSeries:
         """Return a new series with one (or more) additional component(s) that contain an attribute of the series' time
         index.
 
-        The additional components are specified with `attribute`, such as 'weekday', 'day' or 'month'.
+        The additional components are specified with `attribute`, such as 'day_of_week', 'day' or 'month'.
 
         This works only for deterministic time series (i.e., made of 1 sample).
 
@@ -3708,7 +3710,7 @@ class TimeSeries:
             Additional keyword arguments for the specified `method`. Some methods require additional arguments.
             Xarray's errors will be raised on invalid keyword arguments.
         kwargs
-            some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
+            some keyword arguments for the `xarray.resample` method, notably `offset` or `origin` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more information, see the `xarray resample() documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`__.
@@ -3720,9 +3722,11 @@ class TimeSeries:
 
         Examples
         --------
-        >>> times = pd.date_range(start=pd.Timestamp("20200101233000"), periods=6, freq="15min")
-        >>> pd_series = pd.Series(range(6), index=times)
-        >>> ts = TimeSeries.from_series(pd_series)
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> times = generate_index("2020-01-01 23:30:00", length=6, freq="15min")
+        >>> ts = TimeSeries.from_times_and_values(times, list(range(6)))
         >>> print(ts.time_index)
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-01 23:45:00',
                        '2020-01-02 00:00:00', '2020-01-02 00:15:00',
@@ -3735,20 +3739,20 @@ class TimeSeries:
         >>> print(resampled_nokwargs_ts.values())
         [[nan]
         [ 2.]]
-        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30min"))
+        >>> resampled_ts = ts.resample(freq="1h", offset="30min")
         >>> print(resampled_ts.time_index)
         DatetimeIndex(['2020-01-01 23:30:00', '2020-01-02 00:30:00'],
                       dtype='datetime64[ns]', name='time', freq='H')
         >>> print(resampled_ts.values())
         [[0.]
         [4.]]
-        >>> resampled_ts = ts.resample(freq="1h", offset=pd.Timedelta("30min"))
+        >>> resampled_ts = ts.resample(freq="1h", offset="30min")
         >>> downsampled_mean_ts = ts.resample(freq="30min", method="mean")
         >>> print(downsampled_mean_ts.values())
         [[0.5]
         [2.5]
         [4.5]]
-        >>> downsampled_reduce_ts = ts.resample(freq="30min", method="reduce", method_args={"func": np.mean})
+        >>> downsampled_reduce_ts = ts.resample(freq="30min", method="reduce", method_kwargs={"func": np.mean})
         >>> print(downsampled_reduce_ts.values())
         [[0.5]
         [2.5]
@@ -3757,7 +3761,7 @@ class TimeSeries:
         import xarray as xr
 
         method_kwargs = method_kwargs or {}
-        if isinstance(freq, pd.DateOffset):
+        if isinstance(freq, pd.offsets.BaseOffset):
             freq = freq.freqstr
 
         resample = self.data_array(copy=False).resample(
@@ -3776,6 +3780,70 @@ class TimeSeries:
         else:
             raise_log(ValueError(f"Unknown method: {method}"))
         return self.__class__.from_xarray(new_xa)
+
+    def reindex(
+        self,
+        times: TimeIndex | Self,
+        method: str | None = None,
+        fill_value: float | None = np.nan,
+        copy: bool = True,
+        **kwargs,
+    ) -> Self:
+        """Return a new series conformed onto a target time index, filling in missing values.
+
+        Parameters
+        ----------
+        times
+            A `pandas.DatetimeIndex`, `pandas.RangeIndex`, or a `TimeSeries` whose `time_index` will be used as the new
+            time index.
+        method
+            A method to fill holes in the re-indexed TimeSeries, by default ``None`` (do not fill gaps).
+            For more information, see the `xarray reindex() documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.reindex.html>`__.
+            For example one of: [None, "backfill", "bfill", "ffill", "nearest", "pad"].
+        fill_value
+            Value to use for newly missing values when ``method=None`` (or where ``method`` cannot fill,
+            such as leading values with ``method="ffill"``). Default is ``np.nan``.
+        copy
+            Whether to copy the underlying data in the returned `TimeSeries`.
+        kwargs
+            Additional keyword arguments passed to `xarray.DataArray.reindex`, such as `tolerance`.
+            For more information, see the `xarray reindex() documentation
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.reindex.html>`__.
+
+        Returns
+        -------
+        TimeSeries
+            A new series aligned to the target time index.
+
+        Examples
+        --------
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> times = generate_index("2020-01-02", length=3, freq="D")
+        >>> ts = TimeSeries.from_times_and_values(times, [10.0, 20.0, 30.0])
+        >>> target_times = generate_index("2020-01-01", length=5, freq="D")
+        >>> reindexed_ts = ts.reindex(target_times, method="ffill", fill_value=0.0)
+        >>> reindexed_ts
+        component      0
+        time
+        2020-01-01   0.0
+        2020-01-02  10.0
+        2020-01-03  20.0
+        2020-01-04  30.0
+        2020-01-05  30.0
+        """
+        if isinstance(times, TimeSeries):
+            times = times.time_index
+
+        new_xa = self.data_array(copy=False).reindex(
+            indexers={self._time_dim: times},
+            method=method,
+            fill_value=fill_value,
+            copy=False,
+            **kwargs,
+        )
+        return self.__class__.from_xarray(new_xa, copy=copy)
 
     def is_within_range(self, ts: pd.Timestamp | int) -> bool:
         """Whether the given timestamp or integer is within the time interval of the series.
@@ -5020,7 +5088,7 @@ class TimeSeries:
         cls,
         times: TimeIndex | pd.Index,
         values: np.ndarray,
-        freq: str | int | None = None,
+        freq: pd.offsets.BaseOffset | str | int | None = None,
     ) -> tuple[TimeIndex, np.ndarray]:
         """Return the time index and values with missing dates inserted.
 
@@ -5110,7 +5178,9 @@ class TimeSeries:
         return times, values[idx_sorted]
 
     @staticmethod
-    def _observed_freq_datetime_index(index: pd.DatetimeIndex) -> set:
+    def _observed_freq_datetime_index(
+        index: pd.DatetimeIndex,
+    ) -> set[pd.offsets.BaseOffset]:
         """Return all observed/inferred frequencies of a `pandas.DatetimeIndex`.
 
         The frequencies are inferred from all combinations of three consecutive time steps.
@@ -5128,12 +5198,15 @@ class TimeSeries:
         steps = np.column_stack([index[unq_td_index + i] for i in range(3)])
 
         # find all unique inferred frequencies
-        observed_freqs = {pd.infer_freq(step) for step in steps}
-        observed_freqs.discard(None)
+        with _infer_freq_returns_offset():
+            observed_freqs = {pd.infer_freq(step) for step in steps}
+        observed_freqs = {
+            to_offset(freq) for freq in observed_freqs if freq is not None
+        }
         return observed_freqs
 
     @staticmethod
-    def _observed_freq_integer_index(index: pd.Index) -> set:
+    def _observed_freq_integer_index(index: pd.Index) -> set[int]:
         """Return all observed/inferred frequencies of a ``pandas.Index`` (an integer-valued index).
 
         The inferred frequencies are given by all unique differences between two consecutive elements.
@@ -5177,7 +5250,7 @@ class TimeSeries:
         cls,
         times: TimeIndex | pd.Index,
         values: np.ndarray,
-        freq: str | int,
+        freq: pd.offsets.BaseOffset | str | int,
     ) -> tuple[TimeIndex, np.ndarray]:
         """Return `times` resampled with frequency `freq` and values with `np.nan` for the newly inserted dates.
 
