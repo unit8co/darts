@@ -58,6 +58,10 @@ from darts.models import (
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
+from darts.models.forecasting.pl_forecasting_module import (
+    PLForecastingModule,
+    io_processor,
+)
 from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
 from darts.tests.parametrize_helpers import param_product
 from darts.utils.data.torch_datasets._data_module import TorchDataModule
@@ -70,6 +74,9 @@ from darts.utils.data.torch_datasets.training_dataset import (
     TorchTrainingDataset,
 )
 from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    PLModuleOutput,
+    TorchInferenceBatch,
     TorchInferenceSample,
     TorchTrainingSample,
     _batch_collate_fn_predict,
@@ -3533,6 +3540,62 @@ class TestTorchForecastingModelFineTuning:
             assert p.requires_grad is True
 
 
+class _RollSizeTestModule(PLForecastingModule):
+    """Deterministic module: next chunk is last target plus optional future cov slice."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.dummy = torch.nn.Parameter(torch.tensor(0.0))
+
+    @io_processor
+    def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
+        ocl = self.output_chunk_length
+        prediction = x_in.past_target[:, -1:, :].expand(-1, ocl, -1).clone()
+        if x_in.future_covariates is not None:
+            prediction = prediction + x_in.future_covariates[:, :ocl, :]
+        return PLModuleOutput(prediction=prediction.unsqueeze(-1))
+
+
+def _make_roll_size_inference_batch(
+    icl: int, ocl: int, n: int, *, with_cov: bool
+) -> TorchInferenceBatch:
+    min_n = n if n >= ocl else ocl
+    cov_len = min_n + ocl + icl
+    past_target = torch.arange(icl, dtype=torch.float32).view(1, icl, 1) + 1.0
+    if not with_cov:
+        return TorchInferenceBatch(past_target=past_target)
+    cov = torch.linspace(0.0, 1.0, cov_len, dtype=torch.float32).view(1, cov_len, 1)
+    return TorchInferenceBatch(
+        past_target=past_target,
+        past_covariates=torch.zeros(1, icl, 1),
+        future_past_covariates=cov,
+        historic_future_covariates=torch.zeros(1, icl, 1),
+        future_covariates=cov * 0.1,
+    )
+
+
+class TestGetBatchPredictionRollSize:
+    @staticmethod
+    def _roll_size_test_horizons(ocl: int) -> list[int]:
+        return sorted({1, ocl, ocl + 1, 2 * ocl - 1, 2 * ocl, 2 * ocl + 2})
+
+    @pytest.mark.parametrize("icl,ocl", [(1, 4), (2, 3), (4, 2)])
+    def test_get_batch_prediction_invariant_to_roll_size(self, icl, ocl):
+        """Target-only rolling: forecast must not depend on ``roll_size`` when covariates are absent."""
+        module = _RollSizeTestModule(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            train_sample_shape={"past_target": (icl, 1)},
+        )
+        module.eval()
+        for n in self._roll_size_test_horizons(ocl):
+            batch = _make_roll_size_inference_batch(icl, ocl, n, with_cov=False)
+            reference = module._get_batch_prediction(n, batch, roll_size=1)
+            for roll_size in range(2, ocl + 1):
+                prediction = module._get_batch_prediction(n, batch, roll_size=roll_size)
+                torch.testing.assert_close(prediction, reference)
+
+
 class TestTorchForecastingModelInputValidation:
     times = pd.date_range("20130101", "20130410")
     series = TimeSeries.from_series(pd.Series(range(100), index=times))
@@ -3653,7 +3716,7 @@ class TestTorchForecastingModelInputValidation:
         "config", param_product([(1, 4), (2, 3), (4, 2)], [False, True])
     )
     def test_predict_roll_size_matches_manual_rollout(self, config):
-        """Every forecast step equals the same step of a manual rollout, for any `roll_size` and `n`."""
+        """End-to-end `predict(roll_size=...)` matches chunked manual `predict()` calls."""
         (icl, ocl), use_covariates = config
         model = DLinearModel(
             input_chunk_length=icl,
@@ -3674,8 +3737,9 @@ class TestTorchForecastingModelInputValidation:
             }
         model.fit(series=self.series, **kwargs)
 
-        for roll_size in range(1, ocl + 1):
-            for n in range(1, 2 * ocl + 3):
+        horizons = sorted({1, ocl, ocl + 1, 2 * ocl - 1, 2 * ocl, 2 * ocl + 2})
+        for n in horizons:
+            for roll_size in range(1, ocl + 1):
                 pred = model.predict(
                     n=n, series=self.series, roll_size=roll_size, **kwargs
                 )
