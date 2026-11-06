@@ -19,7 +19,7 @@ from narwhals import DataFrame
 from pandas._libs.tslibs.offsets import BusinessMixin
 
 from darts.logging import get_logger, raise_log
-from darts.typing import TimeIndex
+from darts.typing import IntoFrequency, IntoTimeStamp, TimeIndex, TimeStamp
 
 TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 
@@ -259,11 +259,7 @@ def _check_quantiles(quantiles):
         )
 
 
-def slice_index(
-    index: TimeIndex,
-    start: int | pd.Timestamp,
-    end: int | pd.Timestamp,
-) -> TimeIndex:
+def slice_index(index: TimeIndex, start: TimeStamp, end: TimeStamp) -> TimeIndex:
     """
     Returns a new Index with the same type as the input `index`, containing the values between `start`
     and `end` included. If start and end are not in the index, the closest values are used instead.
@@ -315,10 +311,7 @@ def slice_index(
     return index[start_idx : end_idx + 1]
 
 
-def drop_before_index(
-    index: TimeIndex,
-    split_point: int | pd.Timestamp,
-) -> TimeIndex:
+def drop_before_index(index: TimeIndex, split_point: TimeStamp) -> TimeIndex:
     """
     Drops everything before the provided time `split_point` (excluded) from the index.
 
@@ -361,9 +354,9 @@ def drop_after_index(
 
 
 def n_steps_between(
-    end: pd.Timestamp | int,
-    start: pd.Timestamp | int,
-    freq: pd.offsets.BaseOffset | int | str,
+    end: TimeStamp,
+    start: TimeStamp,
+    freq: IntoFrequency,
 ) -> int:
     """Get the number of time steps with a given frequency `freq` between `end` and `start`.
 
@@ -504,10 +497,10 @@ def infer_freq_intersection(
 
 
 def generate_index(
-    start: pd.Timestamp | str | int | None = None,
-    end: pd.Timestamp | str | int | None = None,
+    start: IntoTimeStamp | None = None,
+    end: IntoTimeStamp | None = None,
     length: int | None = None,
-    freq: str | int | pd.offsets.BaseOffset | None = None,
+    freq: IntoFrequency | None = None,
     name: str | None = None,
 ) -> TimeIndex:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency

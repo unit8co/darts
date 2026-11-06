@@ -19,7 +19,7 @@ from darts.timeseries import (
     TIME_AX,
     TimeSeries,
 )
-from darts.typing import IntoFrequency, TimeIndex, TimeZone
+from darts.typing import IntoFrequency, IntoTimeStamp, TimeIndex, TimeStamp, TimeZone
 from darts.utils.utils import _maybe_cast_array_dtype, generate_index
 
 ONE_INDEXED_FREQS = {
@@ -37,8 +37,8 @@ TIMES_NAME = DIMS[TIME_AX]
 
 def constant_timeseries(
     value: float = 1,
-    start: str | pd.Timestamp | int | None = "2000-01-01",
-    end: pd.Timestamp | int | None = None,
+    start: IntoTimeStamp | None = "2000-01-01",
+    end: IntoTimeStamp | None = None,
     length: int | None = None,
     freq: IntoFrequency | None = None,
     column_name: str | None = "constant",
@@ -93,8 +93,8 @@ def constant_timeseries(
 def linear_timeseries(
     start_value: float = 0,
     end_value: float = 1,
-    start: str | pd.Timestamp | int | None = "2000-01-01",
-    end: pd.Timestamp | int | None = None,
+    start: IntoTimeStamp | None = "2000-01-01",
+    end: IntoTimeStamp | None = None,
     length: int | None = None,
     freq: IntoFrequency | None = None,
     column_name: str | None = "linear",
@@ -156,8 +156,8 @@ def sine_timeseries(
     value_amplitude: float = 1.0,
     value_phase: float = 0.0,
     value_y_offset: float = 0.0,
-    start: str | pd.Timestamp | int | None = "2000-01-01",
-    end: pd.Timestamp | int | None = None,
+    start: IntoTimeStamp | None = "2000-01-01",
+    end: IntoTimeStamp | None = None,
     length: int | None = None,
     freq: IntoFrequency | None = None,
     column_name: str | None = "sine",
@@ -223,8 +223,8 @@ def sine_timeseries(
 def gaussian_timeseries(
     mean: float | np.ndarray = 0.0,
     std: float | np.ndarray = 1.0,
-    start: str | pd.Timestamp | int | None = "2000-01-01",
-    end: pd.Timestamp | int | None = None,
+    start: IntoTimeStamp | None = "2000-01-01",
+    end: IntoTimeStamp | None = None,
     length: int | None = None,
     freq: IntoFrequency | None = None,
     column_name: str | None = "gaussian",
@@ -305,8 +305,8 @@ def gaussian_timeseries(
 def random_walk_timeseries(
     mean: float = 0.0,
     std: float = 1.0,
-    start: str | pd.Timestamp | int | None = "2000-01-01",
-    end: pd.Timestamp | int | None = None,
+    start: IntoTimeStamp | None = "2000-01-01",
+    end: IntoTimeStamp | None = None,
     length: int | None = None,
     freq: IntoFrequency | None = None,
     column_name: str | None = "random_walk",
@@ -364,8 +364,8 @@ def random_walk_timeseries(
 def autoregressive_timeseries(
     coef: Sequence[float],
     start_values: Sequence[float] | None = None,
-    start: str | pd.Timestamp | int | None = "2000-01-01",
-    end: pd.Timestamp | int | None = None,
+    start: IntoTimeStamp | None = "2000-01-01",
+    end: IntoTimeStamp | None = None,
     length: int | None = None,
     freq: IntoFrequency | None = None,
     column_name: str | None = "autoregressive",
@@ -437,7 +437,7 @@ def autoregressive_timeseries(
 
 def _extend_time_index_until(
     time_index: TimeIndex,
-    until: int | str | pd.Timestamp | None,
+    until: IntoTimeStamp | None,
     add_length: int,
     name,
 ) -> pd.DatetimeIndex:
@@ -479,7 +479,7 @@ def holidays_timeseries(
     prov: str | None = None,
     state: str | None = None,
     column_name: str | None = "holidays",
-    until: int | str | pd.Timestamp | None = None,
+    until: IntoTimeStamp | None = None,
     add_length: int = 0,
     dtype: np.typing.DTypeLike = np.float64,
     tz: TimeZone = None,
@@ -546,7 +546,7 @@ def datetime_attribute_timeseries(
     attribute: str,
     one_hot: bool = False,
     cyclic: bool = False,
-    until: int | str | pd.Timestamp | None = None,
+    until: IntoTimeStamp | None = None,
     add_length: int = 0,
     dtype=np.float64,
     with_columns: list[str] | str | None = None,
@@ -766,7 +766,7 @@ def _build_forecast_series(
     custom_columns: list[str] | None = None,
     with_static_covs: bool = True,
     with_hierarchy: bool = True,
-    pred_start: pd.Timestamp | int | None = None,
+    pred_start: TimeStamp | None = None,
     time_index: TimeIndex | None = None,
     copy: bool = False,
 ) -> TimeSeries:
@@ -830,7 +830,7 @@ def _build_forecast_series(
 def _build_forecast_series_from_schema(
     values: np.ndarray,
     schema: dict[str, Any],
-    pred_start: pd.Timestamp | int,
+    pred_start: TimeStamp,
     predict_likelihood_parameters: bool,
     likelihood_component_names_fn: Callable | None = None,
     copy: bool = False,
@@ -895,7 +895,7 @@ def _build_forecast_series_from_schema(
 
 
 def _generate_new_dates(
-    n: int, input_series: TimeSeries, start: pd.Timestamp | int | None = None
+    n: int, input_series: TimeSeries, start: TimeStamp | None = None
 ) -> TimeIndex:
     """
     Generates `n` new dates after the end of the specified series
@@ -914,7 +914,7 @@ def _generate_new_dates(
 def _process_time_index(
     time_index: TimeSeries | pd.DatetimeIndex,
     tz: TimeZone = None,
-    until: int | str | pd.Timestamp | None = None,
+    until: IntoTimeStamp | None = None,
     add_length: int = 0,
 ) -> tuple[pd.DatetimeIndex, pd.DatetimeIndex]:
     """

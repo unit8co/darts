@@ -60,7 +60,14 @@ from pandas.tseries.frequencies import to_offset
 
 from darts.config import get_option
 from darts.logging import get_logger, raise_log
-from darts.typing import Frequency, IntoFrequency, TimeIndex, TimeZone
+from darts.typing import (
+    Frequency,
+    IntoFrequency,
+    IntoTimeStamp,
+    TimeIndex,
+    TimeStamp,
+    TimeZone,
+)
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils._formatting import (
     format_bytes,
@@ -1643,7 +1650,7 @@ class TimeSeries:
         return self.shape[COMP_AX] == 1
 
     @property
-    def freq(self) -> pd.offsets.BaseOffset | int:
+    def freq(self) -> Frequency:
         """The frequency of the series.
 
         A ``pandas.offsets.BaseOffset`` if the series is indexed with a ``pandas.DatetimeIndex``.
@@ -1974,7 +1981,7 @@ class TimeSeries:
             **self._attrs,
         )
 
-    def start_time(self) -> pd.Timestamp | int:
+    def start_time(self) -> TimeStamp:
         """Start time of the series.
 
         Returns
@@ -1990,7 +1997,7 @@ class TimeSeries:
             self._start_time = start_time
         return start_time
 
-    def end_time(self) -> pd.Timestamp | int:
+    def end_time(self) -> TimeStamp:
         """End time of the series.
 
         Returns
@@ -2376,7 +2383,7 @@ class TimeSeries:
             **self._attrs,
         )
 
-    def get_index_at_point(self, point: pd.Timestamp | float | int, after=True) -> int:
+    def get_index_at_point(self, point: TimeStamp | float, after=True) -> int:
         """Convert a point along the time index into an integer index ranging from (0, len(series)-1) inclusive.
 
         Parameters
@@ -2454,9 +2461,7 @@ class TimeSeries:
             )
         return point_index
 
-    def get_timestamp_at_point(
-        self, point: pd.Timestamp | float | int
-    ) -> pd.Timestamp | int:
+    def get_timestamp_at_point(self, point: pd.Timestamp | float | int) -> TimeStamp:
         """Convert a point into a ``pandas.Timestamp`` (if datetime-indexed) or integer (if integer-indexed).
 
         Parameters
@@ -2481,7 +2486,7 @@ class TimeSeries:
         return self._time_index[idx]
 
     def _split_at(
-        self, split_point: pd.Timestamp | float | int, after: bool = True
+        self, split_point: TimeStamp | float, after: bool = True
     ) -> tuple[Self, Self]:
         # Get index with not after in order to avoid moving twice if split_point is not in self
         point_index = self.get_index_at_point(split_point, not after)
@@ -2490,7 +2495,7 @@ class TimeSeries:
             self[point_index + (1 if after else 0) :],
         )
 
-    def split_after(self, split_point: pd.Timestamp | float | int) -> tuple[Self, Self]:
+    def split_after(self, split_point: TimeStamp | float) -> tuple[Self, Self]:
         """Split the series in two, after a provided `split_point`.
 
         Parameters
@@ -2510,9 +2515,7 @@ class TimeSeries:
         """
         return self._split_at(split_point, after=True)
 
-    def split_before(
-        self, split_point: pd.Timestamp | float | int
-    ) -> tuple[Self, Self]:
+    def split_before(self, split_point: TimeStamp | float) -> tuple[Self, Self]:
         """Split the series in two, before a provided `split_point`.
 
         Parameters
@@ -2534,7 +2537,7 @@ class TimeSeries:
 
     def drop_after(
         self,
-        split_point: pd.Timestamp | float | int,
+        split_point: TimeStamp | float,
         keep_point: bool = False,
     ):
         """Return a new series where everything after (and in-/excluding) the provided time `split_point` was dropped.
@@ -2560,7 +2563,7 @@ class TimeSeries:
 
     def drop_before(
         self,
-        split_point: pd.Timestamp | float | int,
+        split_point: TimeStamp | float,
         keep_point: bool = False,
     ):
         """Return a new series where everything before (and in-/excluding) the provided time `split_point` was dropped.
@@ -2584,7 +2587,7 @@ class TimeSeries:
             + int(not keep_point) :
         ]
 
-    def slice(self, start_ts: pd.Timestamp | int, end_ts: pd.Timestamp | int):
+    def slice(self, start_ts: TimeStamp, end_ts: TimeStamp):
         """Return a slice of the series starting at `start_ts` and ending before `end_ts`.
 
         For series having DatetimeIndex, this is inclusive on both ends. For series having a RangeIndex,
@@ -2658,7 +2661,7 @@ class TimeSeries:
             idx = pd.RangeIndex(effective_start_ts, effective_end_ts, step=self.freq)
             return self[idx]
 
-    def slice_n_points_after(self, start_ts: pd.Timestamp | int, n: int) -> Self:
+    def slice_n_points_after(self, start_ts: TimeStamp, n: int) -> Self:
         """Return a slice of the series starting at `start_ts` (inclusive) and having at most `n` points.
 
         Parameters
@@ -2690,7 +2693,7 @@ class TimeSeries:
             )
         return self[point_index : point_index + n]
 
-    def slice_n_points_before(self, end_ts: pd.Timestamp | int, n: int) -> Self:
+    def slice_n_points_before(self, end_ts: TimeStamp, n: int) -> Self:
         """Return a slice of the series ending at `end_ts` (inclusive) and having at most `n` points.
 
         Parameters
@@ -3685,7 +3688,7 @@ class TimeSeries:
 
     def resample(
         self,
-        freq: Frequency,
+        freq: pd.offsets.BaseOffset,
         method: str = "pad",
         method_kwargs: dict[str, Any] | None = None,
         **kwargs,
@@ -3845,7 +3848,7 @@ class TimeSeries:
         )
         return self.__class__.from_xarray(new_xa, copy=copy)
 
-    def is_within_range(self, ts: pd.Timestamp | int) -> bool:
+    def is_within_range(self, ts: TimeStamp) -> bool:
         """Whether the given timestamp or integer is within the time interval of the series.
 
         `ts` does not need to be an element of the series' time index.
@@ -5357,10 +5360,10 @@ class TimeSeries:
                 ValueError(f"Invalid `axis={axis}`. Must be one of `(1, 2, 3)`."),
             )
 
-    def _get_first_timestamp_after(self, ts: pd.Timestamp) -> pd.Timestamp | int:
+    def _get_first_timestamp_after(self, ts: TimeStamp) -> TimeStamp:
         return next(filter(lambda t: t >= ts, self._time_index))
 
-    def _get_last_timestamp_before(self, ts: pd.Timestamp) -> pd.Timestamp | int:
+    def _get_last_timestamp_before(self, ts: TimeStamp) -> TimeStamp:
         return next(filter(lambda t: t <= ts, self._time_index[::-1]))
 
     def _assert_univariate(self):
@@ -5388,7 +5391,7 @@ class TimeSeries:
                 ),
             )
 
-    def _raise_if_not_within(self, ts: pd.Timestamp | int):
+    def _raise_if_not_within(self, ts: TimeStamp):
         if isinstance(ts, pd.Timestamp):
             # Not that the converse doesn't apply (a time-indexed series can be called with an integer)
             if not self._has_datetime_index:
@@ -5554,7 +5557,7 @@ class TimeSeries:
         np.negative(ts._values, out=ts._values)
         return ts
 
-    def __contains__(self, ts: int | pd.Timestamp) -> bool:
+    def __contains__(self, ts: TimeStamp) -> bool:
         return ts in self.time_index
 
     def __round__(self, n=None):
@@ -5723,9 +5726,7 @@ class TimeSeries:
         | list[str]
         | list[int]
         | list[pd.Timestamp]
-        | str
-        | int
-        | pd.Timestamp
+        | IntoTimeStamp
         | Any,
     ) -> Self:
         """Return a new series with elements selected by `key`.

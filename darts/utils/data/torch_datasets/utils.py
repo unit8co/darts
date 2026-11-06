@@ -14,6 +14,7 @@ import torch
 from torch.utils._pytree import register_pytree_node
 
 from darts.logging import raise_log
+from darts.typing import TimeStamp
 
 # Feature slots used for model-init snapshots, dim inference, and checkpoint shapes.
 # Order matches the historical 6-element ``train_sample_shape`` list.
@@ -113,7 +114,7 @@ class TorchInferenceSample(TorchSample):
     future_covariates: np.ndarray | None = None
     static_covariates: np.ndarray | None = None
     series_schema: dict[str, Any] | None = None
-    pred_time: pd.Timestamp | int | None = None
+    pred_time: TimeStamp | None = None
 
 
 @dataclass(slots=True)

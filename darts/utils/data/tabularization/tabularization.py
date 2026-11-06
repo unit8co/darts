@@ -18,7 +18,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from darts import TimeSeries
 from darts.logging import raise_log
-from darts.typing import TimeIndex, TimeSeriesLike
+from darts.typing import Frequency, TimeIndex, TimeSeriesLike, TimeStamp
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
@@ -2029,10 +2029,10 @@ def strided_moving_window(
 
 
 def _extend_time_index(
-    time_index: pd.Index,
-    freq: int | str,
-    new_start: pd.Timestamp | None = None,
-    new_end: pd.Timestamp | None = None,
+    time_index: TimeIndex,
+    freq: Frequency,
+    new_start: TimeStamp | None = None,
+    new_end: TimeStamp | None = None,
 ):
     """
     Extends a `time_index` of frequency `freq` such that it now ends at time `new_end`;
