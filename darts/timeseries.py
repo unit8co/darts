@@ -60,7 +60,7 @@ from pandas.tseries.frequencies import to_offset
 
 from darts.config import get_option
 from darts.logging import get_logger, raise_log
-from darts.typing import TimeIndex, TimeZone
+from darts.typing import Frequency, IntoFrequency, TimeIndex, TimeZone
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils._formatting import (
     format_bytes,
@@ -106,7 +106,7 @@ class TimeSeries:
         times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
-        freq: str | pd.offsets.BaseOffset | int | None = None,
+        freq: IntoFrequency | None = None,
         components: Sequence | str | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
@@ -485,7 +485,7 @@ class TimeSeries:
         cls,
         xa: xr.DataArray,
         fill_missing_dates: bool | None = False,
-        freq: str | pd.offsets.BaseOffset | int | None = None,
+        freq: IntoFrequency | None = None,
         fillna_value: float | None = None,
         copy: bool = True,
     ) -> Self:
@@ -576,7 +576,7 @@ class TimeSeries:
         time_col: str | None = None,
         value_cols: list[str] | str | None = None,
         fill_missing_dates: bool | None = False,
-        freq: str | pd.offsets.BaseOffset | int | None = None,
+        freq: IntoFrequency | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
         hierarchy: dict | None = None,
@@ -681,7 +681,7 @@ class TimeSeries:
         time_col: str | None = None,
         value_cols: list[str] | str | None = None,
         fill_missing_dates: bool | None = False,
-        freq: str | pd.offsets.BaseOffset | int | None = None,
+        freq: IntoFrequency | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
         hierarchy: dict | None = None,
@@ -847,7 +847,7 @@ class TimeSeries:
         static_cols: list[str] | str | None = None,
         metadata_cols: list[str] | str | None = None,
         fill_missing_dates: bool | None = False,
-        freq: str | pd.offsets.BaseOffset | int | None = None,
+        freq: IntoFrequency | None = None,
         fillna_value: float | None = None,
         drop_group_cols: list[str] | str | None = None,
         n_jobs: int | None = 1,
@@ -1132,7 +1132,7 @@ class TimeSeries:
         cls,
         pd_series,
         fill_missing_dates: bool | None = False,
-        freq: str | pd.offsets.BaseOffset | int | None = None,
+        freq: IntoFrequency | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
         metadata: dict | None = None,
@@ -1214,7 +1214,7 @@ class TimeSeries:
         times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
-        freq: str | pd.offsets.BaseOffset | int | None = None,
+        freq: IntoFrequency | None = None,
         columns: Sequence | str | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
@@ -3288,7 +3288,7 @@ class TimeSeries:
         times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
-        freq: str | pd.offsets.BaseOffset | int | None = None,
+        freq: IntoFrequency | None = None,
         fillna_value: float | None = None,
     ) -> Self:
         """Return a new series similar to this one but with new `times` and `values`.
@@ -3685,7 +3685,7 @@ class TimeSeries:
 
     def resample(
         self,
-        freq: str | pd.offsets.BaseOffset,
+        freq: Frequency,
         method: str = "pad",
         method_kwargs: dict[str, Any] | None = None,
         **kwargs,
@@ -5088,7 +5088,7 @@ class TimeSeries:
         cls,
         times: TimeIndex | pd.Index,
         values: np.ndarray,
-        freq: pd.offsets.BaseOffset | str | int | None = None,
+        freq: IntoFrequency | None = None,
     ) -> tuple[TimeIndex, np.ndarray]:
         """Return the time index and values with missing dates inserted.
 
@@ -5250,7 +5250,7 @@ class TimeSeries:
         cls,
         times: TimeIndex | pd.Index,
         values: np.ndarray,
-        freq: pd.offsets.BaseOffset | str | int,
+        freq: IntoFrequency,
     ) -> tuple[TimeIndex, np.ndarray]:
         """Return `times` resampled with frequency `freq` and values with `np.nan` for the newly inserted dates.
 

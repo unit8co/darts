@@ -20,4 +20,8 @@ TimeIndex: TypeAlias = pd.DatetimeIndex | pd.RangeIndex
 # req. Union with string literals (again, to avoid circular dependency issues)
 TimeSeriesLike: TypeAlias = Union["TimeSeries", Sequence["TimeSeries"]]
 
+# frequency can be either a `BaseOffset` for series with `DatetimeIndex` or `int` for series with `RangeIndex`
+Frequency: TypeAlias = pd.offsets.BaseOffset | int
+IntoFrequency: TypeAlias = Frequency | str
+
 TimeZone: TypeAlias = str | tzinfo | None

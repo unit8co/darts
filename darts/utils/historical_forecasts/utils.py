@@ -20,7 +20,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries, slice_intersect
-from darts.typing import TimeIndex, TimeSeriesLike
+from darts.typing import Frequency, TimeIndex, TimeSeriesLike
 from darts.utils.ts_utils import (
     SeriesType,
     get_series_seq_type,
@@ -1212,7 +1212,7 @@ def _get_historical_forecast_boundaries(
     forecast_horizon: int,
     overlap_end: bool,
     stride: int,
-    freq: pd.offsets.BaseOffset | int,
+    freq: Frequency,
     show_warnings: bool = True,
 ) -> tuple[Any, ...]:
     """

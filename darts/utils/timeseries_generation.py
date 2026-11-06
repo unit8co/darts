@@ -19,7 +19,7 @@ from darts.timeseries import (
     TIME_AX,
     TimeSeries,
 )
-from darts.typing import TimeIndex, TimeZone
+from darts.typing import IntoFrequency, TimeIndex, TimeZone
 from darts.utils.utils import _maybe_cast_array_dtype, generate_index
 
 ONE_INDEXED_FREQS = {
@@ -40,7 +40,7 @@ def constant_timeseries(
     start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | pd.offsets.BaseOffset | int | None = None,
+    freq: IntoFrequency | None = None,
     column_name: str | None = "constant",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -96,7 +96,7 @@ def linear_timeseries(
     start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | pd.offsets.BaseOffset | int | None = None,
+    freq: IntoFrequency | None = None,
     column_name: str | None = "linear",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -159,7 +159,7 @@ def sine_timeseries(
     start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | pd.offsets.BaseOffset | int | None = None,
+    freq: IntoFrequency | None = None,
     column_name: str | None = "sine",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -226,7 +226,7 @@ def gaussian_timeseries(
     start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | pd.offsets.BaseOffset | int | None = None,
+    freq: IntoFrequency | None = None,
     column_name: str | None = "gaussian",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -308,7 +308,7 @@ def random_walk_timeseries(
     start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | pd.offsets.BaseOffset | int | None = None,
+    freq: IntoFrequency | None = None,
     column_name: str | None = "random_walk",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -367,7 +367,7 @@ def autoregressive_timeseries(
     start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | pd.offsets.BaseOffset | int | None = None,
+    freq: IntoFrequency | None = None,
     column_name: str | None = "autoregressive",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
