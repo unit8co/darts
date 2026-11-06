@@ -30,6 +30,13 @@ from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.torch import MonteCarloDropout
 
 
+def _rin_group_dim(group_config: bool | list[str], full_dim: int) -> int | None:
+    """Number of components `RINorm` should normalize for one `use_reversible_instance_norm` group."""
+    if group_config is False:
+        return None
+    return full_dim if group_config is True else len(group_config)
+
+
 def io_processor(forward):
     """Applies some input / output processing to PLForecastingModule.forward.
 
@@ -46,20 +53,21 @@ def io_processor(forward):
 
     Current applications include:
 
-    - Reversible Instance Normalization: normalizes batch input target features, and inverse transform the forward
-      output back to the original scale. Activated with `use_reversible_instance_norm=True` at model creation.
+    - Reversible Instance Normalization: normalizes batch input target series, past covariates, and/or future
+      covariates features (per `use_reversible_instance_norm`'s group config), and inverse transforms the forward
+      output back to the original scale. Activated with `use_reversible_instance_norm` at model creation.
     """
 
     @wraps(forward)
     def forward_wrapper(self, x_in: PLModuleInput, *args, **kwargs):
-        if not self.use_reversible_instance_norm:
+        if self.rin is None:
             return forward(self, x_in, *args, **kwargs)
 
-        # apply reversible instance normalization to past target only; clone to prevent re-normalization
-        x_in = x_in.replace(past_target=self.rin(x_in.past_target.clone()))
+        # apply reversible instance normalization to the configured input groups
+        x_in = self._rin_normalize_input(x_in)
         out = forward(self, x_in, *args, **kwargs)
         # inverse transform target output back to original scale
-        return out.replace(prediction=self.rin.inverse(out.prediction))
+        return self._rin_denormalize_output(out)
 
     return forward_wrapper
 
@@ -136,9 +144,22 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
-            It is only applied to the features of the target series and not the covariates. If ``True``,
-            applies ``RINorm`` with default hyperparameters. If a dictionary, defines the hyperparameters to construct
-            the ``RINorm``. Supported parameters are ``{"affine": bool, "eps": float}``. Default: ``False``.
+            If ``True``, applies ``RINorm`` to the target `series` only, with default hyperparameters. If a
+            dictionary, defines which component groups to normalize and the `RINorm` hyperparameters; see
+            :meth:`RINorm.parse_config <darts.models.components.layer_norm_variants.RINorm.parse_config>` for the
+            supported dict format (``"params"``, ``"series"``, ``"past_covariates"``, ``"future_covariates"`` keys).
+            Default: ``False``. For example, to normalize all `series` components, two named
+            `past_covariates` components, and no `future_covariates`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                use_reversible_instance_norm={
+                    "series": True,  # normalize all `series` components
+                    "past_covariates": ["comp1", "compx"],  # normalize only these components, by name
+                    "future_covariates": False,  # do not normalize `future_covariates` (also the default)
+                }
+            ..
 
         References
         ----------
@@ -189,13 +210,54 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.val_metrics = torch_metrics.clone(prefix="val_")
 
         # reversible instance norm
-        self.use_reversible_instance_norm = use_reversible_instance_norm
-        if use_reversible_instance_norm is True:
-            self.rin: RINorm | None = RINorm(input_dim=self.n_targets)
-        elif isinstance(use_reversible_instance_norm, dict):
-            self.rin = RINorm(input_dim=self.n_targets, **use_reversible_instance_norm)
+        self.rin_config = RINorm.parse_config(use_reversible_instance_norm)
+        # full (unselected) dims available in the batch, regardless of which components RIN targets
+        shapes = self.train_sample_shape or {}
+        past_cov_shape = shapes.get("past_covariates")
+        future_cov_shape = shapes.get("future_covariates")
+        self._past_cov_full_dim = past_cov_shape[1] if past_cov_shape else 0
+        self._future_cov_full_dim = future_cov_shape[1] if future_cov_shape else 0
+        if self.rin_config is None:
+            self.rin: RINorm | None = None
         else:
-            self.rin = None
+            # Verify that if past_covariates or future_covariates is specified, the model actually
+            # uses past_covariates or future_covariates
+            for group_name, full_dim in (
+                ("series", self.n_targets),
+                ("past_covariates", self._past_cov_full_dim),
+                ("future_covariates", self._future_cov_full_dim),
+            ):
+                group_cfg = self.rin_config[group_name]
+                if full_dim > 0 or group_cfg is False:
+                    continue
+                condition = (
+                    "selects components by name"
+                    if isinstance(group_cfg, list)
+                    else "is set to `True`"
+                )
+                raise_log(
+                    ValueError(
+                        f"`use_reversible_instance_norm['{group_name}']` {condition}, but this "
+                        f"model does not use any `{group_name}`."
+                    )
+                )
+            self.rin = RINorm(
+                input_dim=_rin_group_dim(self.rin_config["series"], self.n_targets),
+                past_cov_dim=_rin_group_dim(
+                    self.rin_config["past_covariates"], self._past_cov_full_dim
+                ),
+                future_cov_dim=_rin_group_dim(
+                    self.rin_config["future_covariates"], self._future_cov_full_dim
+                ),
+                **self.rin_config["params"],
+            )
+        # column indices selecting named components per group, resolved externally once actual
+        # component order is known (e.g. by `TorchForecastingModel`); unused for `bool` group configs
+        self.rin_component_indices: dict[str, Sequence[int] | None] = {
+            "series": None,
+            "past_covariates": None,
+            "future_covariates": None,
+        }
 
         # initialize prediction parameters
         self.pred_n: int | None = None
@@ -386,6 +448,141 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_batch_size = batch_size
         self.predict_likelihood_parameters = predict_likelihood_parameters
         self.pred_mc_dropout = mc_dropout
+
+    def set_rin_component_indices(
+        self,
+        series: Sequence[int] | None = None,
+        past_covariates: Sequence[int] | None = None,
+        future_covariates: Sequence[int] | None = None,
+    ) -> None:
+        """Sets the column indices (within the corresponding batch tensor) that `RINorm` should select for
+        groups configured with a list of component names in `use_reversible_instance_norm`. To be called
+        once the actual component order is known (e.g. by `TorchForecastingModel`), before running the model.
+        """
+        self.rin_component_indices = {
+            "series": series,
+            "past_covariates": past_covariates,
+            "future_covariates": future_covariates,
+        }
+
+    def _select_rin_group(
+        self, tensor: torch.Tensor | None, group_name: str
+    ) -> tuple[torch.Tensor | None, slice | Sequence[int] | None]:
+        """Selects the `RINorm`-enabled components of `tensor` for `use_reversible_instance_norm`
+        group `group_name`, returning the selection together with the index/slice needed to write
+        the normalized values back into `tensor` (see :meth:`_merge_rin_group`).
+
+        Returns ``(None, None)`` if `tensor` is `None` (the group has no data in this batch) or the
+        group is disabled in `rin_config`.
+        """
+        cfg = self.rin_config[group_name]
+        if tensor is None or cfg is False:
+            return None, None
+        if cfg is True:
+            return tensor, slice(None)
+        idx = self.rin_component_indices[group_name]
+        if idx is None:
+            raise_log(
+                ValueError(
+                    f"`use_reversible_instance_norm['{group_name}']` selects components by name, but the "
+                    "corresponding indices have not been resolved yet. Call `set_rin_component_indices()` "
+                    "before running the model."
+                )
+            )
+        return tensor[:, :, idx], idx
+
+    @staticmethod
+    def _merge_rin_group(
+        tensor: torch.Tensor | None,
+        group_out: torch.Tensor | None,
+        idx: slice | Sequence[int] | None,
+    ) -> torch.Tensor | None:
+        """Returns `tensor` with its columns `idx` (as returned by :meth:`_select_rin_group`)
+        replaced by the normalized `group_out` values.
+
+        Returns `tensor` unchanged if `group_out` is `None` (the group is not normalized). Never
+        modifies `tensor` in-place, since it may share storage with the original batch (and
+        modifying it would re-normalize it on a later call or corrupt the autograd graph).
+        """
+        if group_out is None:
+            return tensor
+        if isinstance(idx, slice):
+            # all components were normalized; `RINorm` outputs are freshly allocated tensors
+            return group_out
+        tensor = tensor.clone()
+        tensor[:, :, list(idx)] = group_out
+        return tensor
+
+    @staticmethod
+    def _rin_as_tuple(
+        result: torch.Tensor
+        | tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None],
+    ) -> tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None]:
+        """Normalizes an `RINorm` `forward`/`transform`/`inverse` call's result to always be a
+        3-tuple ``(series, past_cov, future_cov)``, regardless of whether `RINorm` took its
+        backward-compatible bare-tensor shortcut for that particular call.
+        """
+        if isinstance(result, tuple):
+            return result
+        return result, None, None
+
+    def _rin_normalize_input(self, x_in: PLModuleInput) -> PLModuleInput:
+        """Applies `RINorm` to the configured groups of `x_in` (past target, past covariates,
+        historic future covariates, and future covariates), returning a new `PLModuleInput` with
+        the normalized tensors to feed into the wrapped `forward()`.
+        """
+        series_in, series_idx = self._select_rin_group(x_in.past_target, "series")
+        past_cov_in, past_cov_idx = self._select_rin_group(
+            x_in.past_covariates, "past_covariates"
+        )
+        hist_future_cov_in, hist_future_cov_idx = self._select_rin_group(
+            x_in.historic_future_covariates, "future_covariates"
+        )
+
+        series_out, past_cov_out, hist_future_cov_out = self._rin_as_tuple(
+            self.rin(x=series_in, past_cov=past_cov_in, future_cov=hist_future_cov_in)
+        )
+
+        # the future window of future covariates reuses the historic window's normalization statistics
+        future_cov_in, future_cov_idx = self._select_rin_group(
+            x_in.future_covariates, "future_covariates"
+        )
+        _, _, future_cov_out = self._rin_as_tuple(
+            self.rin.transform(future_cov=future_cov_in)
+        )
+
+        return x_in.replace(
+            past_target=self._merge_rin_group(x_in.past_target, series_out, series_idx),
+            past_covariates=self._merge_rin_group(
+                x_in.past_covariates, past_cov_out, past_cov_idx
+            ),
+            historic_future_covariates=self._merge_rin_group(
+                x_in.historic_future_covariates,
+                hist_future_cov_out,
+                hist_future_cov_idx,
+            ),
+            future_covariates=self._merge_rin_group(
+                x_in.future_covariates, future_cov_out, future_cov_idx
+            ),
+        )
+
+    def _rin_denormalize_output(self, out: PLModuleOutput) -> PLModuleOutput:
+        """Inverse-transforms the wrapped `forward()`'s target output back to the original scale,
+        if `series` is one of the active RIN groups (a no-op otherwise, since it was never
+        normalized on the way in).
+        """
+        if not self.rin.has_series:
+            return out
+
+        # only the RIN-selected target columns were normalized on the way in (see
+        # `_rin_normalize_input`); denormalize just those, leaving any non-selected target
+        # columns (already in their original scale) untouched.
+        prediction = out.prediction
+        pred_sel, pred_idx = self._select_rin_group(prediction, "series")
+        pred_inv, _, _ = self._rin_as_tuple(self.rin.inverse(x=pred_sel))
+        return out.replace(
+            prediction=self._merge_rin_group(prediction, pred_inv, pred_idx)
+        )
 
     def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         # prediction is of shape (batch_size, n_timesteps, n_components, n_params)
@@ -674,6 +871,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # we must save the metrics to continue logging them when resuming training
         checkpoint["torch_metrics_train"] = self.train_metrics
         checkpoint["torch_metrics_val"] = self.val_metrics
+        # column indices resolved from named `use_reversible_instance_norm` groups are not
+        # recoverable from the checkpoint's tensors/hyperparameters alone (the original `TimeSeries`
+        # component names are not saved), so they must be persisted directly
+        checkpoint["rin_component_indices"] = self.rin_component_indices
 
     def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
@@ -685,6 +886,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.criterion = checkpoint["loss_fn"]
         self.train_metrics = checkpoint["torch_metrics_train"]
         self.val_metrics = checkpoint["torch_metrics_val"]
+        # absent from checkpoints saved before named `use_reversible_instance_norm` groups existed;
+        # `self.rin_component_indices` (all `None`, from `__init__`) is left as-is in that case
+        if "rin_component_indices" in checkpoint:
+            self.rin_component_indices = checkpoint["rin_component_indices"]
 
     def to_dtype(self, dtype):
         """Cast module precision (float32 by default) to another precision."""

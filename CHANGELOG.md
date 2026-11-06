@@ -27,6 +27,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Theta and FourTheta parameters `season_mode`, `model_mode`, `trend_mode`.
   - `darts.utils.statistics` parameter `model`.
 - Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
+- `use_reversible_instance_norm` now supports applying Reversible Instance Normalization (`RINorm`) to `past_covariates` and `future_covariates`, in addition to the target `series`. Pass a dict with `"series"`, `"past_covariates"`, `"future_covariates"` keys (each a `bool`, or a list of specific component names to normalize only a subset), and an optional `"params"` key for the `RINorm` hyperparameters (`affine`, `eps`). The existing `bool` / `{"affine": ..., "eps": ...}` forms remain supported unchanged, and continue to apply only to the target series. [#2758](https://github.com/unit8co/darts/issues/2758) by [Alain Gysi](https://github.com/agysi).
 
 **Fixed**
 
