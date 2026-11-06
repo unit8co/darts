@@ -43,7 +43,7 @@ from darts.metrics.utils import (
     METRIC_OUTPUT_TYPE,
     METRIC_TYPE,
 )
-from darts.typing import TimeIndex, TimeSeriesLike
+from darts.typing import TimeIndex, TimeSeriesLike, TimeStamp
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _apply_data_transformers,
@@ -618,7 +618,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         custom_components: list[str] | None = None,
         with_static_covs: bool = True,
         with_hierarchy: bool = True,
-        pred_start: pd.Timestamp | int | None = None,
+        pred_start: TimeStamp | None = None,
     ) -> TimeSeries:
         """
         Builds a forecast time series starting after the end of the training time series, with the
@@ -696,7 +696,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | Literal["end"] | None = None,
+        start: TimeStamp | float | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -1279,7 +1279,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | Literal["end"] | None = None,
+        start: TimeStamp | float | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -1666,7 +1666,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         future_covariates: TimeSeries | None = None,
         forecast_horizon: int | None = None,
         stride: int = 1,
-        start: pd.Timestamp | float | int | Literal["end"] | None = None,
+        start: TimeStamp | float | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         last_points_only: bool = False,
         show_warnings: bool = True,
@@ -2075,7 +2075,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | float | int | Literal["end"] | None = None,
+        start: TimeStamp | float | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -2917,7 +2917,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Sequence[TimeSeries] | None = None,
         future_covariates: Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        start: pd.Timestamp | float | int | Literal["end"] | None = None,
+        start: TimeStamp | float | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,

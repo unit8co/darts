@@ -7,16 +7,16 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 import numpy as np
-import pandas as pd
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
+from darts.typing import TimeStamp
 
 MapperFn = (
-    Callable[[np.number], np.number] | Callable[[pd.Timestamp, np.number], np.number]
+    Callable[[np.number], np.number] | Callable[[TimeStamp, np.number], np.number]
 )
 
 
@@ -24,7 +24,7 @@ class Mapper(BaseDataTransformer):
     def __init__(
         self,
         fn: Callable[[np.number], np.number]
-        | Callable[[pd.Timestamp, np.number], np.number],
+        | Callable[[TimeStamp, np.number], np.number],
         name: str = "Mapper",
         n_jobs: int = 1,
         verbose: bool = False,
@@ -84,9 +84,9 @@ class InvertibleMapper(InvertibleDataTransformer):
     def __init__(
         self,
         fn: Callable[[np.number], np.number]
-        | Callable[[pd.Timestamp, np.number], np.number],
+        | Callable[[TimeStamp, np.number], np.number],
         inverse_fn: Callable[[np.number], np.number]
-        | Callable[[pd.Timestamp, np.number], np.number],
+        | Callable[[TimeStamp, np.number], np.number],
         name: str = "InvertibleMapper",
         n_jobs: int = 1,
         verbose: bool = False,

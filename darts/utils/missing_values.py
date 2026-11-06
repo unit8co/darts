@@ -41,7 +41,7 @@ def fill_missing_values(
     interpolate_kwargs
         Keyword arguments for `pandas.Dataframe.interpolate()`, only used when fit is set to 'auto'.
         See `the documentation
-        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html>`__
+        <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.interpolate.html>`__
         for the list of supported parameters.
 
     Returns
@@ -162,7 +162,7 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
     interpolate_kwargs
         Keyword arguments for `pandas.Dataframe.interpolate()`.
         See `the documentation
-        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.interpolate.html>`__
+        <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.interpolate.html>`__
         for the list of supported parameters.
     Returns
     -------

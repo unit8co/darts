@@ -48,7 +48,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         Parameters
         ----------
         low_freq
-            The pd.DateOffset string alias corresponding to the target low
+            The pd.offsets.BaseOffset string alias corresponding to the target low
             frequency [2]_. Passed on to the `rule` parameter of pandas.DataFrame.resample().
         strip
             Whether to remove the NaNs from the start and the end of the transformed series.
@@ -336,7 +336,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
 
         References
         ----------
-        .. [1] https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets
+        .. [1] https://pandas.pydata.org/docs/user_guide/timeseries.html#anchored-offsets
         """
         low_freq = params["fixed"]["_low_freq"]
         drop_static_covariates = params["fixed"]["_drop_static_covariates"]

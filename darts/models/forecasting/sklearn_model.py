@@ -62,7 +62,6 @@ from collections.abc import Callable, Sequence
 from typing import Any, Literal
 
 import numpy as np
-import pandas as pd
 from sklearn.base import is_classifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import has_fit_parameter
@@ -70,7 +69,7 @@ from sklearn.utils.validation import has_fit_parameter
 from darts import TimeSeries
 from darts.logging import get_logger, raise_deprecation_warning, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
     create_lagged_component_names,
@@ -1581,7 +1580,7 @@ class SKLearnModel(GlobalForecastingModel):
         past_covariates: Sequence[TimeSeries] | None = None,
         future_covariates: Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        start: pd.Timestamp | float | int | Literal["end"] | None = None,
+        start: TimeStamp | float | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
