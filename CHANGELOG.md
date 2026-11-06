@@ -361,7 +361,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Disallowed `use_reversible_instance_norm=True` or `{"affine": True}` for foundation models to prevent checkpoint loading errors due to incompatible weights. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
-- Updated the restrictive type hint for the timezone parameter `tz` to cover all timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) and [#3035](https://github.com/unit8co/darts/pull/3035) by [Moritz Waldleben](https://github.com/mwaldleben).
+- Updated the restrictive type hint for the timezone parameter `tz` to cover all timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) and [#3035](https://github.com/unit8co/darts/pull/3035) by [Moritz Waldleben](https://github.com/mwaldleben).
 
 **Dependencies**
 

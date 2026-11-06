@@ -31,7 +31,7 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 
 - Have a strictly monotonically increasing time index with a well-defined frequency (without holes / missing dates).
   For more info on available ``DateTimeIndex`` frequencies, see `date offset aliases
-  <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__. For integer-indexed
+  <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__. For integer-indexed
   series the frequency corresponds to the constant step size between consecutive indices.
 - Contain numeric data types only
 - Have unique component / column names
@@ -148,7 +148,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
+            <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         components
@@ -485,7 +485,7 @@ class TimeSeries:
         cls,
         xa: xr.DataArray,
         fill_missing_dates: bool | None = False,
-        freq: str | int | None = None,
+        freq: str | pd.offsets.BaseOffset | int | None = None,
         fillna_value: float | None = None,
         copy: bool = True,
     ) -> Self:
@@ -517,7 +517,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
+            <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -576,7 +576,7 @@ class TimeSeries:
         time_col: str | None = None,
         value_cols: list[str] | str | None = None,
         fill_missing_dates: bool | None = False,
-        freq: str | int | None = None,
+        freq: str | pd.offsets.BaseOffset | int | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
         hierarchy: dict | None = None,
@@ -607,7 +607,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
+            <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -681,7 +681,7 @@ class TimeSeries:
         time_col: str | None = None,
         value_cols: list[str] | str | None = None,
         fill_missing_dates: bool | None = False,
-        freq: str | int | None = None,
+        freq: str | pd.offsets.BaseOffset | int | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
         hierarchy: dict | None = None,
@@ -719,7 +719,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
+            <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -847,7 +847,7 @@ class TimeSeries:
         static_cols: list[str] | str | None = None,
         metadata_cols: list[str] | str | None = None,
         fill_missing_dates: bool | None = False,
-        freq: str | int | None = None,
+        freq: str | pd.offsets.BaseOffset | int | None = None,
         fillna_value: float | None = None,
         drop_group_cols: list[str] | str | None = None,
         n_jobs: int | None = 1,
@@ -902,7 +902,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
+            <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -1132,7 +1132,7 @@ class TimeSeries:
         cls,
         pd_series,
         fill_missing_dates: bool | None = False,
-        freq: str | int | None = None,
+        freq: str | pd.offsets.BaseOffset | int | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
         metadata: dict | None = None,
@@ -1160,7 +1160,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
+            <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -1214,7 +1214,7 @@ class TimeSeries:
         times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
-        freq: str | int | None = None,
+        freq: str | pd.offsets.BaseOffset | int | None = None,
         columns: Sequence | str | None = None,
         fillna_value: float | None = None,
         static_covariates: pd.Series | pd.DataFrame | None = None,
@@ -1243,7 +1243,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
+            <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         columns
@@ -1643,10 +1643,10 @@ class TimeSeries:
         return self.shape[COMP_AX] == 1
 
     @property
-    def freq(self) -> pd.DateOffset | int:
+    def freq(self) -> pd.offsets.BaseOffset | int:
         """The frequency of the series.
 
-        A ``pandas.DateOffset`` if the series is indexed with a ``pandas.DatetimeIndex``.
+        A ``pandas.offsets.BaseOffset`` if the series is indexed with a ``pandas.DatetimeIndex``.
         An integer (step size) if the series is indexed with a ``pandas.RangeIndex``.
         """
         return self._freq
@@ -3288,7 +3288,7 @@ class TimeSeries:
         times: TimeIndex | pd.Index,
         values: np.ndarray,
         fill_missing_dates: bool | None = False,
-        freq: str | int | None = None,
+        freq: str | pd.offsets.BaseOffset | int | None = None,
         fillna_value: float | None = None,
     ) -> Self:
         """Return a new series similar to this one but with new `times` and `values`.
@@ -3311,7 +3311,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
+            <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -3617,7 +3617,7 @@ class TimeSeries:
         tz
             Optionally, a time zone to convert the time index before computing attributes.
             Supports any type handled by pandas
-            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
+            `tz_convert <https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
 
         Returns
         -------
@@ -3663,7 +3663,7 @@ class TimeSeries:
         tz
             Optionally, a time zone to convert the time index before computing attributes.
             Supports any type handled by pandas
-            `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
+            `tz_convert <https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
 
         Returns
         -------
@@ -3685,7 +3685,7 @@ class TimeSeries:
 
     def resample(
         self,
-        freq: str | pd.DateOffset,
+        freq: str | pd.offsets.BaseOffset,
         method: str = "pad",
         method_kwargs: dict[str, Any] | None = None,
         **kwargs,
@@ -3698,7 +3698,7 @@ class TimeSeries:
         ----------
         freq
             The new time difference between two adjacent entries in the returned TimeSeries.
-            Expects a `pandas.DateOffset` or `DateOffset` alias.
+            Expects a `pandas.offsets.BaseOffset` or `BaseOffset` alias.
         method
             A method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
             in the reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
@@ -3994,7 +3994,7 @@ class TimeSeries:
                         If not provided, Darts defaults to "expanding".
                         User defined functions can use either "rolling" or "expanding" modes.
                         More information on pandas windowing operations can be found in the `documentation
-                        <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`__.
+                        <https://pandas.pydata.org/docs/user_guide/window.html>`__.
 
             :``"components"``: Optional. A string or list of strings specifying the TimeSeries components on which the
                                transformation should be applied. If not specified, the transformation will be
@@ -4040,7 +4040,7 @@ class TimeSeries:
             It is expected that the function returns a single
             value for each window. Other possible configurations can be found in the
             `pandas.DataFrame.rolling().apply()
-            documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`__
+            documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.rolling.html>`__
             and `pandas.DataFrame.expanding().apply()
             documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`__.
 
@@ -4159,7 +4159,7 @@ class TimeSeries:
                         "Transformation function must be a string or a callable. "
                         "String can be the name of any function available for pandas window. "
                         "A list of those function can be found in the `documentation "
-                        "<https://pandas.pydata.org/pandas-docs/stable/reference/window.html>`."
+                        "<https://pandas.pydata.org/docs/reference/window.html>`."
                     ),
                 )
 
@@ -4488,7 +4488,7 @@ class TimeSeries:
 
         References
         ----------
-        .. [1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
+        .. [1] https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_csv.html
         """
         if not self.is_deterministic:
             raise_log(
@@ -5093,7 +5093,7 @@ class TimeSeries:
         """Return the time index and values with missing dates inserted.
 
         This requires either a provided `freq` or the possibility to infer a unique frequency from `times` (see
-        `offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__
+        `offset aliases <https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases>`__
         for more info on supported frequencies).
 
         Parameters
@@ -5143,7 +5143,7 @@ class TimeSeries:
             offset_alias_info = (
                 (
                     " For more information about frequency aliases, read "
-                    "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
+                    "https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases"
                 )
                 if has_datetime_index
                 else ""
@@ -5294,7 +5294,7 @@ class TimeSeries:
             offset_alias_info = (
                 (
                     " For more information about frequency aliases, read "
-                    "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
+                    "https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases"
                 )
                 if has_datetime_index
                 else ""

@@ -37,10 +37,10 @@ TIMES_NAME = DIMS[TIME_AX]
 
 def constant_timeseries(
     value: float = 1,
-    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int | None = None,
+    freq: str | pd.offsets.BaseOffset | int | None = None,
     column_name: str | None = "constant",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -63,7 +63,7 @@ def constant_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
+        `docs <https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -93,10 +93,10 @@ def constant_timeseries(
 def linear_timeseries(
     start_value: float = 0,
     end_value: float = 1,
-    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int | None = None,
+    freq: str | pd.offsets.BaseOffset | int | None = None,
     column_name: str | None = "linear",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -124,7 +124,7 @@ def linear_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
+        `docs <https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -156,10 +156,10 @@ def sine_timeseries(
     value_amplitude: float = 1.0,
     value_phase: float = 0.0,
     value_y_offset: float = 0.0,
-    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int | None = None,
+    freq: str | pd.offsets.BaseOffset | int | None = None,
     column_name: str | None = "sine",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -189,7 +189,7 @@ def sine_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
+        `docs <https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -223,10 +223,10 @@ def sine_timeseries(
 def gaussian_timeseries(
     mean: float | np.ndarray = 0.0,
     std: float | np.ndarray = 1.0,
-    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int | None = None,
+    freq: str | pd.offsets.BaseOffset | int | None = None,
     column_name: str | None = "gaussian",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -258,7 +258,7 @@ def gaussian_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
+        `docs <https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -305,10 +305,10 @@ def gaussian_timeseries(
 def random_walk_timeseries(
     mean: float = 0.0,
     std: float = 1.0,
-    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int | None = None,
+    freq: str | pd.offsets.BaseOffset | int | None = None,
     column_name: str | None = "random_walk",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -334,7 +334,7 @@ def random_walk_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
+        `docs <https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -364,10 +364,10 @@ def random_walk_timeseries(
 def autoregressive_timeseries(
     coef: Sequence[float],
     start_values: Sequence[float] | None = None,
-    start: pd.Timestamp | int | None = pd.Timestamp("2000-01-01"),
+    start: str | pd.Timestamp | int | None = "2000-01-01",
     end: pd.Timestamp | int | None = None,
     length: int | None = None,
-    freq: str | int | None = None,
+    freq: str | pd.offsets.BaseOffset | int | None = None,
     column_name: str | None = "autoregressive",
     dtype: np.typing.DTypeLike = np.float64,
 ) -> TimeSeries:
@@ -395,7 +395,7 @@ def autoregressive_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
+        `docs <https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -513,7 +513,7 @@ def holidays_timeseries(
     tz
         Optionally, a time zone to convert the time index before computing attributes.
         Supports any type handled by pandas
-        `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
+        `tz_convert <https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
 
     Returns
     -------
@@ -566,7 +566,7 @@ def datetime_attribute_timeseries(
     attribute
         An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "day_of_week",
         "day", "hour", "minute", "second". See all available attributes `here
-        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex>`__.
+        <https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.html>`__.
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
@@ -593,7 +593,7 @@ def datetime_attribute_timeseries(
     tz
         Optionally, a time zone to convert the time index before computing attributes.
         Supports any type handled by pandas
-        `tz_convert <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
+        `tz_convert <https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.tz_convert.html>`__.
 
     Returns
     -------
@@ -616,7 +616,7 @@ def datetime_attribute_timeseries(
             ValueError(
                 f"attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. "
                 "See all available attributes in "
-                "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex"
+                "https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.html"
             ),
         )
 

@@ -363,14 +363,15 @@ def drop_after_index(
 def n_steps_between(
     end: pd.Timestamp | int,
     start: pd.Timestamp | int,
-    freq: pd.DateOffset | int | str,
+    freq: pd.offsets.BaseOffset | int | str,
 ) -> int:
     """Get the number of time steps with a given frequency `freq` between `end` and `start`.
+
     Works for both integers and time stamps.
 
-    * if `end`, `start`, `freq` are all integers, we can simple divide the difference by the frequency.
-    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. "d", "h", ..., and not "ME", "YE", ...),
-        we can simply divide by the frequency
+    * if `end`, `start`, `freq` are all integers, we can simply divide the difference by the frequency.
+    * if `freq` is a pandas.offsets.BaseOffset with non-ambiguous timedelta (e.g. "d", "h", ..., and not "ME", "YE",
+      ...), we can simply divide by the frequency
     * otherwise, we take the period difference between the two time stamps.
 
     Parameters
@@ -459,9 +460,9 @@ def n_steps_between(
 
 
 def infer_freq_intersection(
-    freq: int | str | pd.tseries.offsets.DateOffset,
-    other: int | str | pd.tseries.offsets.DateOffset,
-) -> int | pd.tseries.offsets.DateOffset:
+    freq: int | str | pd.offsets.BaseOffset,
+    other: int | str | pd.offsets.BaseOffset,
+) -> int | pd.offsets.BaseOffset:
     """Infers the frequency at which two frequencies `freq` and `other` intersect.
 
     Parameters
@@ -506,7 +507,7 @@ def generate_index(
     start: pd.Timestamp | str | int | None = None,
     end: pd.Timestamp | str | int | None = None,
     length: int | None = None,
-    freq: str | int | pd.DateOffset | None = None,
+    freq: str | int | pd.offsets.BaseOffset | None = None,
     name: str | None = None,
 ) -> TimeIndex:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
@@ -524,9 +525,9 @@ def generate_index(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
-        a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
+        The time difference between two adjacent entries in the returned index. In case `start` is a Timestamp,
+        a `pandas.offsets.BaseOffset` alias is expected; see
+        `docs <https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).

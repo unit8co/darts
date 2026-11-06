@@ -1212,7 +1212,7 @@ def _get_historical_forecast_boundaries(
     forecast_horizon: int,
     overlap_end: bool,
     stride: int,
-    freq: pd.DateOffset,
+    freq: pd.offsets.BaseOffset | int,
     show_warnings: bool = True,
 ) -> tuple[Any, ...]:
     """

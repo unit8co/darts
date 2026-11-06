@@ -394,7 +394,7 @@ class TestTimeSeries:
 
     def test_datetime_indexing(self):
         # checking that the DatetimeIndex slicing is behaving as described in
-        # https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html
+        # https://pandas.pydata.org/docs/user_guide/indexing.html
 
         # getting index outside the index range should raise an exception
         with pytest.raises(KeyError):
@@ -1503,7 +1503,7 @@ class TestTimeSeries:
         assert math.isnan(series_test.to_series().get("20130105"))
 
         # ------ test infer frequency for all offset aliases from ------
-        # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+        # https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases
         offset_aliases = [
             "B",
             "C",
