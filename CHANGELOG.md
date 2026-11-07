@@ -31,6 +31,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed `TorchForecastingModel.predict()` and `run_onnx_prediction()` with `roll_size < output_chunk_length` raising an error, returning fewer than `n` points or returning wrong values, depending on `n`. `roll_size` now has no effect when `n <= output_chunk_length`. Also fixed auto-regressive forecasts with `input_chunk_length < output_chunk_length` that could use the wrong target values for the last chunk when `n` is not a multiple of `output_chunk_length`. [#3332](https://github.com/unit8co/darts/pull/3332) by [Mordris](https://github.com/Mordris).
+- Fixed `Theta.fit()` and `FourTheta.fit()` raising a `ValueError` when fitting on a seasonal series containing zero or negative values with `season_mode="multiplicative"`; both models now fall back to `"additive"` seasonality with a warning. [#3340](https://github.com/unit8co/darts/pull/3340) by [Masashi Iida](https://github.com/iida-masashi).
 - Fixed `SKLearnModel.get_estimator()` accepting out-of-range `horizon` and `target_dim` values for models with native multi-output support. A `ValueError` is now raised, as for all other models. [#3327](https://github.com/unit8co/darts/pull/3327) by [Luke J](https://github.com/LukeTheoJohnson).
 - Fixed `MIDAS` failing on short multivariate or probabilistic series when padding to a complete low-frequency period. [#3304](https://github.com/unit8co/darts/pull/3304) by [Aryan R. Ganjoo](https://github.com/AryanRG).
 - Fixed `CatBoostModel` with a `"gaussian"` likelihood reporting the variance instead of the standard deviation when predicting with `predict_likelihood_parameters=True`. The `*_sigma` component now holds the standard deviation, consistent with the torch `GaussianLikelihood`. Sampled forecasts are unaffected. [#3302](https://github.com/unit8co/darts/pull/3302) by [Miral Amin](https://github.com/aminmiral).
@@ -360,7 +361,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Disallowed `use_reversible_instance_norm=True` or `{"affine": True}` for foundation models to prevent checkpoint loading errors due to incompatible weights. [#3029](https://github.com/unit8co/darts/pull/3029) by [Zhihao Dai](https://github.com/daidahao).
-- Updated the restrictive type hint for the timezone parameter `tz` to cover all timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) and [#3035](https://github.com/unit8co/darts/pull/3035) by [Moritz Waldleben](https://github.com/mwaldleben).
+- Updated the restrictive type hint for the timezone parameter `tz` to cover all timezone definitions supported by Pandas [tz_convert](https://pandas.pydata.org/docs/reference/api/pandas.DatetimeIndex.tz_convert.html). [#3015](https://github.com/unit8co/darts/pull/3015) and [#3035](https://github.com/unit8co/darts/pull/3035) by [Moritz Waldleben](https://github.com/mwaldleben).
 
 **Dependencies**
 

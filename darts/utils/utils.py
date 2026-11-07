@@ -19,7 +19,7 @@ from narwhals import DataFrame
 from pandas._libs.tslibs.offsets import BusinessMixin
 
 from darts.logging import get_logger, raise_log
-from darts.typing import TimeIndex
+from darts.typing import IntoFrequency, IntoTimeStamp, TimeIndex, TimeStamp
 
 TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 
@@ -259,11 +259,7 @@ def _check_quantiles(quantiles):
         )
 
 
-def slice_index(
-    index: TimeIndex,
-    start: int | pd.Timestamp,
-    end: int | pd.Timestamp,
-) -> TimeIndex:
+def slice_index(index: TimeIndex, start: TimeStamp, end: TimeStamp) -> TimeIndex:
     """
     Returns a new Index with the same type as the input `index`, containing the values between `start`
     and `end` included. If start and end are not in the index, the closest values are used instead.
@@ -315,10 +311,7 @@ def slice_index(
     return index[start_idx : end_idx + 1]
 
 
-def drop_before_index(
-    index: TimeIndex,
-    split_point: int | pd.Timestamp,
-) -> TimeIndex:
+def drop_before_index(index: TimeIndex, split_point: TimeStamp) -> TimeIndex:
     """
     Drops everything before the provided time `split_point` (excluded) from the index.
 
@@ -361,16 +354,17 @@ def drop_after_index(
 
 
 def n_steps_between(
-    end: pd.Timestamp | int,
-    start: pd.Timestamp | int,
-    freq: pd.DateOffset | int | str,
+    end: TimeStamp,
+    start: TimeStamp,
+    freq: IntoFrequency,
 ) -> int:
     """Get the number of time steps with a given frequency `freq` between `end` and `start`.
+
     Works for both integers and time stamps.
 
-    * if `end`, `start`, `freq` are all integers, we can simple divide the difference by the frequency.
-    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. "d", "h", ..., and not "ME", "YE", ...),
-        we can simply divide by the frequency
+    * if `end`, `start`, `freq` are all integers, we can simply divide the difference by the frequency.
+    * if `freq` is a pandas.offsets.BaseOffset with non-ambiguous timedelta (e.g. "d", "h", ..., and not "ME", "YE",
+      ...), we can simply divide by the frequency
     * otherwise, we take the period difference between the two time stamps.
 
     Parameters
@@ -459,9 +453,9 @@ def n_steps_between(
 
 
 def infer_freq_intersection(
-    freq: int | str | pd.tseries.offsets.DateOffset,
-    other: int | str | pd.tseries.offsets.DateOffset,
-) -> int | pd.tseries.offsets.DateOffset:
+    freq: int | str | pd.offsets.BaseOffset,
+    other: int | str | pd.offsets.BaseOffset,
+) -> int | pd.offsets.BaseOffset:
     """Infers the frequency at which two frequencies `freq` and `other` intersect.
 
     Parameters
@@ -503,10 +497,10 @@ def infer_freq_intersection(
 
 
 def generate_index(
-    start: pd.Timestamp | str | int | None = None,
-    end: pd.Timestamp | str | int | None = None,
+    start: IntoTimeStamp | None = None,
+    end: IntoTimeStamp | None = None,
     length: int | None = None,
-    freq: str | int | pd.DateOffset | None = None,
+    freq: IntoFrequency | None = None,
     name: str | None = None,
 ) -> TimeIndex:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
@@ -524,9 +518,9 @@ def generate_index(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
-        a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
+        The time difference between two adjacent entries in the returned index. In case `start` is a Timestamp,
+        a `pandas.offsets.BaseOffset` alias is expected; see
+        `docs <https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).

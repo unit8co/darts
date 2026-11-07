@@ -8,9 +8,9 @@ from collections.abc import Sequence
 from typing import Any, Literal
 
 import numpy as np
-import pandas as pd
 
 from darts import TimeSeries
+from darts.typing import TimeStamp
 from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_boundaries,
     _process_predict_start_points_bounds,
@@ -24,7 +24,7 @@ def _optimized_historical_forecasts(
     past_covariates: Sequence[TimeSeries] | None = None,
     future_covariates: Sequence[TimeSeries] | None = None,
     num_samples: int = 1,
-    start: pd.Timestamp | float | int | Literal["end"] | None = None,
+    start: TimeStamp | float | Literal["end"] | None = None,
     start_format: Literal["position", "value"] = "value",
     forecast_horizon: int = 1,
     stride: int = 1,
@@ -143,7 +143,7 @@ def _create_dataset_bounds(
     series: Sequence[TimeSeries],
     past_covariates: Sequence[TimeSeries] | None = None,
     future_covariates: Sequence[TimeSeries] | None = None,
-    start: pd.Timestamp | float | int | Literal["end"] | None = None,
+    start: TimeStamp | float | Literal["end"] | None = None,
     start_format: Literal["position", "value"] = "value",
     forecast_horizon: int = 1,
     stride: int = 1,

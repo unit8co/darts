@@ -16,11 +16,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
-import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import raise_log
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
 from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.ts_utils import get_series_seq_type, series2seq
@@ -197,8 +196,8 @@ def prepare_onnx_inputs(
 
 def _values_between(
     series: TimeSeries,
-    start: pd.Timestamp | int,
-    end: pd.Timestamp | int,
+    start: TimeStamp,
+    end: TimeStamp,
     dtype,
 ) -> np.ndarray:
     """Return the values of `series` between `start` and `end` (inclusive)."""

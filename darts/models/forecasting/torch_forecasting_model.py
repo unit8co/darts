@@ -29,7 +29,6 @@ from glob import glob
 from typing import Any, Literal, Self
 
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
 from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
@@ -45,7 +44,7 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.data import (
     SequentialTorchInferenceDataset,
     SequentialTorchTrainingDataset,
@@ -2820,7 +2819,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         past_covariates: Sequence[TimeSeries] | None = None,
         future_covariates: Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        start: pd.Timestamp | float | int | Literal["end"] | None = None,
+        start: TimeStamp | float | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
