@@ -1635,6 +1635,30 @@ class TestShapExplainer:
                 assert explanation.n_components == 6
                 assert np.isfinite(explanation.values()).all()
 
+    @pytest.mark.skipif(
+        not GBM_AVAILABLE, reason="requires gradient boosting libraries"
+    )
+    def test_explain_single_multiquantile_multivariate(self):
+        series = sine_timeseries(length=100, value_frequency=0.05).stack(
+            linear_timeseries(length=100)
+        )
+        model = CatBoostModel(
+            lags=3,
+            output_chunk_length=2,
+            likelihood="multiquantile",
+            quantiles=[0.1, 0.5, 0.9],
+            **cb_test_params,
+        )
+        model.fit(series)
+
+        explainer = ShapExplainer(model)
+        result = explainer.explain_single()
+        for comp in model.likelihood.component_names(series):
+            explanation = result.get_explanation(component=comp)
+            # one row per explained horizon, one column per lagged feature
+            assert explanation.values().shape == (2, 6)
+            assert np.isfinite(explanation.values()).all()
+
 
 class TestExplainabilityUtilsInputValidation:
     def test_process_input_covariates_without_series(self):
