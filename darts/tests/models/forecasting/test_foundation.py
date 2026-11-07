@@ -603,7 +603,10 @@ class TestFoundationModel:
 
         # outside of training, the output only holds the user-selected predictions and is left as is
         module.eval()
-        assert torch.equal(module._metrics_prediction(output), prediction)
+        try:
+            assert torch.equal(module._metrics_prediction(output), prediction)
+        finally:
+            module.train()
 
 
 class TestVariableInputChunkLength:
