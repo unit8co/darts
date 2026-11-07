@@ -128,6 +128,16 @@ class _TiRexModule(PLForecastingModule):
             )
         )
 
+    def _metrics_prediction(self, output: PLModuleOutput) -> torch.Tensor:
+        prediction = output.prediction
+        if self.training and self._enable_finetuning:
+            # during fine-tuning the output holds all pre-trained quantiles (needed for the loss);
+            # metrics should only see the user-selected ones, like in validation / prediction
+            prediction = prediction.index_select(
+                dim=-1, index=self._user_quantile_indices
+            )
+        return prediction
+
     def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         if self.training and self._enable_finetuning:
             # compute loss on pre-trained quantiles
