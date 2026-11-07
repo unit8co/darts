@@ -15,6 +15,7 @@ from darts.models import (
     ARIMA,
     FFT,
     ExponentialSmoothing,
+    FourTheta,
     LinearRegressionModel,
     NaiveDrift,
     NaiveMean,
@@ -1305,6 +1306,66 @@ class TestBacktesting:
         with pytest.raises(ValueError, match="resulted in a NaN `metric` score"):
             NaiveSeasonal.gridsearch(
                 parameters={"K": [1]},
+                series=series[:-5],
+                val_series=series[-5:],
+                metric=self._nan_if_constant_mae,
+            )
+
+    @pytest.mark.parametrize("n_jobs", [1, 2])
+    @pytest.mark.parametrize("mode", ["split", "expanding", "fitted"])
+    def test_gridsearch_failing_combination_not_selected(self, caplog, mode, n_jobs):
+        """A combination raising an error is excluded from the selection instead of aborting the search."""
+        # `K=100` and `seasonality_period=100` require longer series than available and raise an error at fit time
+        series = lt(length=10, start_value=1)
+        if mode == "split":
+            kwargs = {"series": series[:-5], "val_series": series[-5:]}
+        elif mode == "expanding":
+            kwargs = {"series": series, "forecast_horizon": 3, "start": 5}
+        else:
+            kwargs = {"series": series, "use_fitted_values": True}
+        if mode == "fitted":
+            model_cls = FourTheta
+            parameters = {"seasonality_period": [2, 100]}
+            failing_params = {"seasonality_period": 100}
+        else:
+            model_cls = NaiveSeasonal
+            parameters = {"K": [100, 2]}
+            failing_params = {"K": 100}
+
+        with caplog.at_level(logging.WARNING):
+            _, best_params, best_score = model_cls.gridsearch(
+                parameters=parameters, n_jobs=n_jobs, **kwargs
+            )
+        assert best_params != failing_params
+        assert not np.isnan(best_score)
+        assert "1 of 2 hyperparameter combinations raised an error" in caplog.text
+        assert str(failing_params) in caplog.text
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            model_cls.gridsearch(
+                parameters=parameters, n_jobs=n_jobs, show_warnings=False, **kwargs
+            )
+        assert "raised an error" not in caplog.text
+
+    def test_gridsearch_all_failing_combinations_raises_original_error(self):
+        series = lt(length=10)
+        with pytest.raises(ValueError, match="model requires at least 100 entries"):
+            NaiveSeasonal.gridsearch(
+                parameters={"K": [100, 200]},
+                series=series[:-5],
+                val_series=series[-5:],
+            )
+
+    def test_gridsearch_failing_and_nan_combinations_raises(self):
+        series = lt(length=10)
+        # `K=1` scores NaN and `K=100` raises an error
+        with pytest.raises(
+            ValueError,
+            match="resulted in a NaN `metric` score or raised an error",
+        ):
+            NaiveSeasonal.gridsearch(
+                parameters={"K": [1, 100]},
                 series=series[:-5],
                 val_series=series[-5:],
                 metric=self._nan_if_constant_mae,
