@@ -1524,6 +1524,117 @@ class TestShapExplainer:
                 shap_method="invalid",
             )
 
+    @pytest.mark.skipif(
+        not GBM_AVAILABLE, reason="requires gradient boosting libraries"
+    )
+    def test_explain_multiquantile_multivariate(self):
+        """Estimators that natively output all quantiles are explained once per target component, and the
+        SHAP values are sliced per likelihood parameter."""
+        series = sine_timeseries(length=100, value_frequency=0.05).stack(
+            linear_timeseries(length=100)
+        )
+        quantiles = [0.1, 0.5, 0.9]
+        ocl = 2
+        model = CatBoostModel(
+            lags=3,
+            output_chunk_length=ocl,
+            likelihood="multiquantile",
+            quantiles=quantiles,
+            iterations=10,
+            depth=2,
+            verbose=-1,
+        )
+        model.fit(series)
+
+        explainer = ShapExplainer(model)
+        results = explainer.explain()
+
+        likelihood_components = model.likelihood.component_names(series)
+        assert len(likelihood_components) == series.n_components * len(quantiles)
+        assert explainer.explainer.target_components_likelihood == likelihood_components
+
+        feature_names = {
+            f"{name}_target_lag-{lag + 1}"
+            for name in series.columns
+            for lag in range(3)
+        }
+        foreground_arr = explainer.explainer.background_arr
+        for h in range(1, ocl + 1):
+            for t_idx, comp in enumerate(series.columns):
+                # SHAP values from running the explainer directly on the estimator
+                estimator = model.get_estimator(horizon=h - 1, target_dim=t_idx)
+                expected = shap.TreeExplainer(estimator)(foreground_arr).values
+                assert expected.shape[-1] == len(quantiles)
+                for q_idx in range(len(quantiles)):
+                    component = likelihood_components[t_idx * len(quantiles) + q_idx]
+                    explanation = results.get_explanation(
+                        horizon=h, component=component
+                    )
+                    assert set(explanation.components) == feature_names
+                    np.testing.assert_allclose(
+                        explanation.values(),
+                        expected[:, :, q_idx],
+                        rtol=1e-5,
+                        atol=1e-8,
+                    )
+
+        # requesting a subset of the likelihood components gives identical values
+        subset = [likelihood_components[4]]
+        results_subset = explainer.explain(target_components=subset)
+        np.testing.assert_allclose(
+            results_subset.get_explanation(horizon=2, component=subset[0]).values(),
+            results.get_explanation(horizon=2, component=subset[0]).values(),
+        )
+
+    @pytest.mark.skipif(
+        not GBM_AVAILABLE, reason="requires gradient boosting libraries"
+    )
+    def test_explain_gaussian_likelihood_multivariate(self):
+        series = sine_timeseries(length=100, value_frequency=0.05).stack(
+            linear_timeseries(length=100)
+        )
+        model = CatBoostModel(
+            lags=3, output_chunk_length=2, likelihood="gaussian", **cb_test_params
+        )
+        model.fit(series)
+        likelihood_components = model.likelihood.component_names(series)
+        assert likelihood_components == [
+            "sine_mu",
+            "sine_sigma",
+            "linear_mu",
+            "linear_sigma",
+        ]
+
+        # the tree explainer only returns SHAP values for the mean `mu`
+        explainer = ShapExplainer(model)
+        with pytest.raises(ValueError, match="only returned values for 1 of the 2"):
+            explainer.explain()
+        with pytest.raises(ValueError, match="only returned values for 1 of the 2"):
+            explainer.explain(target_components=["sine_sigma"])
+
+        # explaining only the mean works and matches the estimator's SHAP values
+        mu_components = ["sine_mu", "linear_mu"]
+        results = explainer.explain(target_components=mu_components)
+        foreground_arr = explainer.explainer.background_arr
+        for h in [1, 2]:
+            for t_idx, comp in enumerate(mu_components):
+                estimator = model.get_estimator(horizon=h - 1, target_dim=t_idx)
+                expected = shap.TreeExplainer(estimator)(foreground_arr).values
+                explanation = results.get_explanation(horizon=h, component=comp)
+                assert explanation.n_components == 6
+                np.testing.assert_allclose(
+                    explanation.values(), expected[:, :, 0], rtol=1e-5, atol=1e-8
+                )
+
+        # model-agnostic methods explain all likelihood parameters
+        explainer = ShapExplainer(model, shap_method="permutation")
+        results = explainer.explain(foreground_series=series[-20:])
+        for h in [1, 2]:
+            for component in likelihood_components:
+                explanation = results.get_explanation(horizon=h, component=component)
+                assert explanation.n_components == 6
+                assert np.isfinite(explanation.values()).all()
+
 
 class TestExplainabilityUtilsInputValidation:
     def test_process_input_covariates_without_series(self):
