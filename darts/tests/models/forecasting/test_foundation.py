@@ -25,6 +25,9 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
+import torch
+from torchmetrics import MeanAbsoluteError
+
 from darts.models import (
     Chronos2Model,
     PatchTSTFMModel,
@@ -47,6 +50,7 @@ from darts.tests.models.forecasting.foundation_test_utils import (
     timesfm2p5_tiny_context,
     tiny_t0_dir,
 )
+from darts.utils.data.torch_datasets.utils import PLModuleOutput
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -59,6 +63,42 @@ def generate_series(n_variables: int, length: int, prefix: str):
         ],
         axis=1,
     )
+
+
+def _finetuning_metrics_configs():
+    """(model class, parameter pattern to unfreeze, model kwargs) of the foundation models that select the
+    user-facing predictions for the fine-tuning metrics."""
+    configs = [
+        (
+            TimesFM2p5Model,
+            "output_projection_point.hidden_layer.weight",
+            {"hub_model_name": "google/timesfm-2.5-200m-pytorch"},
+        ),
+        (
+            TimesFM3Model,
+            "output_head.weight",
+            {"local_dir": TIMESFM3_TINY_DIR, "accept_license": True},
+        ),
+        (
+            Chronos2Model,
+            "output_patch_embedding.*",
+            {"hub_model_name": "autogluon/chronos-2-small"},
+        ),
+        (PatchTSTFMModel, "*out_layer.*", {"local_dir": PATCHTST_FM_TINY_DIR}),
+    ]
+    if TIREX_AVAILABLE:
+        configs.append((
+            TiRexModel,
+            "*output_patch_embedding.*",
+            {"hub_model_name": "NX-AI/TiRex", "accept_license": True},
+        ))
+    if TIREX2_AVAILABLE:
+        configs.append((
+            TiRex2Model,
+            "*output_patch_embedding.*",
+            {"hub_model_name": "NX-AI/TiRex-2"},
+        ))
+    return configs
 
 
 class TestFoundationModel:
@@ -513,6 +553,57 @@ class TestFoundationModel:
         preds = model.predict(n=6, predict_likelihood_parameters=True)
         assert preds.shape == (6, self.series.n_components * len(quantiles), 1)
         assert not np.isnan(preds.all_values(copy=False)).any()
+
+    @pytest.mark.parametrize(
+        "config", _finetuning_metrics_configs(), ids=lambda config: config[0].__name__
+    )
+    @pytest.mark.parametrize(
+        "quantiles", [None, [0.1, 0.5, 0.9]], ids=["deterministic", "quantiles"]
+    )
+    def test_finetuning_metrics_use_user_predictions(self, config, quantiles):
+        """Tests that the fine-tuning metrics are computed on the user-selected predictions (median if
+        deterministic, else the likelihood quantiles), while the loss uses all pre-trained quantiles."""
+        model_cls, pattern, kwargs = config
+        icl, ocl = 12, 6
+        model = model_cls(
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            enable_finetuning={"unfreeze": [pattern]},
+            n_epochs=1,
+            likelihood=QuantileRegression(quantiles) if quantiles else None,
+            torch_metrics=MeanAbsoluteError(),
+            **kwargs,
+            **tfm_kwargs,
+        )
+
+        # used to crash: all pre-trained quantiles were passed to the training metrics
+        series = self.series[: icl + ocl + 6]
+        model.fit(series, val_series=series)
+        assert "train_MeanAbsoluteError" in model.trainer.callback_metrics
+        assert "val_MeanAbsoluteError" in model.trainer.callback_metrics
+
+        # fake training output where the value of each quantile column is its quantile level
+        module = model.model
+        train_levels = module._finetuning_likelihood.quantiles
+        user_levels = quantiles or [0.5]
+        batch_size, n_components = 2, series.n_components
+        prediction = torch.tensor(train_levels, dtype=torch.float32).expand(
+            batch_size, ocl, n_components, len(train_levels)
+        )
+        output = PLModuleOutput(prediction=prediction)
+
+        # during training, the metrics must only see the user-selected quantile levels
+        module.train()
+        selected = module._metrics_prediction(output)
+        expected = torch.tensor(user_levels, dtype=torch.float32).expand(
+            batch_size, ocl, n_components, len(user_levels)
+        )
+        assert selected.shape == expected.shape
+        assert torch.allclose(selected, expected)
+
+        # outside of training, the output only holds the user-selected predictions and is left as is
+        module.eval()
+        assert torch.equal(module._metrics_prediction(output), prediction)
 
 
 class TestVariableInputChunkLength:
