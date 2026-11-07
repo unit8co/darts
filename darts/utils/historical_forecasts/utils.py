@@ -5,6 +5,7 @@ Optimized Historical Forecasts Utils
 
 import inspect
 from collections.abc import Callable, Sequence
+from copy import deepcopy
 from types import SimpleNamespace
 from typing import Any, Literal, TypeAlias, TypeVar
 
@@ -19,7 +20,7 @@ from darts.dataprocessing.transformers import (
 )
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries, slice_intersect
-from darts.typing import TimeIndex, TimeSeriesLike
+from darts.typing import Frequency, TimeIndex, TimeSeriesLike, TimeStamp
 from darts.utils.ts_utils import (
     SeriesType,
     get_series_seq_type,
@@ -558,7 +559,7 @@ def _historical_forecasts_check_kwargs(
 def _get_start_index(
     series: TimeSeries,
     series_idx: int,
-    start: pd.Timestamp | int | float | Literal["end"],
+    start: TimeStamp | float | Literal["end"],
     start_format: Literal["value", "position"],
     stride: int,
     historical_forecasts_time_index: ExtendedTimeIndex | None = None,
@@ -665,11 +666,11 @@ def _adjust_start(rel_start, stride):
 def _check_start(
     series: TimeSeries,
     start_idx: int,
-    start: pd.Timestamp | int | float,
+    start: TimeStamp | float,
     start_format: Literal["value", "position"],
-    series_start: pd.Timestamp | int,
-    ref_start: pd.Timestamp | int,
-    ref_end: pd.Timestamp | int,
+    series_start: TimeStamp,
+    ref_start: TimeStamp,
+    ref_end: TimeStamp,
     stride: int,
     series_idx: int,
     is_historical_forecast: bool,
@@ -713,7 +714,7 @@ def _get_historical_forecasts_setup(
     future_covariates: TimeSeries | None,
     series_idx: int,
     forecast_horizon: int,
-    start: pd.Timestamp | int | float | Literal["end"] | None,
+    start: TimeStamp | float | Literal["end"] | None,
     start_format: Literal["value", "position"],
     stride: int,
     overlap_end: bool,
@@ -1004,7 +1005,7 @@ def _adjust_historical_forecasts_time_index(
     series: TimeSeries,
     series_idx: int,
     historical_forecasts_time_index: ExtendedTimeIndex,
-    start: pd.Timestamp | float | int | Literal["end"] | None,
+    start: TimeStamp | float | Literal["end"] | None,
     start_format: Literal["position", "value"],
     stride: int,
     show_warnings: bool,
@@ -1081,7 +1082,7 @@ def _adjust_historical_forecasts_time_index(
 
 def _get_start_value_msg(
     series: TimeSeries,
-    start: pd.Timestamp | float | int | Literal["end"] | None,
+    start: TimeStamp | float | Literal["end"] | None,
     start_format: Literal["position", "value"],
     start_idx_orig: int,
 ) -> str:
@@ -1206,12 +1207,12 @@ def _get_historical_forecast_boundaries(
     series_idx: int,
     past_covariates: TimeSeries | None,
     future_covariates: TimeSeries | None,
-    start: pd.Timestamp | float | int | Literal["end"] | None,
+    start: TimeStamp | float | Literal["end"] | None,
     start_format: Literal["position", "value"],
     forecast_horizon: int,
     overlap_end: bool,
     stride: int,
-    freq: pd.DateOffset,
+    freq: Frequency,
     show_warnings: bool = True,
 ) -> tuple[Any, ...]:
     """
@@ -1404,12 +1405,12 @@ def _convert_data_transformers(
     if data_transformers is None:
         return dict()
     else:
-        return {
-            key_: val_
-            if isinstance(val_, Pipeline)
-            else Pipeline(transformers=[val_], copy=copy)
-            for key_, val_ in data_transformers.items()
-        }
+        res = {}
+        for key_, val_ in data_transformers.items():
+            if not isinstance(val_, Pipeline):
+                val_ = Pipeline(transformers=[val_])
+            res[key_] = deepcopy(val_) if copy else val_
+        return res
 
 
 def _apply_data_transformers(

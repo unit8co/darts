@@ -11,14 +11,12 @@ scorer(s) to compute anomaly scores by comparing how actuals deviate from the mo
 from collections.abc import Sequence
 from typing import Literal, Self
 
-import pandas as pd
-
 from darts import TimeSeries
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.logging import raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeSeriesLike, TimeStamp
 
 
 class ForecastingAnomalyModel(AnomalyModel):
@@ -64,7 +62,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         future_covariates: TimeSeriesLike | None = None,
         allow_model_training: bool = False,
         forecast_horizon: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: TimeStamp | float | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
@@ -150,7 +148,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
         forecast_horizon: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: TimeStamp | float | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
@@ -237,7 +235,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: Sequence[TimeSeries] | None = None,
         future_covariates: Sequence[TimeSeries] | None = None,
         forecast_horizon: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: TimeStamp | float | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
@@ -323,7 +321,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: TimeSeriesLike | None = None,
         future_covariates: TimeSeriesLike | None = None,
         forecast_horizon: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: TimeStamp | float | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
@@ -421,7 +419,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         past_covariates: TimeSeries | None = None,
         future_covariates: TimeSeries | None = None,
         forecast_horizon: int = 1,
-        start: pd.Timestamp | float | int | None = None,
+        start: TimeStamp | float | None = None,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,
@@ -532,7 +530,7 @@ class ForecastingAnomalyModel(AnomalyModel):
         future_covariates: Sequence[TimeSeries] | None = None,
         allow_model_training: bool = False,
         forecast_horizon: int = 1,
-        start: pd.Timestamp | float | int = 0.5,
+        start: TimeStamp | float = 0.5,
         start_format: Literal["position", "value"] = "value",
         num_samples: int = 1,
         verbose: bool = False,

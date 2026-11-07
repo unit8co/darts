@@ -48,7 +48,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         Parameters
         ----------
         low_freq
-            The pd.DateOffset string alias corresponding to the target low
+            The pd.offsets.BaseOffset string alias corresponding to the target low
             frequency [2]_. Passed on to the `rule` parameter of pandas.DataFrame.resample().
         strip
             Whether to remove the NaNs from the start and the end of the transformed series.
@@ -134,10 +134,12 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
         low_freq = params["fixed"]["_low_freq"]
         for idx, ts in enumerate(series):
             high_freq = ts.freq_str
+            high_period = pd.tseries.frequencies.get_period_alias(high_freq)
+            low_period = pd.tseries.frequencies.get_period_alias(low_freq)
+            # pandas>=3.1 also considers a frequency a sub-period of itself
             if not pd.tseries.frequencies.is_subperiod(
-                pd.tseries.frequencies.get_period_alias(high_freq),
-                pd.tseries.frequencies.get_period_alias(low_freq),
-            ):
+                high_period, low_period
+            ) or pd.tseries.frequencies.is_superperiod(high_period, low_period):
                 raise_log(
                     ValueError(
                         f"The frequency string of the series at index={idx} must be higher than the "
@@ -240,9 +242,9 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             first_idx = first_up_sampled.index.get_loc(df.index[0])
             last_idx = first_idx + series_size - 1
 
-            start_chunk = np.empty((first_idx, 1, 1))
+            start_chunk = np.empty((first_idx, n_cols_in, n_samples))
             start_chunk.fill(np.nan)
-            end_chunk = np.empty((max_size - 1 - last_idx, 1, 1))
+            end_chunk = np.empty((max_size - 1 - last_idx, n_cols_in, n_samples))
             end_chunk.fill(np.nan)
             arr = np.concatenate([start_chunk, arr, end_chunk])
             # arr has shape (n time steps, n components, n samples)
@@ -334,7 +336,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
 
         References
         ----------
-        .. [1] https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#anchored-offsets
+        .. [1] https://pandas.pydata.org/docs/user_guide/timeseries.html#anchored-offsets
         """
         low_freq = params["fixed"]["_low_freq"]
         drop_static_covariates = params["fixed"]["_drop_static_covariates"]

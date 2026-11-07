@@ -29,7 +29,6 @@ from glob import glob
 from typing import Any, Literal, Self
 
 import numpy as np
-import pandas as pd
 import pytorch_lightning as pl
 import torch
 from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
@@ -45,7 +44,7 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.data import (
     SequentialTorchInferenceDataset,
     SequentialTorchTrainingDataset,
@@ -212,7 +211,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
@@ -1163,14 +1162,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         if val_series is not None:
-            val_dataset = self._build_train_dataset(
-                series=val_series,
-                past_covariates=val_past_covariates,
-                future_covariates=val_future_covariates,
-                sample_weight=val_sample_weight,
-                max_samples_per_ts=max_samples_per_ts,
-                stride=stride,
-            )
+            try:
+                val_dataset = self._build_train_dataset(
+                    series=val_series,
+                    past_covariates=val_past_covariates,
+                    future_covariates=val_future_covariates,
+                    sample_weight=val_sample_weight,
+                    max_samples_per_ts=max_samples_per_ts,
+                    stride=stride,
+                )
+            except ValueError as err:
+                raise_log(
+                    ValueError(f"Invalid validation set: {err}"),
+                )
         else:
             val_dataset = None
 
@@ -2815,7 +2819,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         past_covariates: Sequence[TimeSeries] | None = None,
         future_covariates: Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        start: pd.Timestamp | float | int | Literal["end"] | None = None,
+        start: TimeStamp | float | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,

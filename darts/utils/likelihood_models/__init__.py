@@ -53,6 +53,9 @@ if TYPE_CHECKING:
     from darts.utils.likelihood_models.torch import (
         WeibullLikelihood as WeibullLikelihood,
     )
+    from darts.utils.likelihood_models.torch import (
+        ZeroInflatedLikelihood as ZeroInflatedLikelihood,
+    )
 
 _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "BernoulliLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
@@ -75,6 +78,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str | None]] = {
     "PoissonLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
     "QuantileRegression": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
     "WeibullLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
+    "ZeroInflatedLikelihood": ("darts.utils.likelihood_models.torch", "(Py)Torch"),
 }
 
 __all__, __getattr__, __dir__ = setup_lazy_imports(_LAZY_IMPORTS, __name__, globals())

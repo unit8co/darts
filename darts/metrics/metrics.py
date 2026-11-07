@@ -2085,6 +2085,7 @@ def ope(
     *,
     q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
     zero_division: str = "warn",
+    signed: bool = False,
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -2102,6 +2103,14 @@ def ope(
     If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
     specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
     (over all samples, or, if given, the quantile prediction itself).
+
+    With `signed=True`, the absolute value is not taken, which gives the signed overall percentage error
+    (percentage bias):
+
+    .. math:: 100 \\cdot \\frac{\\sum_{t=1}^{T}{y_t} - \\sum_{t=1}^{T}{\\hat{y}_t}}{\\sum_{t=1}^{T}{y_t}}.
+
+    A positive value means that the forecast is too low overall (under-forecasting), a negative value that it is
+    too high (over-forecasting).
 
     Parameters
     ----------
@@ -2123,6 +2132,9 @@ def ope(
 
         Note: a negative sum is a valid denominator (e.g. financial return series). Only an exact
         zero sum triggers the zero-division handling.
+    signed
+        Whether to return the signed overall percentage error instead of its absolute value. The sign shows the
+        direction of the bias: positive for under-forecasting and negative for over-forecasting.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2181,16 +2193,15 @@ def ope(
         np.nansum(y_true, axis=TIME_AX),
         np.nansum(y_pred, axis=TIME_AX),
     )
-    return 100.0 * np.abs(
-        _safe_divide(
-            y_true_sum - y_pred_sum,
-            y_true_sum,
-            zero_division=zero_division,
-            zero_fill=0.0,
-            strict_zero=True,
-            metric_type="percentage",
-        )
+    ope_ = 100.0 * _safe_divide(
+        y_true_sum - y_pred_sum,
+        y_true_sum,
+        zero_division=zero_division,
+        zero_fill=0.0,
+        strict_zero=True,
+        metric_type="percentage",
     )
+    return ope_ if signed else np.abs(ope_)
 
 
 @multi_ts_support

@@ -19,7 +19,7 @@ from narwhals import DataFrame
 from pandas._libs.tslibs.offsets import BusinessMixin
 
 from darts.logging import get_logger, raise_log
-from darts.typing import TimeIndex
+from darts.typing import IntoFrequency, IntoTimeStamp, TimeIndex, TimeStamp
 
 TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 
@@ -71,24 +71,6 @@ class NotImportedModule:
 
     def __call__(self, *args, **kwargs):
         raise_log(ImportError(self.error_message))
-
-
-# Enums
-class SeasonalityMode(Enum):
-    MULTIPLICATIVE = "multiplicative"
-    ADDITIVE = "additive"
-    NONE = None
-
-
-class TrendMode(Enum):
-    LINEAR = "linear"
-    EXPONENTIAL = "exponential"
-
-
-class ModelMode(Enum):
-    MULTIPLICATIVE = "multiplicative"
-    ADDITIVE = "additive"
-    NONE = None
 
 
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
@@ -277,11 +259,7 @@ def _check_quantiles(quantiles):
         )
 
 
-def slice_index(
-    index: TimeIndex,
-    start: int | pd.Timestamp,
-    end: int | pd.Timestamp,
-) -> TimeIndex:
+def slice_index(index: TimeIndex, start: TimeStamp, end: TimeStamp) -> TimeIndex:
     """
     Returns a new Index with the same type as the input `index`, containing the values between `start`
     and `end` included. If start and end are not in the index, the closest values are used instead.
@@ -333,10 +311,7 @@ def slice_index(
     return index[start_idx : end_idx + 1]
 
 
-def drop_before_index(
-    index: TimeIndex,
-    split_point: int | pd.Timestamp,
-) -> TimeIndex:
+def drop_before_index(index: TimeIndex, split_point: TimeStamp) -> TimeIndex:
     """
     Drops everything before the provided time `split_point` (excluded) from the index.
 
@@ -379,16 +354,17 @@ def drop_after_index(
 
 
 def n_steps_between(
-    end: pd.Timestamp | int,
-    start: pd.Timestamp | int,
-    freq: pd.DateOffset | int | str,
+    end: TimeStamp,
+    start: TimeStamp,
+    freq: IntoFrequency,
 ) -> int:
     """Get the number of time steps with a given frequency `freq` between `end` and `start`.
+
     Works for both integers and time stamps.
 
-    * if `end`, `start`, `freq` are all integers, we can simple divide the difference by the frequency.
-    * if `freq` is a pandas Dateoffset with non-ambiguous timedelate (e.g. "d", "h", ..., and not "ME", "YE", ...),
-        we can simply divide by the frequency
+    * if `end`, `start`, `freq` are all integers, we can simply divide the difference by the frequency.
+    * if `freq` is a pandas.offsets.BaseOffset with non-ambiguous timedelta (e.g. "d", "h", ..., and not "ME", "YE",
+      ...), we can simply divide by the frequency
     * otherwise, we take the period difference between the two time stamps.
 
     Parameters
@@ -426,7 +402,7 @@ def n_steps_between(
     valid_time = (
         isinstance(start, pd.Timestamp)
         and isinstance(end, pd.Timestamp)
-        and isinstance(freq, pd.DateOffset)
+        and isinstance(freq, pd.offsets.BaseOffset)
     )
     if not (valid_int or valid_time):
         raise_log(
@@ -437,7 +413,9 @@ def n_steps_between(
         )
 
     # frequency has a fixed period (e.g. non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W'), or integer step)
-    if isinstance(freq, int) or pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
+    # since pandas 3.0, 'D' is a calendar day and not a `Tick` anymore; pandas>=3.1 converts it to a timedelta,
+    # but `Timestamp` differences can't be divided by it, so it uses the period-based approach below
+    if isinstance(freq, int | pd.offsets.Tick):
         diff = end - start
         if abs(diff) != diff:
             # (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency
@@ -446,7 +424,7 @@ def n_steps_between(
             diff += diff % freq
         n_steps = diff // freq
     else:
-        period_alias = pd.tseries.frequencies.get_period_alias(freq.name)
+        period_alias = pd.tseries.frequencies.get_period_alias(freq.rule_code)
         if isinstance(freq, BusinessMixin) or period_alias is None:
             # for lower pandas versions ~1.5.0, business frequencies wrongly have a period alias.
             # taking the period difference as computed in `else` gives wrong results.
@@ -475,9 +453,9 @@ def n_steps_between(
 
 
 def infer_freq_intersection(
-    freq: int | str | pd.tseries.offsets.DateOffset,
-    other: int | str | pd.tseries.offsets.DateOffset,
-) -> int | pd.tseries.offsets.DateOffset:
+    freq: int | str | pd.offsets.BaseOffset,
+    other: int | str | pd.offsets.BaseOffset,
+) -> int | pd.offsets.BaseOffset:
     """Infers the frequency at which two frequencies `freq` and `other` intersect.
 
     Parameters
@@ -519,10 +497,10 @@ def infer_freq_intersection(
 
 
 def generate_index(
-    start: pd.Timestamp | str | int | None = None,
-    end: pd.Timestamp | str | int | None = None,
+    start: IntoTimeStamp | None = None,
+    end: IntoTimeStamp | None = None,
     length: int | None = None,
-    freq: str | int | pd.DateOffset | None = None,
+    freq: IntoFrequency | None = None,
     name: str | None = None,
 ) -> TimeIndex:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
@@ -540,9 +518,9 @@ def generate_index(
     length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
-        a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
+        The time difference between two adjacent entries in the returned index. In case `start` is a Timestamp,
+        a `pandas.offsets.BaseOffset` alias is expected; see
+        `docs <https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -823,3 +801,18 @@ def _maybe_cast_array_dtype(vals: np.ndarray, dtype):
     if vals.dtype != dtype:
         vals = vals.astype(dtype)
     return vals
+
+
+def _infer_freq_returns_offset() -> contextlib.AbstractContextManager:
+    """Context manager making `pd.infer_freq()` and `DatetimeIndex.inferred_freq` return a frequency offset.
+
+    This is the default behavior starting from pandas 4.0.0. For pandas>=3.1.0, it opts into the future behavior
+    which also avoids a `Pandas4Warning`. For lower pandas versions (where the option does not exist), the
+    frequencies are still returned as strings.
+    """
+    option = "future.infer_freq_returns_offset"
+    try:
+        pd.get_option(option)
+    except pd.errors.OptionError:  # pragma: no cover
+        return contextlib.nullcontext()
+    return pd.option_context(option, True)

@@ -1,4 +1,5 @@
 import builtins
+import warnings
 from unittest.mock import patch
 
 import numpy as np
@@ -16,8 +17,10 @@ from darts.utils.likelihood_models.base import (
     quantile_names,
 )
 from darts.utils.missing_values import extract_subseries
+from darts.utils.timeseries_generation import datetime_attribute_timeseries
 from darts.utils.ts_utils import retain_period_common_to_all
 from darts.utils.utils import (
+    _infer_freq_returns_offset,
     expand_arr,
     generate_index,
     infer_freq_intersection,
@@ -141,6 +144,31 @@ class TestUtils:
         assert isinstance(subseries_no_gap, list)
         assert len(subseries_no_gap) == 1
         assert subseries_no_gap[0] == no_gap_series
+
+        # multivariate series with leading and trailing partial NaNs under mode="any"
+
+        partial_nan_vals = np.array([
+            [np.nan, 1.0, 2.0, np.nan, 4.0, 5.0],
+            [1.0, 1.0, 2.0, 3.0, 4.0, np.nan],
+        ]).T
+        partial_nan_series = TimeSeries.from_values(partial_nan_vals)
+        subseries_partial = extract_subseries(
+            partial_nan_series, min_gap_size=1, mode="any"
+        )
+        assert len(subseries_partial) == 2
+        assert len(subseries_partial[0]) == 2
+        assert not np.isnan(subseries_partial[0].values()).any()
+        assert len(subseries_partial[1]) == 1
+        assert not np.isnan(subseries_partial[1].values()).any()
+
+        # all-NaN series returns an empty list
+        all_nan_series = TimeSeries.from_values(np.full((1, 2), np.nan))
+        assert extract_subseries(all_nan_series) == []
+        assert extract_subseries(all_nan_series, mode="any") == []
+
+        # empty series returns an empty list
+        empty_series = TimeSeries.from_values(np.array([]))
+        assert extract_subseries(empty_series) == []
 
     @pytest.mark.parametrize(
         "start,freq",
@@ -952,3 +980,66 @@ class TestRandomMethodInputValidation:
             @random_method
             def standalone_func():
                 pass
+
+
+@pytest.mark.skipif(
+    not hasattr(pd.errors, "Pandas4Warning"),
+    reason="`Pandas4Warning` only exists for pandas>=3.1",
+)
+class TestPandas4Deprecations:
+    """Darts should not raise any `Pandas4Warning` from its own code paths."""
+
+    @pytest.fixture(autouse=True)
+    def _pandas4_warnings_as_errors(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", pd.errors.Pandas4Warning)
+            yield
+
+    def test_infer_freq_returns_offset(self):
+        idx = pd.DatetimeIndex(pd.date_range("2024-01-01", periods=5, freq="D").values)
+        with _infer_freq_returns_offset():
+            assert isinstance(pd.infer_freq(idx), pd.offsets.BaseOffset)
+            assert isinstance(idx.inferred_freq, pd.offsets.BaseOffset)
+
+    @pytest.mark.parametrize("freq", ["D", "h", "MS", "W-MON", "QE-DEC", "B"])
+    def test_timeseries_with_inferred_freq(self, freq):
+        idx = pd.date_range("2024-01-01", periods=10, freq=freq)
+        # strip the `freq` so that it must be inferred
+        ts = TimeSeries.from_times_and_values(
+            pd.DatetimeIndex(idx.values), np.arange(10.0)
+        )
+        assert ts.freq == idx.freq
+
+    def test_fill_missing_dates(self):
+        idx = pd.date_range("2024-01-01", periods=10, freq="D").delete([3, 4])
+        ts = TimeSeries.from_times_and_values(
+            idx, np.arange(8.0), fill_missing_dates=True
+        )
+        assert ts.freq_str == "D"
+        assert len(ts) == 10
+
+        # irregular index: the error still lists the observed frequency strings
+        idx = pd.DatetimeIndex(["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-05"])
+        idx = idx.append(pd.date_range("2024-01-07", periods=3, freq="2D"))
+        with pytest.raises(ValueError, match="Observed frequencies"):
+            TimeSeries.from_times_and_values(
+                idx, np.arange(7.0), fill_missing_dates=True
+            )
+
+    @pytest.mark.parametrize("freq", ["2h", "30min", "2D", "MS"])
+    def test_resample_with_offset(self, freq):
+        idx = pd.date_range("2024-01-01", periods=48, freq="h")
+        ts = TimeSeries.from_times_and_values(idx, np.arange(48.0))
+        resampled = ts.resample(freq=pd.tseries.frequencies.to_offset(freq))
+        assert resampled.freq == pd.tseries.frequencies.to_offset(freq)
+
+    @pytest.mark.parametrize("freq", ["h", "2D", "MS", "W-MON", "QE-DEC", "B"])
+    def test_n_steps_between(self, freq):
+        idx = pd.date_range("2024-01-01", periods=10, freq=freq)
+        assert n_steps_between(end=idx[-1], start=idx[0], freq=idx.freq) == 9
+
+    @pytest.mark.parametrize("attribute", ["day_of_week", "day_of_year"])
+    def test_datetime_attribute_timeseries(self, attribute):
+        idx = pd.date_range("2024-01-01", periods=10, freq="D")
+        ts = datetime_attribute_timeseries(idx, attribute=attribute)
+        assert len(ts) == 10

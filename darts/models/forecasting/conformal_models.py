@@ -13,7 +13,6 @@ from collections.abc import Callable, Sequence
 from typing import Any, BinaryIO, Literal, Self
 
 import numpy as np
-import pandas as pd
 
 from darts import TimeSeries, metrics
 from darts.dataprocessing.pipeline import Pipeline
@@ -21,7 +20,7 @@ from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import raise_log
 from darts.metrics.utils import METRIC_TYPE
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils import _build_tqdm_iterator, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
@@ -40,6 +39,7 @@ from darts.utils.ts_utils import (
 )
 from darts.utils.utils import (
     TORCH_AVAILABLE,
+    ModelType,
     _check_quantiles,
     generate_index,
     n_steps_between,
@@ -78,8 +78,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
           `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
 
         Conformal models can be applied to any of Darts' global forecasting model, as long as the model has been
-        fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
-        follows:
+        fitted before and is not a classification model. In general the workflow of the models to produce one
+        calibrated forecast/prediction is as follows:
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
           the most recent past of your input series relative to the forecast start point. The number of calibration
@@ -129,6 +129,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
                 ValueError("`model` must be a pre-trained `GlobalForecastingModel`."),
+            )
+        if getattr(model, "_model_type", None) == ModelType.FORECASTING_CLASSIFIER:
+            raise_log(
+                ValueError(
+                    "`model` must be a regression model (predicting continuous numerical "
+                    "values). Classification models are not supported."
+                ),
             )
         _check_quantiles(quantiles)
 
@@ -393,7 +400,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | int | Literal["end"] | None = None,
+        start: TimeStamp | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -633,7 +640,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | int | Literal["end"] | None = None,
+        start: TimeStamp | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -866,7 +873,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         num_samples: int = 1,
         train_length: int | None = None,
         val_length: int = 0,
-        start: pd.Timestamp | int | Literal["end"] | None = None,
+        start: TimeStamp | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: bool | int | Callable[..., bool] = True,
@@ -1084,7 +1091,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Sequence[TimeSeries],
         forecasts: Sequence[Sequence[TimeSeries]] | Sequence[TimeSeries],
         num_samples: int = 1,
-        start: pd.Timestamp | int | str | None = None,
+        start: TimeStamp | str | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -1643,8 +1650,8 @@ class ConformalNaiveModel(ConformalModel):
           `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
 
         Conformal models can be applied to any of Darts' global forecasting model, as long as the model has been
-        fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
-        follows:
+        fitted before and is not a classification model. In general the workflow of the models to produce one
+        calibrated forecast/prediction is as follows:
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
           the most recent past of your input series relative to the forecast start point. The number of calibration
@@ -1774,8 +1781,8 @@ class ConformalQRModel(ConformalModel):
           `predict_likelihood_parameters=False`, and `num_samples>>1` to the forecast method.
 
         Conformal models can be applied to any of Darts' global forecasting model, as long as the model has been
-        fitted before. In general the workflow of the models to produce one calibrated forecast/prediction is as
-        follows:
+        fitted before and is not a classification model. In general the workflow of the models to produce one
+        calibrated forecast/prediction is as follows:
 
         - Extract a calibration set: The calibration set for each conformal forecast is automatically extracted from
           the most recent past of your input series relative to the forecast start point. The number of calibration
@@ -1907,9 +1914,9 @@ def _get_calibration_hfc_start(
     output_chunk_shift: int,
     cal_length: int | None,
     cal_stride: int,
-    start: pd.Timestamp | int | Literal["end"] | None,
+    start: TimeStamp | Literal["end"] | None,
     start_format: Literal["position", "value"],
-) -> tuple[int | pd.Timestamp | None, Literal["position", "value"]]:
+) -> tuple[TimeStamp | None, Literal["position", "value"]]:
     """Find the calibration start point (CSP) (for historical forecasts on calibration set).
 
     - If `start=None`, the CSP is also `None` (all possible hfcs).

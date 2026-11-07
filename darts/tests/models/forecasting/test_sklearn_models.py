@@ -1306,6 +1306,69 @@ class TestSKLearnModels:
         model = model_cls(lags=None, lags_past_covariates=5, multi_models=mode)
         assert model.min_train_series_length == 0 + 1 + 0 + add_min_samples
 
+    def test_fit_series_and_val_series_too_short(self):
+        """Test informative error messages when training or validation series/covariates are too short."""
+        train = tg.linear_timeseries(length=25)
+        short_ts = tg.linear_timeseries(length=6)
+
+        model = LinearRegressionModel(lags=12, output_chunk_length=6)
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^`target_series` must have at least "
+                r"`-min\(lags\) \+ output_chunk_shift \+ output_chunk_length` = 18 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            model.fit(series=short_ts)
+
+        model_no_target_lags = LinearRegressionModel(
+            lags=None, lags_past_covariates=4, output_chunk_length=8
+        )
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^`target_series` must have at least "
+                r"`output_chunk_shift \+ output_chunk_length` = 8 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            model_no_target_lags.fit(series=short_ts, past_covariates=train)
+
+        if not XGB_AVAILABLE:
+            return
+
+        m = XGBModel(lags=12, lags_past_covariates=12, output_chunk_length=6)
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^Invalid validation set: `target_series` must have at least "
+                r"`-min\(lags\) \+ output_chunk_shift \+ output_chunk_length` = 18 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            m.fit(
+                series=train,
+                past_covariates=train,
+                val_series=short_ts,
+                val_past_covariates=train,
+            )
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                r"^Invalid validation set: `past_covariates` must have at least "
+                r"`-min\(lags_past_covariates\) \+ max\(lags_past_covariates\) \+ 1` = 12 "
+                r"time steps; instead, it only has 6\.$"
+            ),
+        ):
+            m.fit(
+                series=train,
+                past_covariates=train,
+                val_series=train,
+                val_past_covariates=short_ts,
+            )
+
     @pytest.mark.parametrize("multi_models", [True, False])
     def test_predict_target_too_short(self, multi_models):
         """Test too short target series for prediction."""
@@ -1891,6 +1954,13 @@ class TestSKLearnModels:
             "Model supports multi-output; a single estimator "
             "forecasts all the horizons and components."
         )
+        # invalid indices are rejected also for native multi-output models
+        with pytest.raises(ValueError, match="`horizon` must be"):
+            m.get_estimator(horizon=2, target_dim=0)
+        with pytest.raises(ValueError, match="`horizon` must be"):
+            m.get_estimator(horizon=-1, target_dim=0)
+        with pytest.raises(ValueError, match="`target_dim` must be"):
+            m.get_estimator(horizon=0, target_dim=1)
 
         # univariate, deterministic, ocl > 2
         m = SKLearnModel(

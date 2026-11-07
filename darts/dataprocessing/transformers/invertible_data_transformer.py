@@ -174,7 +174,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
 
         The `params` dictionary *can* contain up to two keys:
 
-        - `params['fixed']` stores the fixed parameters of the transformation (i.e. attributed
+        - `params['fixed']` stores the fixed parameters of the transformation (i.e. attributes
           defined in the `__init__` method of the child-most class *before* `super().__init__` is called);
           `params['fixed']` is a dictionary itself, whose keys are the names of the fixed parameter
           attributes. For example, if `_my_fixed_param` is defined as an attribute in the child-most
@@ -184,20 +184,20 @@ class InvertibleDataTransformer(BaseDataTransformer):
           returned by the `ts_fit` function, whatever those output(s) may be. See :class:`.FittableDataTransformer`
           for further details about fitted parameters.
 
-        Any positional/keyword argument supplied to the `transform` method are passed as positional/keyword arguments
-        to `ts_inverse_transform`; hence, `ts_inverse_transform` should also accept `*args` and/or `**kwargs` if
-        positional/keyword arguments are passed to `transform`. Note that if the `mask_components` attribute of
-        `InvertibleDataTransformer` is set to `False`, then the `component_mask` provided to `transform` will be passed
-        as an additional keyword argument to `ts_inverse_transform`.
+        Any positional/keyword argument supplied to the `inverse_transform` method are passed as positional/keyword
+        arguments to `ts_inverse_transform`; hence, `ts_inverse_transform` should also accept `*args` and/or `**kwargs`
+        if positional/keyword arguments are passed to `inverse_transform`. Note that if the `mask_components` attribute
+        of `InvertibleDataTransformer` is set to `False`, then the `component_mask` provided to `inverse_transform` will
+        be passed as an additional keyword argument to `ts_inverse_transform`.
 
         The `BaseDataTransformer` class, from which `InvertibleDataTransformer` inherits, includes some helper methods
         which may prove useful when implementing a `ts_inverse_transform` function:
 
         - The `apply_component_mask` and `unapply_component_mask` methods, which apply and 'unapply'
-          `component_mask`s to a `TimeSeries` respectively; these methods are automatically called in `transform` if
-          the `mask_component` attribute of `InvertibleDataTransformer` is set to `True`, but you may want to manually
-          call them if you set `mask_components` to `False` and wish to manually specify how `component_mask`s are
-          applied to a `TimeSeries`.
+          `component_mask`s to a `TimeSeries` respectively; these methods are automatically called in
+          `inverse_transform` if the `mask_components` attribute of `InvertibleDataTransformer` is set to `True`, but
+          you may want to manually call them if you set `mask_components` to `False` and wish to manually specify how
+          `component_mask`s are applied to a `TimeSeries`.
         - The `stack_samples` method, which stacks all the samples in a `TimeSeries` along
           the component axis, so that the `TimeSeries` goes from shape `(n_timesteps, n_components, n_samples)` to
           shape `(n_timesteps, n_components * n_samples)`. This stacking is useful if a pointwise inverse transform
@@ -226,7 +226,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         args
             Any additional keyword arguments provided to `inverse_transform`.
         kwargs
-            Any additional keyword arguments provided to `inverse_transform`. Note that if the `mask_component`
+            Any additional keyword arguments provided to `inverse_transform`. Note that if the `mask_components`
             attribute of `InvertibleDataTransformer` is set to `False`, then `component_mask` will
             be passed as a keyword argument.
 

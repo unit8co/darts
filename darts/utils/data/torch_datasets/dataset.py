@@ -182,8 +182,8 @@ class TorchDataset(ABC, Dataset):
                     if is_training:
                         raise_log(
                             ValueError(
-                                f"Invalid `{main_feat_type.value}`; could not find values in index "
-                                f"range: {start_time} - {end_time}."
+                                f"Invalid `{main_feat_type.value}` at series index {series_idx}; "
+                                f"could not find values in index range: {start_time} - {end_time}."
                             ),
                         )
 

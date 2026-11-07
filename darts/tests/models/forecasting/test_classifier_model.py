@@ -294,12 +294,18 @@ class TestClassifierModel:
             else []
         ),
     )
-    def test_error_on_different_classes_for_same_component(self, clf_params):
+    @pytest.mark.parametrize("n_components", [1, 3])
+    def test_error_on_different_classes_for_same_component(
+        self, clf_params, n_components
+    ):
         """check that estimators for the same component see the same labels"""
         clf, kwargs = clf_params
         # only one estimator see the last labels of the series thus the estimator due to output_chunk_length=2
         # for the same component won't see the same labels
-        series = TimeSeries.from_values(np.array([0, 0, 0, 1, 2]), columns=["comp1"])
+        values = np.column_stack(
+            [[0, 0, 1, 0, 1]] * (n_components - 1) + [[0, 0, 0, 1, 2]]
+        )
+        series = TimeSeries.from_values(values)
         model = clf(lags=1, output_chunk_length=2, **kwargs)
 
         with pytest.raises(ValueError) as err:
@@ -308,13 +314,15 @@ class TestClassifierModel:
             "Estimators for the same target component received different class labels "
             "during training. In most cases this occurs for shorter target series. "
         )
+        assert f"For component `{n_components - 1}`" in str(err.value)
 
         # if only one estimator due to multi_models=False, then there are no issue
         single_model = clf(lags=1, output_chunk_length=2, multi_models=False, **kwargs)
         single_model.fit(series=series)
 
         # if same labels per component it does not raise an error
-        series = TimeSeries.from_values(np.array([0, 0, 0, 1, 1]), columns=["comp1"])
+        values[-1, -1] = 1
+        series = TimeSeries.from_values(values)
         model.fit(series=series)
 
     @pytest.mark.parametrize("clf_params", param_list(process_model_list(classifiers)))

@@ -62,7 +62,6 @@ from collections.abc import Callable, Sequence
 from typing import Any, Literal
 
 import numpy as np
-import pandas as pd
 from sklearn.base import is_classifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import has_fit_parameter
@@ -70,7 +69,7 @@ from sklearn.utils.validation import has_fit_parameter
 from darts import TimeSeries
 from darts.logging import get_logger, raise_deprecation_warning, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
     create_lagged_component_names,
@@ -182,7 +181,7 @@ class SKLearnModel(GlobalForecastingModel):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
@@ -695,12 +694,6 @@ class SKLearnModel(GlobalForecastingModel):
         else:
             model = self.model
 
-        if not isinstance(model, MultiOutputMixin):
-            logger.warning(
-                "Model supports multi-output; a single estimator forecasts all the horizons and components."
-            )
-            return model
-
         if not 0 <= horizon < self.output_chunk_length:
             raise_log(
                 ValueError(
@@ -713,6 +706,12 @@ class SKLearnModel(GlobalForecastingModel):
                     f"`target_dim` must be `>= 0`, and `< n_target_components={self.input_dim['target']}`."
                 ),
             )
+
+        if not isinstance(model, MultiOutputMixin):
+            logger.warning(
+                "Model supports multi-output; a single estimator forecasts all the horizons and components."
+            )
+            return model
 
         # when multi_models=True, one model per horizon and target component
         idx_estimator = (
@@ -732,15 +731,20 @@ class SKLearnModel(GlobalForecastingModel):
     ) -> dict:
         """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
         validation set. This method can be overridden if the model requires a different logic to add the eval set."""
-        val_samples, val_labels, val_weight = self._create_lagged_data(
-            series=val_series,
-            past_covariates=val_past_covariates,
-            future_covariates=val_future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            sample_weight=val_sample_weight,
-            last_static_covariates_shape=self._static_covariates_shape,
-            stride=stride,
-        )
+        try:
+            val_samples, val_labels, val_weight = self._create_lagged_data(
+                series=val_series,
+                past_covariates=val_past_covariates,
+                future_covariates=val_future_covariates,
+                max_samples_per_ts=max_samples_per_ts,
+                sample_weight=val_sample_weight,
+                last_static_covariates_shape=self._static_covariates_shape,
+                stride=stride,
+            )
+        except ValueError as err:
+            raise_log(
+                ValueError(f"Invalid validation set: {err}"),
+            )
         # create validation sets for MultiOutputMixin
         if val_labels.ndim == 2 and isinstance(self.model, MultiOutputMixin):
             val_sets, val_weights = [], []
@@ -1576,7 +1580,7 @@ class SKLearnModel(GlobalForecastingModel):
         past_covariates: Sequence[TimeSeries] | None = None,
         future_covariates: Sequence[TimeSeries] | None = None,
         num_samples: int = 1,
-        start: pd.Timestamp | float | int | Literal["end"] | None = None,
+        start: TimeStamp | float | Literal["end"] | None = None,
         start_format: Literal["position", "value"] = "value",
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -1733,7 +1737,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
@@ -2046,7 +2050,7 @@ class RegressionModel(SKLearnModel):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
@@ -2163,7 +2167,7 @@ class _ClassifierMixin:
             num_components = len(classes) // self._output_chunk_length
 
             # classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ..]
-            for i in range(self._output_chunk_length):
+            for i in range(num_components):
                 if any(
                     not np.array_equal(classes[i], estimator_classes)
                     for estimator_classes in classes[i::num_components]
@@ -2314,7 +2318,7 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'day_of_week']},
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),

@@ -485,6 +485,36 @@ class TestMIDAS:
         )
         assert inversed == expected
 
+    @pytest.mark.parametrize("high_freq", ["MS", "ME"])
+    @pytest.mark.parametrize("low_freq", ["QS", "QE"])
+    @pytest.mark.parametrize(
+        "start,length", [(0, 1), (0, 2), (0, 3), (1, 1), (1, 2), (2, 1)]
+    )
+    @pytest.mark.parametrize("n_components,n_samples", [(1, 1), (2, 1), (1, 3), (2, 3)])
+    def test_short_series_roundtrip(
+        self, high_freq, low_freq, start, length, n_components, n_samples
+    ):
+        monthly = TimeSeries.from_times_and_values(
+            times=pd.date_range("2020-01-01", periods=3, freq=high_freq)[
+                start : start + length
+            ],
+            values=np.arange(length * n_components * n_samples, dtype=float).reshape(
+                length, n_components, n_samples
+            ),
+        )
+        midas = MIDAS(low_freq=low_freq, strip=False)
+        quarterly = midas.fit_transform(monthly)
+
+        # Each month occupies its own group of components, with absent months padded.
+        expected = np.full((3, n_components, n_samples), np.nan)
+        expected[start : start + length] = monthly.all_values()
+        np.testing.assert_equal(
+            quarterly.all_values(), expected.reshape(1, 3 * n_components, n_samples)
+        )
+        expected_time = "2020-01-01" if low_freq == "QS" else "2020-03-31"
+        assert quarterly.start_time() == pd.Timestamp(expected_time)
+        assert midas.inverse_transform(quarterly) == monthly
+
     def test_multiple_ts(self):
         """
         Verify that MIDAS works as expected with multiple series of different "high" frequencies (monthly and quarterly

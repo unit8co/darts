@@ -8,11 +8,10 @@ from collections.abc import Sequence
 from typing import Any, Literal
 
 import numpy as np
-import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
 from darts import TimeSeries
-from darts.typing import TimeSeriesLike
+from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
@@ -26,7 +25,7 @@ def _optimized_historical_forecasts_regression(
     past_covariates: Sequence[TimeSeries] | None = None,
     future_covariates: Sequence[TimeSeries] | None = None,
     num_samples: int = 1,
-    start: pd.Timestamp | float | int | Literal["end"] | None = None,
+    start: TimeStamp | float | Literal["end"] | None = None,
     start_format: Literal["position", "value"] = "value",
     forecast_horizon: int = 1,
     stride: int = 1,

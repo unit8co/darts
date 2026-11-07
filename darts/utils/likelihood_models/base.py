@@ -29,6 +29,7 @@ class LikelihoodType(Enum):
     Laplace = "laplace"
     LogNormal = "lognormal"
     Weibull = "weibull"
+    ZeroInflated = "zeroinflated"
     Quantile = "quantile"
     MultiQuantile = "multiquantile"
     ClassProbability = "classprobability"

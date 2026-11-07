@@ -394,7 +394,7 @@ class TestTimeSeries:
 
     def test_datetime_indexing(self):
         # checking that the DatetimeIndex slicing is behaving as described in
-        # https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html
+        # https://pandas.pydata.org/docs/user_guide/indexing.html
 
         # getting index outside the index range should raise an exception
         with pytest.raises(KeyError):
@@ -1094,8 +1094,16 @@ class TestTimeSeries:
         targetDiv = TimeSeries.from_series(
             pd.Series([i / 2 for i in range(10)], index=self.pd_series1.index)
         )
+        targetrDiv = TimeSeries.from_times_and_values(
+            times=self.pd_series1.index,
+            values=2.0 / np.array([i for i in range(10)], dtype=self.series1.dtype),
+        )
         targetPow = TimeSeries.from_series(
             pd.Series([float(i**2) for i in range(10)], index=self.pd_series1.index)
+        )
+        targetnPow = TimeSeries.from_times_and_values(
+            times=self.pd_series1.index,
+            values=np.array([i for i in range(10)], dtype=self.series1.dtype) ** (-2),
         )
 
         assert self.series1 + seriesA == targetAdd
@@ -1108,15 +1116,9 @@ class TestTimeSeries:
         assert 2 * self.series1 == targetMul
         assert self.series1 / seriesA == targetDiv
         assert self.series1 / 2 == targetDiv
+        assert 2 / self.series1 == targetrDiv
         assert self.series1**2 == targetPow
-
-        with pytest.raises(ZeroDivisionError):
-            # Cannot divide by a TimeSeries with a value 0.
-            self.series1 / self.series1
-
-        with pytest.raises(ZeroDivisionError):
-            # Cannot divide by 0.
-            self.series1 / 0
+        assert self.series1 ** (-2) == targetnPow
 
     def test_ops_array(self):
         # can work with xarray directly
@@ -1154,6 +1156,7 @@ class TestTimeSeries:
         seriesMul = TimeSeries(self.times, arrayA * arrayB)
         seriesDiv = TimeSeries(self.times, arrayA / arrayB)
         seriesPow = TimeSeries(self.times, arrayA**arrayB)
+        seriesnPow = TimeSeries(self.times, arrayA ** (-arrayB))
 
         # assert different operations; must be equivalent to operations with scalar
         assert seriesA + seriesB == seriesAdd
@@ -1161,6 +1164,7 @@ class TestTimeSeries:
         assert seriesA * seriesB == seriesMul
         assert seriesA / seriesB == seriesDiv
         assert seriesA**seriesB == seriesPow
+        assert seriesA ** (-seriesB) == seriesnPow
 
         # it also works with numpy arrays directly
         assert seriesA + arrayB == seriesAdd
@@ -1168,6 +1172,7 @@ class TestTimeSeries:
         assert seriesA * arrayB == seriesMul
         assert seriesA / arrayB == seriesDiv
         assert seriesA**arrayB == seriesPow
+        assert seriesA ** (-arrayB) == seriesnPow
 
     @pytest.mark.parametrize(
         "dt_source,dt_vals",
@@ -1183,7 +1188,29 @@ class TestTimeSeries:
         assert (series - vals).dtype == dt_source
         assert (series * vals).dtype == dt_source
         assert (series / vals).dtype == dt_source
+        assert (2 / series).dtype == dt_source
         assert (series**vals).dtype == dt_source
+        assert (series**2).dtype == dt_source
+        assert (series**-2).dtype == dt_source
+        assert (series**0.5).dtype == dt_source
+
+    def test_zero_truediv(self):
+        series = TimeSeries.from_values(np.array([1.0, 2.0, 3.0]))
+        z_values = np.array([1.0, 0.0, 3.0]).reshape((3, 1, 1))
+        z_series = TimeSeries.from_values(z_values)
+
+        np.testing.assert_array_equal((series / 0.0).values()[:, 0], [np.inf] * 3)
+        np.testing.assert_array_equal(
+            (series / z_values).values()[:, 0], [1.0, np.inf, 1.0]
+        )
+        np.testing.assert_array_equal(
+            (series / z_series).values()[:, 0], [1.0, np.inf, 1.0]
+        )
+
+    def test_zero_rtruediv(self):
+        series = TimeSeries.from_values(np.array([1.0, 0.0, 2.0]))
+        np.testing.assert_array_equal((1.0 / series).values()[:, 0], [1.0, np.inf, 0.5])
+        np.testing.assert_array_equal((0.0 / series).values()[:, 0], [0.0, np.nan, 0.0])
 
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))
@@ -1476,7 +1503,7 @@ class TestTimeSeries:
         assert math.isnan(series_test.to_series().get("20130105"))
 
         # ------ test infer frequency for all offset aliases from ------
-        # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+        # https://pandas.pydata.org/docs/user_guide/timeseries.html#offset-aliases
         offset_aliases = [
             "B",
             "C",
@@ -1813,6 +1840,112 @@ class TestTimeSeries:
         )
         assert resampled_timeseries.to_series().at[pd.Timestamp("20200101233000")] == 0
 
+    @pytest.mark.parametrize("index_type", ["dt", "int"])
+    def test_reindex_timeseries(self, index_type):
+        if index_type == "dt":
+            source_start, target_start, freq = "2020-01-01", "2019-12-31", "D"
+        else:
+            source_start, target_start, freq = 1, 0, 1
+
+        source_times = generate_index(source_start, length=3, freq=freq)
+        series = TimeSeries.from_series(pd.Series([1.0, 2.0, 3.0], index=source_times))
+        target_times = generate_index(target_start, length=5, freq=freq)
+        target_series = TimeSeries.from_series(
+            pd.Series(np.zeros(len(target_times)), index=target_times)
+        )
+
+        # reindex with expansion creates missing values
+        out = series.reindex(target_times)
+        np.testing.assert_equal(
+            out.all_values(copy=False)[:, 0, 0],
+            [np.nan, 1.0, 2.0, 3.0, np.nan],
+        )
+        assert out.time_index.equals(target_times)
+
+        # works also with TimeSeries input
+        out = series.reindex(target_series, fill_value=0.0)
+        np.testing.assert_equal(
+            out.all_values(copy=False)[:, 0, 0],
+            [0.0, 1.0, 2.0, 3.0, 0.0],
+        )
+        assert out.time_index.equals(target_times)
+
+        # reindex with expansion and ffill, fill_value
+        out = series.reindex(target_times, method="ffill", fill_value=0.0)
+        np.testing.assert_equal(
+            out.all_values(copy=False)[:, 0, 0],
+            [0.0, 1.0, 2.0, 3.0, 3.0],
+        )
+        assert out.time_index.equals(target_times)
+
+        # reindex with expansion and bfill
+        out = series.reindex(target_times, method="bfill")
+        np.testing.assert_equal(
+            out.all_values(copy=False)[:, 0, 0],
+            [1.0, 1.0, 2.0, 3.0, np.nan],
+        )
+        assert out.time_index.equals(target_times)
+
+        if index_type == "dt":
+            start, freq_sparse, freq = "2020-01-01 18:00", "2D", "12h"
+        else:
+            start, freq_sparse, freq = 19, 48, 12
+
+        # reindex with sparse times
+        sparse_times = generate_index(source_start, length=2, freq=freq_sparse)
+        sparse_series = TimeSeries.from_series(
+            pd.Series([1.0, 3.0], index=sparse_times)
+        )
+        nearest_times = generate_index(start, length=2, freq=freq)
+        out = sparse_series.reindex(
+            nearest_times,
+            method="nearest",
+        )
+        np.testing.assert_equal(out.values(copy=False)[:, 0], [1.0, 3.0])
+        assert out.time_index.equals(nearest_times)
+
+    def test_reindex_preserves_samples_and_metadata(self):
+        times = pd.date_range("2020-01-01", periods=3, freq="D")
+        values = np.arange(12, dtype=float).reshape(3, 2, 2)
+        series = TimeSeries(
+            times=times,
+            values=values,
+            components=["bottom", "top"],
+            static_covariates=pd.Series({"site": 1.0}),
+            hierarchy={"bottom": "top"},
+            metadata={"source": "test"},
+        )
+        target_times = pd.date_range("2019-12-31", periods=5, freq="D")
+
+        reindexed = series.reindex(target_times)
+
+        assert reindexed.all_values(copy=False).shape == (5, 2, 2)
+        assert reindexed.components.equals(series.components)
+        assert reindexed.static_covariates.equals(series.static_covariates)
+        assert reindexed.hierarchy == series.hierarchy
+        assert reindexed.metadata == series.metadata
+        np.testing.assert_equal(
+            reindexed.all_values(copy=False)[1:4],
+            series.all_values(copy=False),
+        )
+
+        inverse_reindexed = reindexed.reindex(series)
+        assert inverse_reindexed == series
+
+    def test_reindex_copy(self):
+        times = pd.date_range("2020-01-01", periods=3, freq="D")
+        series = TimeSeries.from_series(pd.Series([1.0, 2.0, 3.0], index=times))
+
+        copied = series.reindex(times, copy=True)
+        not_copied = series.reindex(times, copy=False)
+
+        assert not np.shares_memory(
+            copied.all_values(copy=False), series.all_values(copy=False)
+        )
+        assert np.shares_memory(
+            not_copied.all_values(copy=False), series.all_values(copy=False)
+        )
+
     def test_short_series_creation(self):
         # test missing freq argument error when filling missing dates on short time series
         with pytest.raises(ValueError):
@@ -2059,6 +2192,20 @@ class TestTimeSeries:
             "fn must return an array of shape `(3, 1, 1)`. Received shape `(3, 2, 1)`"
         )
 
+    def test_strip(self):
+        vals = np.array([np.nan, 1.0, 2.0, np.nan])
+        series = TimeSeries.from_values(vals)
+        # leading and trailing nan
+        assert series.strip() == series[1:-1]
+        # trailing nan only
+        assert series[1:].strip() == series[1:-1]
+        # leading nan only
+        assert series[:-1].strip() == series[1:-1]
+        # zero nan
+        assert series[1:-1].strip() == series[1:-1]
+        # only nan
+        assert series[:1].strip() == series[:0]
+
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
         times2 = pd.date_range("20120101", "20210301", freq="QE")
@@ -2163,6 +2310,20 @@ class TestTimeSeries:
 
         assert len(series1.longest_contiguous_slice()) == 3
         assert len(series1.longest_contiguous_slice(2)) == 6
+
+        # all-NaN series returns empty series
+        all_nan = TimeSeries.from_values(np.array([np.nan]))
+        assert len(all_nan.longest_contiguous_slice()) == 0
+
+        # multivariate series with mode="any" and boundary partial NaNs
+        vals = np.array([
+            [np.nan, 1.0, 2.0, 3.0, 4.0],
+            [1.0, 1.0, 2.0, 3.0, np.nan],
+        ]).T
+        ts_multi = TimeSeries.from_values(vals)
+        res_lcs = ts_multi.longest_contiguous_slice(max_gap_size=1, mode="any")
+        assert len(res_lcs) == 3
+        assert not np.isnan(res_lcs.values()).any()
 
     @pytest.mark.parametrize(
         "times",
@@ -2361,6 +2522,30 @@ class TestTimeSeries:
         assert idx.name == "test_index"
 
         assert ts.time_index.equals(idx)
+
+    def test_values_stochastic_warning(self, caplog):
+        ts = TimeSeries.from_values(np.arange(30).reshape(10, 1, 3))
+        msg = "stochastic series only extracts values of a single sample"
+        with caplog.at_level(logging.WARNING):
+            values = ts.values()
+
+        assert msg in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 0])
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            values = ts.values(sample=1)
+
+        assert msg not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            values = TimeSeries.from_values(ts.values(sample=1)).values()
+
+        assert msg not in caplog.text
+        np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
+        caplog.clear()
 
 
 def helper_test_slice(test_series: TimeSeries):
