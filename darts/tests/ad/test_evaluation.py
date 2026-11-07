@@ -168,3 +168,26 @@ class TestAnomalyDetectionModel:
         with pytest.raises(ValueError) as err:
             check_metric(series, med_series, "AUC_ROC", scores_exp[2])
         assert str(err.value).startswith("Argument `metric` must be one of ")
+
+    @pytest.mark.parametrize(
+        "config",
+        [
+            (eval_metric_from_scores, "AUC_ROC", "pred_scores"),
+            (eval_metric_from_scores, "AUC_PR", "pred_scores"),
+            (eval_metric_from_binary_prediction, "f1", "pred_anomalies"),
+            (eval_metric_from_binary_prediction, "accuracy", "pred_anomalies"),
+        ],
+    )
+    def test_eval_non_overlapping_series(self, config):
+        """Predictions and anomalies without a common time step raise a clear error."""
+        metric_fn, metric, pred_name = config
+        anomalies = self.ts_uv
+        # same values, but starting right after the end of `anomalies`
+        pred_series = self.ts_uv.shift(len(self.ts_uv))
+
+        with pytest.raises(ValueError) as err:
+            metric_fn(anomalies, pred_series, metric=metric)
+        assert str(err.value) == (
+            f"The two time series `{pred_name}` and `anomalies` "
+            f"must have at least a partially overlapping time index."
+        )
