@@ -340,7 +340,7 @@ class AnomalyModel(ABC):
     def _process_input_series(series: TimeSeriesLike, **kwargs):
         """Checks input series and converts series and covariates in `kwargs` to sequences."""
         series = _check_input(series, name="series")
-        for cov_name in ["past_covariates", "future_covariates"]:
+        for cov_name in ["past_covariates", "future_covariates", "covariates"]:
             cov = kwargs.pop(cov_name, None)
             if cov is not None:
                 cov = _check_input(cov, name=cov_name)

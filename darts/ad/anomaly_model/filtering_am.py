@@ -7,6 +7,7 @@ several anomaly scorer(s) to compute anomaly scores
 by comparing how actuals deviate from the model's predictions (filtered series).
 """
 
+import inspect
 from collections.abc import Sequence
 from typing import Literal, Self
 
@@ -56,6 +57,7 @@ class FilteringAnomalyModel(AnomalyModel):
         self,
         series: TimeSeriesLike,
         allow_model_training: bool = False,
+        covariates: TimeSeriesLike | None = None,
         **filter_fit_kwargs,
     ) -> Self:
         """Fit the underlying filtering model (if applicable) and the fittable scorers, if any.
@@ -73,6 +75,10 @@ class FilteringAnomalyModel(AnomalyModel):
         allow_model_training
             Whether the filtering model should be fitted on the given series. If `False`, the model must already be
             fitted.
+        covariates
+            Optionally, a (sequence of) covariate series (e.g. control inputs for the `KalmanFilter`), one for each
+            series in `series`. Each covariate series must have the same time index as the corresponding series. This
+            applies only to filtering models that support covariates.
         **filter_fit_kwargs
             Additional parameters passed to the filtering model's `fit()` method.
 
@@ -84,6 +90,7 @@ class FilteringAnomalyModel(AnomalyModel):
         return super().fit(
             series=series,
             allow_model_training=allow_model_training,
+            covariates=covariates,
             **filter_fit_kwargs,
         )
 
@@ -91,6 +98,7 @@ class FilteringAnomalyModel(AnomalyModel):
         self,
         series: TimeSeriesLike,
         return_model_prediction: bool = False,
+        covariates: TimeSeriesLike | None = None,
         **filter_kwargs,
     ) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]]:
         """Compute the anomaly score(s) for the given (sequence of) series.
@@ -104,6 +112,10 @@ class FilteringAnomalyModel(AnomalyModel):
             The (sequence of) series to score on.
         return_model_prediction
             Whether to return the filtering model prediction along with the anomaly scores.
+        covariates
+            Optionally, a (sequence of) covariate series (e.g. control inputs for the `KalmanFilter`), one for each
+            series in `series`. Each covariate series must have the same time index as the corresponding series. This
+            applies only to filtering models that support covariates.
         **filter_kwargs
             Additional parameters passed to the filtering model's `filter()` method.
 
@@ -123,11 +135,15 @@ class FilteringAnomalyModel(AnomalyModel):
         return super().score(
             series=series,
             return_model_prediction=return_model_prediction,
+            covariates=covariates,
             **filter_kwargs,
         )
 
     def predict_series(
-        self, series: Sequence[TimeSeries], **kwargs
+        self,
+        series: Sequence[TimeSeries],
+        covariates: Sequence[TimeSeries] | None = None,
+        **kwargs,
     ) -> Sequence[TimeSeries]:
         """Filters the given sequence of target time series with the filtering model.
 
@@ -135,16 +151,27 @@ class FilteringAnomalyModel(AnomalyModel):
         ----------
         series
             The sequence of series to filter.
+        covariates
+            Optionally, a sequence of covariate series (e.g. control inputs for the `KalmanFilter`), one for each
+            series in `series`. This applies only to filtering models that support covariates.
         **kwargs
             Additional parameters passed to the filtering model's `filter()` method.
         """
-        return [self.model.filter(s, **kwargs) for s in series]
+        if covariates is None:
+            return [self.model.filter(s, **kwargs) for s in series]
+
+        self._check_supports_covariates(method_name="filter")
+        return [
+            self.model.filter(s, covariates=cov, **kwargs)
+            for s, cov in zip(series, covariates)
+        ]
 
     def eval_metric(
         self,
         anomalies: TimeSeriesLike,
         series: TimeSeriesLike,
         metric: Literal["AUC_ROC", "AUC_PR"] = "AUC_ROC",
+        covariates: TimeSeriesLike | None = None,
         **filter_kwargs,
     ) -> (
         dict[str, float]
@@ -168,6 +195,10 @@ class FilteringAnomalyModel(AnomalyModel):
             The name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
+        covariates
+            Optionally, a (sequence of) covariate series (e.g. control inputs for the `KalmanFilter`), one for each
+            series in `series`. Each covariate series must have the same time index as the corresponding series. This
+            applies only to filtering models that support covariates.
         **filter_kwargs
             Additional parameters passed to the filtering model's `filter()` method.
 
@@ -188,6 +219,7 @@ class FilteringAnomalyModel(AnomalyModel):
             anomalies=anomalies,
             series=series,
             metric=metric,
+            covariates=covariates,
             **filter_kwargs,
         )
 
@@ -198,6 +230,7 @@ class FilteringAnomalyModel(AnomalyModel):
         names_of_scorers: str | Sequence[str] | None = None,
         title: str | None = None,
         metric: Literal["AUC_ROC", "AUC_PR"] | None = None,
+        covariates: TimeSeries | None = None,
         **score_kwargs,
     ):
         """Plot the results of the anomaly model.
@@ -230,6 +263,9 @@ class FilteringAnomalyModel(AnomalyModel):
             Optionally, the name of the metric function to use. Must be one of "AUC_ROC" (Area Under the
             Receiver Operating Characteristic Curve) and "AUC_PR" (Average Precision from scores).
             Default: "AUC_ROC".
+        covariates
+            Optionally, a covariate series (e.g. control inputs for the `KalmanFilter`) with the same time index as
+            `series`. This applies only to filtering models that support covariates.
         score_kwargs
             parameters for the `score()` method.
         """
@@ -240,6 +276,7 @@ class FilteringAnomalyModel(AnomalyModel):
             names_of_scorers=names_of_scorers,
             title=title,
             metric=metric,
+            covariates=covariates,
             **score_kwargs,
         )
 
@@ -247,10 +284,10 @@ class FilteringAnomalyModel(AnomalyModel):
         self,
         series: Sequence[TimeSeries],
         allow_model_training: bool,
+        covariates: Sequence[TimeSeries] | None = None,
         **model_fit_kwargs,
     ):
         """Fit the filters (if applicable) and scorers."""
-        # TODO: add support for covariates (see eg. Kalman Filter)
         if allow_model_training and hasattr(self.model, "fit"):
             # TODO: check if filter is already fitted (for now fit it regardless -> only Kalman)
             if len(series) > 1:
@@ -260,6 +297,9 @@ class FilteringAnomalyModel(AnomalyModel):
                         f"on a single time series, but multiple are provided."
                     ),
                 )
+            if covariates is not None:
+                self._check_supports_covariates(method_name="fit")
+                model_fit_kwargs["covariates"] = covariates[0]
             self.model.fit(series[0], **model_fit_kwargs)
         else:
             # TODO: check if Kalman is fitted or not
@@ -267,6 +307,16 @@ class FilteringAnomalyModel(AnomalyModel):
             pass
 
         if self.scorers_are_trainable:
-            pred = self.predict_series(series)
+            pred = self.predict_series(series, covariates=covariates)
             # fit the scorers
             self._fit_scorers(series, pred)
+
+    def _check_supports_covariates(self, method_name: str):
+        """Raises an error if the filtering model's method `method_name` does not support covariates."""
+        method = getattr(self.model, method_name)
+        if "covariates" not in inspect.signature(method).parameters:
+            raise_log(
+                ValueError(
+                    f"Filtering model `{self.model.__class__.__name__}` does not support `covariates`."
+                ),
+            )
