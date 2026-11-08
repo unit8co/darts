@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -12,6 +13,7 @@ from darts.ad.aggregators import (
     OrAggregator,
 )
 from darts.models import MovingAverageFilter
+from darts.utils.utils import _parallel_apply
 
 # element shape : (model_cls, model_kwargs, expected metrics)
 list_NonFittableAggregator = [
@@ -631,3 +633,25 @@ class TestAnomalyDetectionAggregator:
             self.mts_anomalies1,
             self.mts_anomalies2,
         ] == input_series_copy
+
+    @pytest.mark.parametrize(
+        "aggregator_cls,module_path",
+        [
+            (AndAggregator, "darts.ad.aggregators.and_aggregator._parallel_apply"),
+            (OrAggregator, "darts.ad.aggregators.or_aggregator._parallel_apply"),
+        ],
+    )
+    @pytest.mark.parametrize("n_jobs", [1, 2, -1])
+    def test_NonFittableAggregator_n_jobs(self, aggregator_cls, module_path, n_jobs):
+        """`n_jobs` given at construction must be forwarded to the parallel
+        execution, and parallel results must match sequential ones."""
+        series = [self.mts_anomalies1, self.mts_anomalies2]
+        expected = aggregator_cls(n_jobs=1).predict(series)
+
+        aggregator = aggregator_cls(n_jobs=n_jobs)
+        with patch(module_path, wraps=_parallel_apply) as mock_apply:
+            values = aggregator.predict(series)
+
+        assert mock_apply.call_count == 1
+        assert mock_apply.call_args.kwargs["n_jobs"] == n_jobs
+        assert values == expected

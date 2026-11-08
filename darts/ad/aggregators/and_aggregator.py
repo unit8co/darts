@@ -45,7 +45,7 @@ class AndAggregator(Aggregator):
         return _parallel_apply(
             [(s,) for s in series],
             _compononents_and,
-            n_jobs=1,
+            n_jobs=self._n_jobs,
             fn_args=args,
             fn_kwargs=kwargs,
         )
