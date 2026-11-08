@@ -208,6 +208,41 @@ class GaussianLikelihood(SKLearnLikelihood):
         return model_output[:, :, component_medians].reshape(k, self._n_outputs, -1)
 
 
+class _ReturnStdGaussianLikelihood(GaussianLikelihood):
+    """Gaussian likelihood for estimators that predict the standard deviation with `predict(x, return_std=True)`.
+
+    This is the case for Bayesian linear regressors such as `sklearn.linear_model.BayesianRidge` and
+    `sklearn.linear_model.ARDRegression`, which return the mean and the standard deviation of the predictive
+    distribution. The outputs are converted to the `[mean, variance]` format expected by `GaussianLikelihood`.
+    """
+
+    def _estimator_predict(
+        self,
+        model,
+        x: np.ndarray,
+        **kwargs,
+    ) -> np.ndarray:
+        estimator = model.model
+        # the estimators do not support multi-output regression natively; get the per-output estimators
+        estimators = getattr(estimator, "estimators_", [estimator])
+
+        # each element has shape (n_series * n_samples,)
+        mus, sigmas = zip(*[
+            est.predict(x, return_std=True, **kwargs) for est in estimators
+        ])
+
+        # shape (n_components * output_chunk_length, n_series * n_samples, 2) with [mu, variance] on the last axis
+        return np.stack([np.stack(mus), np.stack(sigmas) ** 2], axis=-1)
+
+    def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
+        # shape (n_components * output_chunk_length, n_series * n_samples, 2)
+        # [mu, variance] on the last dimension, grouped by component
+        k = model_output.shape[1]
+        # the mean is the median prediction
+        # shape (n_series * n_samples, output_chunk_length, n_components)
+        return model_output[:, :, 0].transpose().reshape(k, self._n_outputs, -1)
+
+
 class PoissonLikelihood(SKLearnLikelihood):
     def __init__(self, n_outputs: int):
         """
