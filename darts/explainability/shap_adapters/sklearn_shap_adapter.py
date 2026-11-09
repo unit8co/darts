@@ -93,6 +93,8 @@ class SKLearnShapAdapter(ShapAdapter):
 
         # per-estimator explainers (MultiOutputMixin and/or QuantileRegression)
         n_params = likelihood.num_parameters if likelihood is not None else 1
+        # without a quantile container, each estimator natively outputs all likelihood
+        # parameters of its target component, so there is one explainer per target
         n_estimators = (
             self.n_targets_likelihood if has_quantile_container else self.n_targets
         )
