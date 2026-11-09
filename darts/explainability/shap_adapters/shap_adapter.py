@@ -245,24 +245,16 @@ class ShapAdapter(ABC):
                     values = explanation.values
                     base_values = explanation.base_values
                     if n_params > 1:
-                        # single-output explainers may return 2D values (E, F); make them (E, F, 1)
-                        values = values.reshape(*values.shape[:2], -1)
-                        # number of likelihood parameters the SHAP explainer returned values for
-                        n_explained = values.shape[-1]
-                        if param_idx >= n_explained:
+                        # values: (E, F, n_params); base_values: (E, n_params)
+                        if values.ndim != 3 or values.shape[-1] != n_params:
                             raise_log(
                                 ValueError(
-                                    f"Cannot explain component `'{t}'`: the SHAP explainer only returned "
-                                    f"values for {n_explained} of the {n_params} likelihood parameters "
-                                    f"of each target component. Either use `shap_method='permutation'` "
-                                    f"to explain all likelihood parameters, or set `target_components` "
-                                    f"to the likelihood parameters that are supported by the current "
-                                    f"SHAP method (e.g. the mean `'<component>_mu'`)."
+                                    f"The SHAP explainer did not return one set of values per likelihood "
+                                    f"parameter: expected {n_params} parameters per target component, "
+                                    f"but got values of shape {values.shape}. Use "
+                                    f"`shap_method='permutation'` to explain all likelihood parameters."
                                 )
                             )
-                        if base_values.ndim == 1:
-                            # (E,) -> (E, 1) when only one parameter was explained
-                            base_values = base_values[:, np.newaxis]
                         values = values[:, :, param_idx]
                         base_values = base_values[:, param_idx]
                     tmp_n[t] = DartsShapExplanation(

@@ -1605,26 +1605,12 @@ class TestShapExplainer:
             "linear_sigma",
         ]
 
-        # the tree explainer only returns SHAP values for the mean `mu`
+        # the tree explainer does not return values for all likelihood parameters
         explainer = ShapExplainer(model)
-        with pytest.raises(ValueError, match="only returned values for 1 of the 2"):
+        with pytest.raises(ValueError, match="did not return one set of values"):
             explainer.explain()
-        with pytest.raises(ValueError, match="only returned values for 1 of the 2"):
-            explainer.explain(target_components=["sine_sigma"])
-
-        # explaining only the mean works and matches the estimator's SHAP values
-        mu_components = ["sine_mu", "linear_mu"]
-        results = explainer.explain(target_components=mu_components)
-        foreground_arr = explainer.explainer.background_arr
-        for h in [1, 2]:
-            for t_idx, comp in enumerate(mu_components):
-                estimator = model.get_estimator(horizon=h - 1, target_dim=t_idx)
-                expected = shap.TreeExplainer(estimator)(foreground_arr).values
-                explanation = results.get_explanation(horizon=h, component=comp)
-                assert explanation.n_components == 6
-                np.testing.assert_allclose(
-                    explanation.values(), expected[:, :, 0], rtol=1e-5, atol=1e-8
-                )
+        with pytest.raises(ValueError, match="did not return one set of values"):
+            explainer.explain(target_components=["sine_mu"])
 
         # model-agnostic methods explain all likelihood parameters
         explainer = ShapExplainer(model, shap_method="permutation")
