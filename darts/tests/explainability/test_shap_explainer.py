@@ -1560,7 +1560,7 @@ class TestShapExplainer:
         }
         foreground_arr = explainer.explainer.background_arr
         for h in range(1, ocl + 1):
-            for t_idx, comp in enumerate(series.columns):
+            for t_idx in range(series.n_components):
                 # SHAP values from running the explainer directly on the estimator
                 estimator = model.get_estimator(horizon=h - 1, target_dim=t_idx)
                 expected = shap.TreeExplainer(estimator)(foreground_arr).values
