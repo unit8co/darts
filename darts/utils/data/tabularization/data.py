@@ -35,13 +35,3 @@ class LaggedData:
     sample_weights: np.ndarray | Sequence[np.ndarray] | None = None
     series_lengths: list[int] | None = None
     last_static_covariates_shape: tuple[int, int] | None = None
-
-    def to_tuple(self):
-        """Return the historical positional tuple used by the private wrappers."""
-        return (
-            self.X,
-            self.y,
-            self.times,
-            self.last_static_covariates_shape,
-            self.sample_weights,
-        )

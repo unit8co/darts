@@ -12,11 +12,11 @@ from darts import TimeSeries
 from darts import concatenate as darts_concatenate
 from darts.logging import raise_log
 from darts.tests.parametrize_helpers import param_product
-from darts.utils.data.tabularization.features import LaggedFeatures
-from darts.utils.data.tabularization.tabularization import (
+from darts.tests.utils.tabularization._legacy_helpers import (
     _create_lagged_component_names,
     _create_lagged_training_data,
 )
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import generate_index, n_steps_between
 
@@ -292,6 +292,8 @@ class TestCreateLaggedTrainingData:
         actual value in `series` will occur at an index of `2` instead of `0`. To 'undo' this, we must subtract off
         the number of prepended value from the lag-offseted indices before retrieving values from `series`.
         """
+        if lags is not None:
+            lags = sorted(lags)
         if lags is None:
             X_block = None
         else:
@@ -2035,7 +2037,10 @@ class TestCreateLaggedTrainingData:
                         use_moving_windows=use_moving_windows,
                         output_chunk_shift=0,
                     )
-            assert "Must specify at least one series-lags pair." == str(err.value)
+            assert str(err.value) == (
+                "`lags_past_covariates` lags are defined, but no past "
+                "components were provided."
+            )
             # Warnings will be thrown indicating that `past_covariates`
             # is specified without `lags_past_covariates`, and that
             # `lags_future_covariates` specified without
@@ -2052,7 +2057,10 @@ class TestCreateLaggedTrainingData:
                         use_moving_windows=use_moving_windows,
                         output_chunk_shift=0,
                     )
-            assert "Must specify at least one series-lags pair." == str(err.value)
+            assert str(err.value) == (
+                "`lags_future_covariates` lags are defined, but no future "
+                "components were provided."
+            )
 
     def test_lagged_training_data_invalid_output_chunk_length_error(self):
         """
@@ -2283,20 +2291,13 @@ class TestCreateLaggedTrainingData:
 
     def test_lagged_training_data_unspecified_lag_or_series_warning(self):
         """
-        Tests that `_create_lagged_training_data` throws correct
-        user warnings when a series is specified without any
-        corresponding lags, or vice versa. The only exception
-        to this is that a warning shouldn't be thrown if
-        `target_series` is specified without any `lags`, since
-        the `target_series` is still used to construct labels,
-        even if its not used to create features (i.e. `target_series`
-        is not ignored if `lags` is not specified).
+        Series specified without lags are warned and ignored; lags specified without the
+        matching series are rejected while resolving the config.
         """
         series = linear_timeseries(start=1, length=20, freq=1)
         lags = [-1]
-        # Check warnings thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
-            # Specify `future_covariates`, but not `lags_future_covariates`:
+            # `future_covariates` without `lags_future_covariates` warns and is ignored.
             with warnings.catch_warnings(record=True) as w:
                 _ = _create_lagged_training_data(
                     target_series=series,
@@ -2313,9 +2314,10 @@ class TestCreateLaggedTrainingData:
                     "`future_covariates` was specified without accompanying "
                     "`lags_future_covariates` and, thus, will be ignored."
                 )
-            # Specify `lags_future_covariates`, but not `future_covariates`:
-            with warnings.catch_warnings(record=True) as w:
-                _ = _create_lagged_training_data(
+
+            # Lags without their series cannot be resolved.
+            with pytest.raises(ValueError) as err:
+                _create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,
                     lags=lags,
@@ -2324,38 +2326,13 @@ class TestCreateLaggedTrainingData:
                     use_moving_windows=use_moving_windows,
                     output_chunk_shift=0,
                 )
-                assert len(w) == 1
-                assert issubclass(w[0].category, UserWarning)
-                assert str(w[0].message) == (
-                    "`lags_future_covariates` was specified without accompanying "
-                    "`future_covariates` and, thus, will be ignored."
-                )
-            # Specify `lags_future_covariates` but not `future_covariates`, and
-            # `past_covariates` but not `lags_past_covariates`:
-            with warnings.catch_warnings(record=True) as w:
-                _ = _create_lagged_training_data(
-                    target_series=series,
-                    lags=lags,
-                    output_chunk_length=1,
-                    past_covariates=series,
-                    lags_future_covariates=lags,
-                    uses_static_covariates=False,
-                    use_moving_windows=use_moving_windows,
-                    output_chunk_shift=0,
-                )
-                assert len(w) == 2
-                assert issubclass(w[0].category, UserWarning)
-                assert issubclass(w[1].category, UserWarning)
-                assert str(w[0].message) == (
-                    "`past_covariates` was specified without accompanying "
-                    "`lags_past_covariates` and, thus, will be ignored."
-                )
-                assert str(w[1].message) == (
-                    "`lags_future_covariates` was specified without accompanying "
-                    "`future_covariates` and, thus, will be ignored."
-                )
-            # Specify `target_series`, but not `lags` - unlike previous tests,
-            # this should *not* throw a warning:
+            assert str(err.value) == (
+                "`lags_future_covariates` lags are defined, but no future "
+                "components were provided."
+            )
+
+            # `target_series` without `lags` is not a warning for training data: the
+            # target is still used to construct the labels.
             with warnings.catch_warnings(record=True) as w:
                 _ = _create_lagged_training_data(
                     target_series=series,

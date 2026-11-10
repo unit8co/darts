@@ -8,7 +8,9 @@ import pytest
 from darts import TimeSeries
 from darts.logging import raise_log
 from darts.tests.parametrize_helpers import param_product
-from darts.utils.data.tabularization.tabularization import _get_feature_times
+from darts.tests.utils.tabularization._legacy_helpers import (
+    _get_feature_times_legacy as _get_feature_times,
+)
 from darts.utils.timeseries_generation import linear_timeseries
 
 
