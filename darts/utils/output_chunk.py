@@ -227,58 +227,7 @@ class RecursiveOutputStrategy(OutputChunkStrategy):
         return not native_multioutput or sample_weight
 
 
-class DirRecOutputStrategy(OutputChunkStrategy):
-    """Reserved interface for the future DirRec strategy.
-
-    The actual chained implementation is intentionally left for the DirRec feature track.
-    """
-
-    name = "dirrec"
-
-    def __init__(self, output_chunk_length: int):
-        super().__init__(output_chunk_length)
-        self.n_horizons = output_chunk_length
-        self.pred_dim = output_chunk_length
-        self.feature_lag_offset = 0
-
-    @staticmethod
-    def _not_implemented() -> None:
-        raise_log(
-            NotImplementedError(
-                "`DirRecOutputStrategy` is reserved for the DirRec feature and is not "
-                "implemented yet."
-            )
-        )
-
-    def estimator_index(self, horizon: int, component: int, n_components: int) -> int:
-        self._not_implemented()
-
-    def horizon_of(self, output_idx: int, n_components: int) -> int:
-        self._not_implemented()
-
-    def component_of(self, output_idx: int, n_components: int) -> int:
-        self._not_implemented()
-
-    def chain_columns(self, output_idx: int, n_components: int) -> tuple[int, ...]:
-        self._not_implemented()
-
-    def fit_order(self, n_outputs: int, n_components: int) -> list[list[int]]:
-        self._not_implemented()
-
-    def predict_order(self, n_outputs: int, n_components: int) -> list[list[int]]:
-        self._not_implemented()
-
-    def requires_wrapper(
-        self,
-        *,
-        native_multioutput: bool,
-        sample_weight: bool,
-    ) -> bool:
-        return True
-
-
 __all__ = [
-    "DirRecOutputStrategy",
     "DirectOutputStrategy",
     "OutputChunkStrategy",
     "RecursiveOutputStrategy",

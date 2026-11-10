@@ -2,7 +2,6 @@ import pytest
 
 from darts.utils.output_chunk import (
     DirectOutputStrategy,
-    DirRecOutputStrategy,
     RecursiveOutputStrategy,
 )
 
@@ -178,34 +177,3 @@ def test_invalid_index_types(strategy_cls, bad_value):
         strategy.estimator_index(0, bad_value, 3)
     with pytest.raises(ValueError):
         strategy.horizon_of(bad_value, 3)
-
-
-class TestDirRecOutputStrategy:
-    def test_reserved_attributes(self):
-        strategy = DirRecOutputStrategy(output_chunk_length=4)
-
-        assert strategy.name == "dirrec"
-        assert strategy.n_horizons == 4
-        assert strategy.pred_dim == 4
-        assert strategy.feature_lag_offset == 0
-        assert strategy.requires_wrapper(
-            native_multioutput=True,
-            sample_weight=False,
-        )
-
-    @pytest.mark.parametrize(
-        "call",
-        [
-            lambda strategy: strategy.estimator_index(0, 0, 1),
-            lambda strategy: strategy.horizon_of(0, 1),
-            lambda strategy: strategy.component_of(0, 1),
-            lambda strategy: strategy.chain_columns(0, 1),
-            lambda strategy: strategy.fit_order(4, 1),
-            lambda strategy: strategy.predict_order(4, 1),
-        ],
-    )
-    def test_reserved_methods_are_not_implemented(self, call):
-        strategy = DirRecOutputStrategy(output_chunk_length=4)
-
-        with pytest.raises(NotImplementedError):
-            call(strategy)

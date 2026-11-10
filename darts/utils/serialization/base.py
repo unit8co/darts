@@ -174,7 +174,6 @@ EXACT_STATE_CLASSES: frozenset[str] = frozenset({
     "darts.utils.forecast_config.ForecastConfig",
     "darts.utils.forecast_config.ResolvedForecastConfig",
     "darts.utils.output_chunk.DirectOutputStrategy",
-    "darts.utils.output_chunk.DirRecOutputStrategy",
     "darts.utils.output_chunk.RecursiveOutputStrategy",
     # boosters and non-BaseEstimator estimators (estimators covered via safe base below)
     "lightgbm.basic.Booster",
