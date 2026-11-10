@@ -26,7 +26,6 @@ _LAGS_ARG_NAMES: dict[str, str] = {
     "past": "lags_past_covariates",
     "future": "lags_future_covariates",
 }
-_STEPWISE_ARG_NAME = "lags_future_covariates_stepwise"
 _DEFAULT_LAGS_KEY = "default_lags"
 
 
@@ -34,45 +33,6 @@ def _validate_kind(kind: str) -> LagsKind:
     if kind not in _LAGS_ARG_NAMES:
         raise_log(ValueError(f"Unknown lags kind: {kind!r}."))
     return kind
-
-
-def _has_stepwise_flags(stepwise: bool | Mapping[str, bool]) -> bool:
-    """Whether at least one component is flagged as step-wise."""
-    if isinstance(stepwise, Mapping):
-        return any(stepwise.values())
-    return bool(stepwise)
-
-
-def _normalize_stepwise(
-    stepwise: bool | Mapping[str, bool],
-) -> bool | dict[str, bool]:
-    """Validate and copy the step-wise flags."""
-    if isinstance(stepwise, bool):
-        return stepwise
-    if not isinstance(stepwise, Mapping):
-        raise_log(
-            ValueError(
-                f"`{_STEPWISE_ARG_NAME}` must be a boolean or a dictionary mapping "
-                "`future_covariates` component names to booleans. Given: "
-                f"{type(stepwise)}."
-            )
-        )
-    if len(stepwise) == 0:
-        raise_log(
-            ValueError(
-                f"When passed as a dictionary, `{_STEPWISE_ARG_NAME}` must contain at least "
-                "one key."
-            )
-        )
-    for comp_name, is_stepwise in stepwise.items():
-        if not isinstance(is_stepwise, bool):
-            raise_log(
-                ValueError(
-                    f"`{_STEPWISE_ARG_NAME}` - `{comp_name}`: must be a boolean. "
-                    f"Given: {type(is_stepwise)}."
-                )
-            )
-    return dict(stepwise)
 
 
 def _raise_invalid_component_lags(
@@ -322,58 +282,18 @@ class ComponentLags(Lags):
 
 @dataclass(frozen=True)
 class FutureLags:
-    """Lags and step-wise flags for the future covariates."""
+    """Lags for the future covariates."""
 
     lags: Lags
-    stepwise: bool | Mapping[str, bool] = False
-
-    def __post_init__(self):
-        stepwise = _normalize_stepwise(self.stepwise)
-        object.__setattr__(self, "stepwise", stepwise)
-
-        if isinstance(stepwise, dict) and isinstance(self.lags, ComponentLags):
-            missing_lags = [
-                comp_name
-                for comp_name, is_stepwise in stepwise.items()
-                if is_stepwise
-                and comp_name != _DEFAULT_LAGS_KEY
-                and comp_name not in self.lags.per_component
-            ]
-            if missing_lags and self.lags.default is None:
-                raise_log(
-                    ValueError(
-                        f"The `{_STEPWISE_ARG_NAME}` dictionary flags components for which "
-                        f"`{_LAGS_ARG_NAMES['future']}` does not define any lags: "
-                        f"{sorted(missing_lags)}. Either add them to "
-                        f"`{_LAGS_ARG_NAMES['future']}` or provide its 'default_lags' key."
-                    )
-                )
 
     @classmethod
-    def from_user(
-        cls,
-        value: object | None,
-        *,
-        stepwise: bool | Mapping[str, bool] = False,
-    ) -> FutureLags | None:
-        normalized = _normalize_stepwise(stepwise)
+    def from_user(cls, value: object | None) -> FutureLags | None:
         if value is None:
-            if _has_stepwise_flags(normalized):
-                raise_log(
-                    ValueError(
-                        f"`{_STEPWISE_ARG_NAME}` requires "
-                        f"`{_LAGS_ARG_NAMES['future']}` to be not None."
-                    )
-                )
             return None
-        return cls(Lags.from_user(value, kind="future"), stepwise=normalized)
+        return cls(Lags.from_user(value, kind="future"))
 
     def shifted(self, n: int) -> FutureLags:
-        return FutureLags(self.lags.shifted(n), stepwise=self.stepwise)
-
-    @property
-    def has_stepwise(self) -> bool:
-        return _has_stepwise_flags(self.stepwise)
+        return FutureLags(self.lags.shifted(n))
 
 
 @dataclass(frozen=True)
@@ -383,7 +303,6 @@ class ResolvedLagConfig:
     target: Mapping[str, tuple[int, ...]] | None
     past: Mapping[str, tuple[int, ...]] | None
     future: Mapping[str, tuple[int, ...]] | None
-    future_stepwise: Mapping[str, bool] | None
     is_component_specific: Mapping[str, bool]
     legacy_lags: Mapping[str, tuple[int, ...]]
 
@@ -397,17 +316,8 @@ class ResolvedLagConfig:
                     {key: tuple(lags) for key, lags in value.items()},
                 )
         object.__setattr__(
-            self,
-            "future_stepwise",
-            None if self.future_stepwise is None else dict(self.future_stepwise),
-        )
-        object.__setattr__(
             self, "is_component_specific", dict(self.is_component_specific)
         )
-
-    @property
-    def has_stepwise(self) -> bool:
-        return bool(self.future_stepwise) and any(self.future_stepwise.values())
 
     def legacy_lags_dict(self) -> dict[str, list[int]]:
         """The ``model.lags`` representation of the resolved lags."""
@@ -458,7 +368,6 @@ class LagConfig:
         lags_future_covariates: object | None = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
-        lags_future_covariates_stepwise: bool | Mapping[str, bool] = False,
     ) -> LagConfig:
         """Build a config from the public ``SKLearnModel`` constructor arguments."""
         if (
@@ -473,15 +382,6 @@ class LagConfig:
                 )
             )
 
-        stepwise = _normalize_stepwise(lags_future_covariates_stepwise)
-        if lags_future_covariates is None and _has_stepwise_flags(stepwise):
-            raise_log(
-                ValueError(
-                    f"`{_STEPWISE_ARG_NAME}` requires "
-                    f"`{_LAGS_ARG_NAMES['future']}` to be not None."
-                )
-            )
-
         return cls(
             target=(None if lags is None else Lags.from_user(lags, kind="target")),
             past=(
@@ -489,7 +389,7 @@ class LagConfig:
                 if lags_past_covariates is None
                 else Lags.from_user(lags_past_covariates, kind="past")
             ),
-            future=FutureLags.from_user(lags_future_covariates, stepwise=stepwise),
+            future=FutureLags.from_user(lags_future_covariates),
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
         )
@@ -535,18 +435,6 @@ class LagConfig:
             except ValueError as exc:
                 errors.append(str(exc))
 
-        future_stepwise: dict[str, bool] | None = None
-        if self.future is not None and components["future"] is not None:
-            if self.output_chunk_length == 1:
-                future_stepwise = {}
-            else:
-                try:
-                    future_stepwise = _resolve_stepwise(
-                        self.future, components["future"]
-                    )
-                except ValueError as exc:
-                    errors.append(str(exc))
-
         if errors:
             raise_log(ValueError("\n".join(errors)))
 
@@ -560,7 +448,6 @@ class LagConfig:
             target=per_component.get("target"),
             past=per_component.get("past"),
             future=per_component.get("future"),
-            future_stepwise=future_stepwise,
             is_component_specific=is_component_specific,
             legacy_lags=legacy_lags,
         )
@@ -643,38 +530,6 @@ def _resolve_lags(
         is_component_specific=True,
         legacy_lags=lags.legacy_lags,
     )
-
-
-def _resolve_stepwise(future: FutureLags, components: Sequence[str]) -> dict[str, bool]:
-    """Resolve and validate the step-wise flags against the future components."""
-    stepwise = future.stepwise
-    if not _has_stepwise_flags(stepwise):
-        return {}
-    if isinstance(stepwise, bool):
-        stepwise = {_DEFAULT_LAGS_KEY: stepwise}
-
-    components = tuple(components)
-    required = set(components)
-    provided = set(stepwise)
-    wrong_components = [
-        comp for comp in stepwise if comp != _DEFAULT_LAGS_KEY and comp not in required
-    ]
-    missing_components = [comp for comp in components if comp not in provided]
-
-    if len(wrong_components) > 0:
-        raise ValueError(
-            f"The `{_STEPWISE_ARG_NAME}` dictionary specifies flags for components that are not "
-            f"present in the series : {wrong_components}. They must be removed to avoid any ambiguity."
-        )
-    if len(missing_components) > 0 and _DEFAULT_LAGS_KEY not in provided:
-        raise ValueError(
-            f"The {_STEPWISE_ARG_NAME} dictionary is missing the flags for the following "
-            f"components present in the series: {missing_components}. The key 'default_lags' can be used to "
-            "provide flags for all the non-explicitely defined components."
-        )
-
-    default_stepwise = stepwise.get(_DEFAULT_LAGS_KEY, False)
-    return {comp: bool(stepwise.get(comp, default_stepwise)) for comp in components}
 
 
 __all__ = [

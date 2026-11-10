@@ -38,7 +38,6 @@ class ForecastConfig:
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         multi_models: bool | None = True,
-        lags_future_covariates_stepwise: bool | dict[str, bool] = False,
     ) -> ForecastConfig:
         """Build a config from the public model constructor arguments."""
         lag_config = LagConfig.from_user(
@@ -47,7 +46,6 @@ class ForecastConfig:
             lags_future_covariates=lags_future_covariates,
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
-            lags_future_covariates_stepwise=lags_future_covariates_stepwise,
         )
         strategy_cls = (
             DirectOutputStrategy

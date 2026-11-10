@@ -260,8 +260,7 @@ def _optimized_historical_forecasts_regression(
                             take_y_indices.append(y_pos)
 
                     # update X with matched predictions (move around axes for correct reshaping
-                    # of samples); the base array holds the target columns, which is also true for
-                    # step-wise feature layouts
+                    # of samples); the base array holds the target columns
                     current_X.array[:, update_x_indices] = np.moveaxis(
                         predictions[:, take_y_indices, comp_idx], 1, -1
                     ).reshape(len(current_X), -1)

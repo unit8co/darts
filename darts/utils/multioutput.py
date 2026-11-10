@@ -26,12 +26,7 @@ from darts.utils.utils import ModelType
 
 
 def _as_base_array(features):
-    """Return a zero-copy base ``np.ndarray`` view for scikit-learn estimators.
-
-    Feature containers are ``np.ndarray`` subclasses that carry horizon metadata. Once the
-    horizon is materialized the metadata is no longer needed, and scikit-learn's validation
-    has measurable overhead on subclasses.
-    """
+    """Return a zero-copy base ``np.ndarray`` view for scikit-learn estimators."""
     if isinstance(features, np.ndarray) and type(features) is not np.ndarray:
         return features.view(np.ndarray)
     return features

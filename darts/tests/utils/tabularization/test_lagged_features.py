@@ -2,36 +2,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.utils.data.tabularization.features import (
-    ArrayLaggedFeatures,
-    StepwiseLaggedFeatures,
-)
+from darts.utils.data.tabularization.features import ArrayLaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
     _add_static_covariates_to_lagged_data,
     _create_lagged_prediction_data,
     _create_lagged_training_data,
 )
 from darts.utils.timeseries_generation import linear_timeseries
-
-
-def make_stepwise(ndim: int = 2):
-    shape = (5, 6) if ndim == 2 else (5, 6, 2)
-    array = np.arange(np.prod(shape), dtype=float).reshape(shape)
-    step_cols = [1, 4]
-    step_values = np.stack([
-        array[:, step_cols],
-        array[:, step_cols] + 100,
-        array[:, step_cols] - 100,
-    ])
-    return (
-        StepwiseLaggedFeatures(
-            array=array,
-            step_values=step_values,
-            step_cols=step_cols,
-        ),
-        array,
-        step_values,
-    )
 
 
 class TestArrayLaggedFeatures:
@@ -158,182 +135,6 @@ class TestArrayLaggedFeatures:
             ArrayLaggedFeatures.concatenate([first, third])
 
 
-class TestStepwiseLaggedFeatures:
-    def test_construction_and_properties(self):
-        features, array, step_values = make_stepwise()
-
-        assert features.n_horizons == 3
-        assert features.shape == array.shape
-        assert features.ndim == array.ndim
-        assert features.dtype == array.dtype
-        assert len(features) == len(array)
-        assert features.array is array
-        assert np.array_equal(features.step_values[0], array[:, features.step_cols])
-        assert np.array_equal(features.step_values, step_values)
-
-    def test_horizon(self):
-        features, array, step_values = make_stepwise()
-
-        assert features.horizon(0) is array
-        for h in range(1, features.n_horizons):
-            horizon = features.horizon(h)
-            assert horizon is not array
-            assert np.array_equal(horizon[:, features.step_cols], step_values[h])
-            assert np.array_equal(horizon[:, [0, 2, 3, 5]], array[:, [0, 2, 3, 5]])
-
-        with pytest.raises(IndexError):
-            features.horizon(-1)
-        with pytest.raises(IndexError):
-            features.horizon(features.n_horizons)
-
-    def test_base_updates_are_visible_in_every_horizon(self):
-        features, array, _ = make_stepwise()
-        features.horizon(1)  # materialize once
-
-        array[0, 0] = 999.0
-        array[1, 2] = -999.0
-
-        assert features.horizon(0)[0, 0] == 999.0
-        for h in range(features.n_horizons):
-            horizon = features.horizon(h)
-            assert horizon[0, 0] == 999.0
-            assert horizon[1, 2] == -999.0
-
-    def test_with_format_fn(self):
-        features, array, step_values = make_stepwise()
-        formatted = features.with_format_fn(pd.DataFrame)
-
-        assert formatted is not features
-        assert formatted.array is array
-        assert isinstance(formatted.horizon(1), pd.DataFrame)
-        assert np.array_equal(
-            formatted.horizon(1).to_numpy()[:, formatted.step_cols],
-            step_values[1],
-        )
-        assert features.format_fn is None
-        assert isinstance(features.horizon(1), np.ndarray)
-
-        cleared = formatted.with_format_fn(None)
-        assert cleared.format_fn is None
-        assert isinstance(cleared.horizon(1), np.ndarray)
-
-    def test_with_base(self):
-        features, array, step_values = make_stepwise()
-        static = np.arange(10).reshape(5, 2)
-        new_array = np.hstack([array, static])
-
-        with_base = features.with_base(new_array)
-
-        assert with_base is not features
-        assert with_base.array is new_array
-        assert with_base.shape == new_array.shape
-        assert np.array_equal(with_base.step_values, step_values)
-        assert np.array_equal(
-            with_base.horizon(1)[:, with_base.step_cols], step_values[1]
-        )
-        assert np.array_equal(with_base.horizon(1)[:, -2:], static)
-
-    def test_repeat(self):
-        features, array, step_values = make_stepwise()
-        repeated = features.repeat(2, axis=0)
-
-        assert isinstance(repeated, StepwiseLaggedFeatures)
-        assert repeated.shape == (10, 6)
-        assert repeated.step_values.shape == (3, 10, 2)
-        assert np.array_equal(repeated.array, np.repeat(array, 2, axis=0))
-        assert np.array_equal(repeated.step_values, np.repeat(step_values, 2, axis=1))
-        assert np.array_equal(
-            repeated.step_values[0],
-            repeated.array[:, repeated.step_cols],
-        )
-
-        with pytest.raises(ValueError):
-            features.repeat(2, axis=1)
-
-    def test_concatenate(self):
-        features, array, step_values = make_stepwise()
-        concatenated = StepwiseLaggedFeatures.concatenate([features, features])
-
-        assert isinstance(concatenated, StepwiseLaggedFeatures)
-        assert concatenated.shape == (10, 6)
-        assert concatenated.step_values.shape == (3, 10, 2)
-        assert np.array_equal(concatenated.array, np.concatenate([array, array]))
-        assert np.array_equal(
-            concatenated.step_values,
-            np.concatenate([step_values, step_values], axis=1),
-        )
-        assert np.array_equal(
-            concatenated.step_values[0],
-            concatenated.array[:, concatenated.step_cols],
-        )
-
-    def test_concatenate_validation(self):
-        with pytest.raises(ValueError):
-            StepwiseLaggedFeatures.concatenate([])
-
-        first, _, _ = make_stepwise()
-        other_array = np.zeros((5, 6))
-        other_step_values = np.zeros((3, 5, 2))
-        other = StepwiseLaggedFeatures(
-            array=other_array,
-            step_values=other_step_values,
-            step_cols=[0, 1],
-        )
-
-        with pytest.raises(ValueError):
-            StepwiseLaggedFeatures.concatenate([first, other])
-
-    def test_getitem_observations(self):
-        features, array, step_values = make_stepwise()
-
-        sliced = features[1:4]
-        assert isinstance(sliced, StepwiseLaggedFeatures)
-        assert sliced.n_horizons == 3
-        assert np.array_equal(sliced.array, array[1:4])
-        assert np.array_equal(sliced.step_values, step_values[:, 1:4])
-        assert np.array_equal(sliced.step_values[0], sliced.array[:, sliced.step_cols])
-
-        with pytest.raises(IndexError):
-            features[0]
-        with pytest.raises(IndexError):
-            features[:, [0, 1]]
-        with pytest.raises(IndexError):
-            features[0, 0, 0]
-
-    def test_getitem_samples(self):
-        features, array, step_values = make_stepwise(ndim=3)
-
-        sliced = features[1:4, :, 0]
-        assert isinstance(sliced, StepwiseLaggedFeatures)
-        assert np.array_equal(sliced.array, array[1:4, :, 0])
-        assert np.array_equal(sliced.step_values, step_values[:, 1:4, :, 0])
-        assert np.array_equal(sliced.step_values[0], sliced.array[:, sliced.step_cols])
-
-    def test_repr(self):
-        features, _, _ = make_stepwise()
-
-        assert repr(features) == (
-            "StepwiseLaggedFeatures(shape=(5, 6), n_horizons=3, step_cols=[1, 4])"
-        )
-
-    @pytest.mark.parametrize(
-        "array_shape,step_values_shape,step_cols",
-        [
-            ((5, 6), (3, 5), [1, 4]),
-            ((5, 6), (3, 4, 2), [1, 4]),
-            ((5, 6), (3, 5, 1), [1, 4]),
-            ((5, 6, 2), (3, 5, 2, 3), [1, 4]),
-        ],
-    )
-    def test_invalid_layout(self, array_shape, step_values_shape, step_cols):
-        with pytest.raises(ValueError):
-            StepwiseLaggedFeatures(
-                array=np.zeros(array_shape),
-                step_values=np.zeros(step_values_shape),
-                step_cols=step_cols,
-            )
-
-
 class TestTabularizationContainers:
     @staticmethod
     def target(length: int = 30):
@@ -446,29 +247,6 @@ class TestTabularizationContainers:
             np.full(len(features_with_static), 5.0),
         )
         assert np.array_equal(features_with_static.array[:, :-1], features.array)
-
-    def test_add_static_covariates_preserves_stepwise_layout(self):
-        features, array, step_values = make_stepwise()
-        target = self.target(length=len(array))
-        static = pd.DataFrame({"sc": [5.0]}, index=target.columns)
-        target = target.with_static_covariates(static)
-
-        features_with_static, static_shape = _add_static_covariates_to_lagged_data(
-            features=features,
-            target_series=target,
-            uses_static_covariates=True,
-        )
-
-        assert isinstance(features_with_static, StepwiseLaggedFeatures)
-        assert features_with_static.shape == (len(array), array.shape[1] + 1)
-        assert features_with_static.n_horizons == features.n_horizons
-        assert np.array_equal(features_with_static.step_values, step_values)
-        assert np.array_equal(features_with_static.step_cols, features.step_cols)
-        assert np.array_equal(features_with_static.array[:, :-1], array)
-        assert np.array_equal(
-            features_with_static.horizon(1)[:, -1],
-            np.full(len(array), 5.0),
-        )
 
     def test_add_static_covariates_keeps_plain_arrays(self):
         target = self.target()

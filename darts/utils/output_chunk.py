@@ -83,7 +83,6 @@ class OutputChunkStrategy(ABC):
         *,
         native_multioutput: bool,
         sample_weight: bool,
-        per_horizon_features: bool = False,
     ) -> bool:
         """Whether the model needs the multi-output wrapper."""
 
@@ -191,9 +190,8 @@ class DirectOutputStrategy(OutputChunkStrategy):
         *,
         native_multioutput: bool,
         sample_weight: bool,
-        per_horizon_features: bool = False,
     ) -> bool:
-        return not native_multioutput or sample_weight or per_horizon_features
+        return not native_multioutput or sample_weight
 
 
 class RecursiveOutputStrategy(OutputChunkStrategy):
@@ -225,7 +223,6 @@ class RecursiveOutputStrategy(OutputChunkStrategy):
         *,
         native_multioutput: bool,
         sample_weight: bool,
-        per_horizon_features: bool = False,
     ) -> bool:
         return not native_multioutput or sample_weight
 
@@ -276,7 +273,6 @@ class DirRecOutputStrategy(OutputChunkStrategy):
         *,
         native_multioutput: bool,
         sample_weight: bool,
-        per_horizon_features: bool = False,
     ) -> bool:
         return True
 

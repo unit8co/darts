@@ -2,10 +2,7 @@ import numpy as np
 import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
-from darts.utils.data.tabularization.features import (
-    ArrayLaggedFeatures,
-    StepwiseLaggedFeatures,
-)
+from darts.utils.data.tabularization.features import ArrayLaggedFeatures
 from darts.utils.multioutput import MultiOutputClassifier, MultiOutputRegressor
 from darts.utils.output_chunk import (
     DirectOutputStrategy,
@@ -97,56 +94,6 @@ class RecordingClassifier(BaseEstimator, ClassifierMixin):
         return np.tile([0.5, 0.5], (len(X), 1))
 
 
-def make_stepwise(n_rows: int = 6):
-    array = np.column_stack([
-        np.arange(n_rows, dtype=float),
-        np.arange(n_rows, dtype=float) + 10.0,
-    ])
-    step_cols = [0]
-    step_values = np.stack([
-        array[:, step_cols],
-        array[:, step_cols] + 100.0,
-    ])
-    return (
-        StepwiseLaggedFeatures(
-            array=array,
-            step_values=step_values,
-            step_cols=step_cols,
-        ),
-        array,
-        step_values,
-    )
-
-
-def test_direct_strategy_routes_stepwise_horizons():
-    X, base, step_values = make_stepwise()
-    y = np.column_stack([np.arange(6), np.arange(6) + 100])
-    RecordingRegressor.reset()
-
-    wrapper = MultiOutputRegressor(
-        RecordingRegressor(),
-        strategy=DirectOutputStrategy(output_chunk_length=2),
-    )
-    wrapper.fit(X, y)
-
-    assert len(wrapper.estimators_) == 2
-    assert wrapper.estimators_[0].fit_X_[:, 0].tolist() == base[:, 0].tolist()
-    assert wrapper.estimators_[1].fit_X_[:, 0].tolist() == step_values[1, :, 0].tolist()
-    assert np.array_equal(wrapper.estimators_[0].fit_y_, y[:, 0])
-    assert np.array_equal(wrapper.estimators_[1].fit_y_, y[:, 1])
-
-    RecordingRegressor.reset()
-    predictions = wrapper.predict(X)
-
-    assert predictions.shape == (6, 2)
-    assert len(RecordingRegressor.predict_records) == 2
-    assert RecordingRegressor.predict_records[0][:, 0].tolist() == base[:, 0].tolist()
-    assert (
-        RecordingRegressor.predict_records[1][:, 0].tolist()
-        == step_values[1, :, 0].tolist()
-    )
-
-
 def test_features_for_output_use_zero_copy_base_arrays():
     base = np.arange(12, dtype=float).reshape(4, 3)
     X = ArrayLaggedFeatures.wrap(base, n_horizons=2)
@@ -226,83 +173,6 @@ def test_sample_weight_is_sliced_per_output():
         assert np.array_equal(
             wrapper.estimators_[i].fit_sample_weight_, sample_weight[:, i]
         )
-
-
-def test_eval_set_is_routed_to_each_horizon():
-    X, base, step_values = make_stepwise()
-    y = np.column_stack([np.arange(6), np.arange(6) + 100])
-    eval_set = [(X, y[:, 0]), (X, y[:, 1])]
-    RecordingRegressor.reset()
-
-    wrapper = MultiOutputRegressor(
-        RecordingRegressor(),
-        eval_set_name="eval_set",
-        strategy=DirectOutputStrategy(output_chunk_length=2),
-    )
-    wrapper.fit(X, y, eval_set=eval_set)
-
-    first_samples, first_labels = wrapper.estimators_[0].fit_eval_set_[0]
-    second_samples, second_labels = wrapper.estimators_[1].fit_eval_set_[0]
-    assert first_samples[:, 0].tolist() == base[:, 0].tolist()
-    assert second_samples[:, 0].tolist() == step_values[1, :, 0].tolist()
-    assert np.array_equal(first_labels, y[:, 0])
-    assert np.array_equal(second_labels, y[:, 1])
-
-
-def test_eval_samples_are_routed_to_each_horizon():
-    X, base, step_values = make_stepwise()
-    y = np.column_stack([np.arange(6), np.arange(6) + 100])
-    RecordingRegressor.reset()
-
-    wrapper = MultiOutputRegressor(
-        RecordingRegressor(),
-        eval_set_name=("eval_samples", "eval_labels"),
-        strategy=DirectOutputStrategy(output_chunk_length=2),
-    )
-    wrapper.fit(
-        X,
-        y,
-        eval_samples=[X, X],
-        eval_labels=[y[:, 0], y[:, 1]],
-    )
-
-    assert (
-        wrapper.estimators_[0].fit_eval_samples_[:, 0].tolist() == base[:, 0].tolist()
-    )
-    assert (
-        wrapper.estimators_[1].fit_eval_samples_[:, 0].tolist()
-        == step_values[1, :, 0].tolist()
-    )
-
-
-def test_predict_proba_routes_stepwise_horizons():
-    X, base, step_values = make_stepwise()
-    y = np.column_stack([
-        np.array([0, 1, 0, 1, 0, 1]),
-        np.array([1, 0, 1, 0, 1, 0]),
-    ])
-    RecordingClassifier.reset()
-
-    wrapper = MultiOutputClassifier(
-        RecordingClassifier(),
-        strategy=DirectOutputStrategy(output_chunk_length=2),
-    )
-    wrapper.fit(X, y)
-    RecordingClassifier.reset()
-
-    probabilities = wrapper.predict_proba(X)
-
-    assert len(probabilities) == 2
-    assert all(probability.shape == (6, 2) for probability in probabilities)
-    assert len(RecordingClassifier.predict_proba_records) == 2
-    assert (
-        RecordingClassifier.predict_proba_records[0][:, 0].tolist()
-        == base[:, 0].tolist()
-    )
-    assert (
-        RecordingClassifier.predict_proba_records[1][:, 0].tolist()
-        == step_values[1, :, 0].tolist()
-    )
 
 
 def test_array_container_with_direct_strategy_is_accepted():

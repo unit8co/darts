@@ -47,28 +47,20 @@ class TestDirectOutputStrategy:
         assert strategy.chain_columns(0, 3) == ()
 
     @pytest.mark.parametrize(
-        "native_multioutput,sample_weight,per_horizon_features,expected",
+        "native_multioutput,sample_weight,expected",
         [
-            (True, False, False, False),
-            (False, False, False, True),
-            (True, True, False, True),
-            (True, False, True, True),
+            (True, False, False),
+            (False, False, True),
+            (True, True, True),
         ],
     )
-    def test_requires_wrapper(
-        self,
-        native_multioutput,
-        sample_weight,
-        per_horizon_features,
-        expected,
-    ):
+    def test_requires_wrapper(self, native_multioutput, sample_weight, expected):
         strategy = DirectOutputStrategy(output_chunk_length=4)
 
         assert (
             strategy.requires_wrapper(
                 native_multioutput=native_multioutput,
                 sample_weight=sample_weight,
-                per_horizon_features=per_horizon_features,
             )
             is expected
         )
@@ -131,28 +123,20 @@ class TestRecursiveOutputStrategy:
         assert strategy.chain_columns(0, 3) == ()
 
     @pytest.mark.parametrize(
-        "native_multioutput,sample_weight,per_horizon_features,expected",
+        "native_multioutput,sample_weight,expected",
         [
-            (True, False, False, False),
-            (False, False, False, True),
-            (True, True, False, True),
-            (True, False, True, False),
+            (True, False, False),
+            (False, False, True),
+            (True, True, True),
         ],
     )
-    def test_requires_wrapper(
-        self,
-        native_multioutput,
-        sample_weight,
-        per_horizon_features,
-        expected,
-    ):
+    def test_requires_wrapper(self, native_multioutput, sample_weight, expected):
         strategy = RecursiveOutputStrategy(output_chunk_length=4)
 
         assert (
             strategy.requires_wrapper(
                 native_multioutput=native_multioutput,
                 sample_weight=sample_weight,
-                per_horizon_features=per_horizon_features,
             )
             is expected
         )
@@ -207,7 +191,6 @@ class TestDirRecOutputStrategy:
         assert strategy.requires_wrapper(
             native_multioutput=True,
             sample_weight=False,
-            per_horizon_features=False,
         )
 
     @pytest.mark.parametrize(

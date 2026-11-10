@@ -129,7 +129,6 @@ def _resolved_config_from_normalized_lags(
             target=target,
             past=past,
             future=future,
-            future_stepwise=None,
             is_component_specific={
                 "target": target_specific,
                 "past": past_specific,

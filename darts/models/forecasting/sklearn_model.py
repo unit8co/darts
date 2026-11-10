@@ -945,9 +945,6 @@ class SKLearnModel(GlobalForecastingModel):
 
         # Check if multi-output regression is required
         requires_multioutput = strategy.n_outputs(series[0].width) > 1
-        per_horizon_features = (
-            config.lags.future is not None and config.lags.future.has_stepwise
-        )
 
         # If multi-output is required and the estimator needs the wrapper, add it
         if (
@@ -956,7 +953,6 @@ class SKLearnModel(GlobalForecastingModel):
             and strategy.requires_wrapper(
                 native_multioutput=self._supports_native_multioutput,
                 sample_weight=sample_weight is not None,
-                per_horizon_features=per_horizon_features,
             )
         ):
             val_set_name, val_weight_name = self.val_set_params
@@ -1343,11 +1339,6 @@ class SKLearnModel(GlobalForecastingModel):
     @property
     def lagged_feature_names(self) -> list[str] | None:
         """The lagged feature names the model has been trained on.
-
-        .. note::
-            The names describe the feature columns shared by all forecast horizons; they do not
-            include a horizon suffix. With step-wise future covariates, different horizons can
-            receive different values for the same named column.
 
         The naming convention for target, past and future covariates is: ``"{name}_{type}_lag{i}"``, where:
 
