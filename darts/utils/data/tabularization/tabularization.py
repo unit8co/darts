@@ -30,7 +30,8 @@ from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
 
 if TYPE_CHECKING:
-    from darts.utils.forecast_config import ResolvedForecastConfig
+    from darts.utils.data.tabularization.lags import Lags
+    from darts.utils.forecast_config import ForecastConfig
 
 NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
 STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
@@ -42,32 +43,24 @@ _PAST_COV = "past_covariates"
 _FUTURE_COV = "future_covariates"
 
 
-def _resolved_lags_from_normalized(
+def _lags_from_normalized(
     lags: Sequence[int] | dict[str, list[int]] | None,
-    components: Sequence[str] | None,
-):
-    """Build resolved lags from already-normalized tabularization arguments."""
+    kind: Literal["target", "past", "future"],
+) -> "Lags | None":
+    """Build parsed lags from already-normalized tabularization arguments."""
+    from darts.utils.data.tabularization.lags import Lags
+
     if lags is None:
-        return None, False, None
-
+        return None
     if isinstance(lags, dict):
-        per_component = {
-            component: tuple(component_lags)
-            for component, component_lags in lags.items()
-        }
-        legacy_lags = (
-            min(min(component_lags) for component_lags in per_component.values()),
-            max(max(component_lags) for component_lags in per_component.values()),
+        return Lags(
+            kind=kind,
+            component_lags={
+                component: tuple(component_lags)
+                for component, component_lags in lags.items()
+            },
         )
-        return per_component, True, legacy_lags
-
-    legacy_lags = tuple(lags)
-    per_component = (
-        None
-        if components is None
-        else {component: legacy_lags for component in components}
-    )
-    return per_component, False, legacy_lags
+    return Lags(kind=kind, shared=tuple(lags))
 
 
 def _resolved_config_from_normalized_lags(
@@ -80,14 +73,17 @@ def _resolved_config_from_normalized_lags(
     target_series: TimeSeriesLike | None,
     past_covariates: TimeSeriesLike | None,
     future_covariates: TimeSeriesLike | None,
-) -> "ResolvedForecastConfig":
+    check_inputs: bool,
+) -> "ForecastConfig":
     """Build a resolved config from the legacy tabularization arguments."""
-    from darts.utils.data.tabularization.lags import ResolvedLagConfig
-    from darts.utils.forecast_config import ResolvedForecastConfig
+    from darts.utils.forecast_config import ForecastConfig
     from darts.utils.output_chunk import (
         DirectOutputStrategy,
         RecursiveOutputStrategy,
     )
+
+    if check_inputs:
+        _check_lags(lags, lags_past_covariates, lags_future_covariates)
 
     target_components = get_single_series(target_series)
     target_components = (
@@ -100,45 +96,29 @@ def _resolved_config_from_normalized_lags(
         None if future_components is None else future_components.components
     )
 
-    target, target_specific, target_legacy = _resolved_lags_from_normalized(
-        lags, target_components
-    )
-    past, past_specific, past_legacy = _resolved_lags_from_normalized(
-        lags_past_covariates, past_components
-    )
-    future, future_specific, future_legacy = _resolved_lags_from_normalized(
-        lags_future_covariates, future_components
-    )
-
-    legacy_lags = {
-        kind: legacy
-        for kind, legacy in (
-            ("target", target_legacy),
-            ("past", past_legacy),
-            ("future", future_legacy),
-        )
-        if legacy is not None
-    }
     strategy_cls = (
         DirectOutputStrategy
         if multi_models or output_chunk_length == 1
         else RecursiveOutputStrategy
     )
-    return ResolvedForecastConfig(
-        lags=ResolvedLagConfig(
-            target=target,
-            past=past,
-            future=future,
-            is_component_specific={
-                "target": target_specific,
-                "past": past_specific,
-                "future": future_specific,
-            },
-            legacy_lags=legacy_lags,
-        ),
+    config = ForecastConfig._from_lags(
+        target=_lags_from_normalized(lags, "target"),
+        past=_lags_from_normalized(lags_past_covariates, "past"),
+        future=_lags_from_normalized(lags_future_covariates, "future"),
         strategy=strategy_cls(output_chunk_length),
         output_chunk_shift=output_chunk_shift,
     )
+    # The legacy helpers tolerate lags without a matching series (they warn and ignore
+    # them), so only resolve the kinds for which components are available.
+    for kind, components in (
+        ("target", target_components),
+        ("past", past_components),
+        ("future", future_components),
+    ):
+        lags_for_kind = config.lags_for(kind)
+        if lags_for_kind is not None and components is not None:
+            lags_for_kind.resolve(components)
+    return config
 
 
 def _create_lagged_data(
@@ -177,7 +157,7 @@ def _create_lagged_data(
     Notes
     -----
     Internal compatibility adapter that accepts the pre-refactor argument names and builds a
-    :class:`ResolvedForecastConfig` from them. New call sites should build the config once and
+    :class:`ForecastConfig` from them. New call sites should build the config once and
     use :func:`_create_lagged_data_from_config` directly.
 
     The `X` array is constructed from the lagged values of up to three separate timeseries:
@@ -427,6 +407,7 @@ def _create_lagged_data(
         target_series=target_series,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
+        check_inputs=check_inputs,
     )
     return _create_lagged_data_core(
         config,
@@ -447,7 +428,7 @@ def _create_lagged_data(
 
 
 def _create_lagged_data_core(
-    config: "ResolvedForecastConfig",
+    config: "ForecastConfig",
     target_series: TimeSeriesLike | None = None,
     past_covariates: TimeSeriesLike | None = None,
     future_covariates: TimeSeriesLike | None = None,
@@ -596,21 +577,25 @@ def _create_lagged_data_core(
 
 
 def _config_lags(
-    config: "ResolvedForecastConfig", kind: Literal["target", "past", "future"]
+    config: "ForecastConfig", kind: Literal["target", "past", "future"]
 ) -> list[int] | dict[str, list[int]] | None:
     """Return the resolved lags in the representation expected by the core."""
-    lags = getattr(config.lags, kind)
-    if config.lags.is_component_specific.get(kind, False):
-        if lags is None:
-            return None
-        return {component: list(values) for component, values in lags.items()}
-    if kind in config.lags.legacy_lags:
-        return list(config.lags.legacy_lags[kind])
-    return None
+    lags = config.lags_for(kind)
+    if lags is None:
+        return None
+    if lags.is_component_specific:
+        try:
+            per_component = lags.resolved_per_component
+        except ValueError:
+            # Legacy callers can pass component-specific lags without a matching series;
+            # in that case the core warns and ignores them, so keep the raw mapping.
+            per_component = lags.component_lags
+        return {component: list(values) for component, values in per_component.items()}
+    return list(lags.shared)
 
 
 def _create_lagged_data_from_config(
-    config: "ResolvedForecastConfig",
+    config: "ForecastConfig",
     target_series: TimeSeriesLike | None = None,
     past_covariates: TimeSeriesLike | None = None,
     future_covariates: TimeSeriesLike | None = None,
@@ -1266,7 +1251,7 @@ def _create_lagged_data_by_moving_window(
     past_covariates: TimeSeries | None,
     future_covariates: TimeSeries | None,
     sample_weight: TimeSeries | None,
-    config: "ResolvedForecastConfig",
+    config: "ForecastConfig",
     lags_extract: list[np.ndarray | None],
     lags_order: list[np.ndarray | None],
     max_samples_per_ts: int | None,
@@ -1494,7 +1479,7 @@ def _create_lagged_data_by_intersecting_times(
     past_covariates: TimeSeries | None,
     future_covariates: TimeSeries | None,
     sample_weight: TimeSeries | None,
-    config: "ResolvedForecastConfig",
+    config: "ForecastConfig",
     max_samples_per_ts: int | None,
     check_inputs: bool,
     is_training: bool,
@@ -1642,7 +1627,7 @@ def _create_lagged_data_by_intersecting_times(
 
 
 def _resolve_autoregression_lags(
-    config: "ResolvedForecastConfig",
+    config: "ForecastConfig",
 ) -> tuple[
     dict[str, list[int]],
     dict[str, dict[str, list[int]]],
@@ -1654,16 +1639,20 @@ def _resolve_autoregression_lags(
     over ``t_pred`` can resolve this once and pass it to
     :func:`_create_lagged_data_autoregression`.
     """
-    lags = {kind: list(values) for kind, values in config.lags.legacy_lags.items()}
-    component_lags = {
-        kind: {
-            component: list(component_lags)
-            for component, component_lags in getattr(config.lags, kind).items()
-        }
-        for kind in ("target", "past", "future")
-        if config.lags.is_component_specific.get(kind, False)
-        and getattr(config.lags, kind) is not None
-    }
+    lags: dict[str, list[int]] = {}
+    component_lags: dict[str, dict[str, list[int]]] = {}
+    for kind in ("target", "past", "future"):
+        lags_for_kind = config.lags_for(kind)
+        if lags_for_kind is None:
+            continue
+        if lags_for_kind.is_component_specific:
+            lags[kind] = list(lags_for_kind.extreme_lags)
+            component_lags[kind] = {
+                component: list(component_lags)
+                for component, component_lags in lags_for_kind.resolved_per_component.items()
+            }
+        else:
+            lags[kind] = list(lags_for_kind.shared)
     relative_cov_lags = {
         kind: np.array(lags[kind]) - lags[kind][0]
         for kind in ("past", "future")
@@ -1678,7 +1667,7 @@ def _create_lagged_data_autoregression(
     last_step_shift: int,
     series_matrix: np.ndarray,
     covariate_matrices: dict[str, np.ndarray],
-    config: "ResolvedForecastConfig",
+    config: "ForecastConfig",
     uses_static_covariates: bool,
     last_static_covariates_shape: tuple[int, int] | None,
     num_samples: int,

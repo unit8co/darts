@@ -63,18 +63,21 @@ def _optimized_historical_forecasts_regression(
         **{k: v for k, v in predict_kwargs.items() if k in super_predict_params},
     )
 
-    config = model._resolved_config
+    config = model._config
     strategy = config.strategy
     output_chunk_length = strategy.output_chunk_length
     output_chunk_shift = config.output_chunk_shift
 
     # get target lags and X positions for auto-regression
-    extreme_target_lags = model._get_extreme_lags("target")
+    target_lags_obj = config.lags_for("target")
+    extreme_target_lags = config.extreme_lags("target")
     if extreme_target_lags is not None:
-        if model._is_component_specific("target"):
-            target_lags = list(config.lags.target.values())
+        if target_lags_obj.is_component_specific:
+            target_lags = list(target_lags_obj.resolved_per_component.values())
         else:
-            target_lags = [extreme_target_lags] * get_single_series(series).n_components
+            target_lags = [target_lags_obj.shared] * get_single_series(
+                series
+            ).n_components
 
         # map which target component lag belongs to which position in X
         counter = 0

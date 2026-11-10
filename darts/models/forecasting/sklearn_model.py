@@ -72,12 +72,13 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
+    _config_lags,
     _create_lagged_component_names,
     _create_lagged_data_autoregression,
     _create_lagged_data_from_config,
     _resolve_autoregression_lags,
 )
-from darts.utils.forecast_config import ForecastConfig, ResolvedForecastConfig
+from darts.utils.forecast_config import ForecastConfig
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
     _optimized_historical_forecasts_regression,
@@ -91,7 +92,6 @@ from darts.utils.likelihood_models.sklearn import (
     _get_likelihood,
 )
 from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
-from darts.utils.output_chunk import OutputChunkStrategy
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 from darts.utils.utils import ModelType, random_method
 
@@ -266,9 +266,6 @@ class SKLearnModel(GlobalForecastingModel):
                     f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}."
                 ),
             )
-        self._output_chunk_length = output_chunk_length
-        self._output_chunk_shift = output_chunk_shift
-
         # model checks
         if self.model is None:
             self.model = LinearRegression(n_jobs=-1)
@@ -278,8 +275,7 @@ class SKLearnModel(GlobalForecastingModel):
         if not callable(getattr(self.model, "predict", None)):
             raise_log(ValueError("Provided model object must have a predict() method"))
 
-        # the resolved config is built in `fit()` once the training components are known
-        self._config = ForecastConfig.from_user(
+        self._config = ForecastConfig(
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
@@ -287,53 +283,12 @@ class SKLearnModel(GlobalForecastingModel):
             output_chunk_shift=output_chunk_shift,
             multi_models=multi_models,
         )
-        self._resolved_config: ResolvedForecastConfig | None = None
         self._warn_on_unsupported_lags(lags)
-        self.multi_models = self._config.strategy.name == "direct"
-        self.pred_dim = self._config.strategy.pred_dim
-
-    @property
-    def _strategy(self) -> OutputChunkStrategy:
-        """The output-chunk strategy, resolved when the model has been fitted."""
-        if self._resolved_config is not None:
-            return self._resolved_config.strategy
-        return self._config.strategy
-
-    def _apply_resolved_config(self, resolved: ResolvedForecastConfig) -> None:
-        self._resolved_config = resolved
+        self.multi_models = self._config.multi_models
+        self.pred_dim = self._config.pred_dim
 
     def _warn_on_unsupported_lags(self, lags: LAGS_TYPE | None) -> None:
         """Hook for subclasses whose target lags cannot preserve categorical values."""
-
-    def _get_lags_dict(self) -> dict[str, list[int]]:
-        """The extreme lags per type, derived from the forecast config."""
-        if self._resolved_config is not None:
-            return self._resolved_config.lags.legacy_lags_dict()
-        return self._config.lags.legacy_lags_dict()
-
-    def _get_component_lags_dict(self) -> dict[str, dict[str, list[int]]]:
-        """The component-specific lags per type, derived from the forecast config."""
-        if self._resolved_config is not None:
-            return self._resolved_config.lags.legacy_component_lags_dict()
-        return self._config.lags.legacy_component_lags_dict()
-
-    def _is_component_specific(self, lags_type: str) -> bool:
-        """Whether ``lags_type`` uses component-specific lags."""
-        if self._resolved_config is not None:
-            return self._resolved_config.lags.is_component_specific.get(
-                lags_type, False
-            )
-        return lags_type in self._config.lags.legacy_component_lags_dict()
-
-    def _get_extreme_lags(self, lags_type: str) -> list[int] | None:
-        """The extreme lags per type; ignores the component-specific mapping."""
-        return self._get_lags_dict().get(lags_type, None)
-
-    def _get_lags(self, lags_type: str):
-        """Lags for one type: component mapping when component-specific, else extremes."""
-        if self._is_component_specific(lags_type):
-            return self._get_component_lags_dict()[lags_type]
-        return self._get_extreme_lags(lags_type)
 
     def _get_lagged_features(
         self,
@@ -353,8 +308,8 @@ class SKLearnModel(GlobalForecastingModel):
             ["series", "past_covariates", "future_covariates"],
         ):
             series_ = get_single_series(series_)
-            lags = self._get_lags(lags_name)
-            if lags is None:
+            lags_obj = self._config.lags_for(lags_name)
+            if lags_obj is None:
                 feature_list.append([])
                 continue
 
@@ -365,7 +320,15 @@ class SKLearnModel(GlobalForecastingModel):
                     ),
                 )
 
-            is_comp_specific = self._is_component_specific(lags_name)
+            is_comp_specific = lags_obj.is_component_specific
+            lags = (
+                {
+                    component: list(values)
+                    for component, values in lags_obj.resolved_per_component.items()
+                }
+                if is_comp_specific
+                else list(lags_obj.shared)
+            )
             series_comps = series_.components.tolist()
             component_lags = {}
 
@@ -407,15 +370,15 @@ class SKLearnModel(GlobalForecastingModel):
     def _model_encoder_settings(
         self,
     ) -> tuple[int, int, bool, bool, list[int] | None, list[int] | None]:
-        strategy = self._strategy
-        target_lags = self._get_extreme_lags("target") or [0]
-        lags_past_covariates = self._get_extreme_lags("past")
+        strategy = self._config.strategy
+        target_lags = self._config.extreme_lags("target") or [0]
+        lags_past_covariates = self._config.extreme_lags("past")
         if lags_past_covariates is not None:
             lags_past_covariates = [
                 min(lags_past_covariates) - strategy.feature_lag_offset,
                 max(lags_past_covariates),
             ]
-        lags_future_covariates = self._get_extreme_lags("future")
+        lags_future_covariates = self._config.extreme_lags("future")
         if lags_future_covariates is not None:
             lags_future_covariates = [
                 min(lags_future_covariates) - strategy.feature_lag_offset,
@@ -442,10 +405,10 @@ class SKLearnModel(GlobalForecastingModel):
         int | None,
         int,
     ]:
-        strategy = self._strategy
-        target_lags = self._get_extreme_lags("target")
-        past_cov_lags = self._get_extreme_lags("past")
-        future_cov_lags = self._get_extreme_lags("future")
+        strategy = self._config.strategy
+        target_lags = self._config.extreme_lags("target")
+        past_cov_lags = self._config.extreme_lags("past")
+        future_cov_lags = self._config.extreme_lags("future")
         min_target_lag = target_lags[0] if target_lags is not None else None
         max_target_lag = strategy.output_chunk_length - 1 + self.output_chunk_shift
         min_past_cov_lag = past_cov_lags[0] if past_cov_lags is not None else None
@@ -474,8 +437,8 @@ class SKLearnModel(GlobalForecastingModel):
 
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
-        strategy = self._strategy
-        target_lags = self._get_extreme_lags("target")
+        strategy = self._config.strategy
+        target_lags = self._config.extreme_lags("target")
         input_chunk_length = -target_lags[0] if target_lags is not None else 0
         return (
             input_chunk_length,
@@ -489,11 +452,11 @@ class SKLearnModel(GlobalForecastingModel):
 
     @property
     def output_chunk_length(self) -> int:
-        return self._output_chunk_length
+        return self._config.output_chunk_length
 
     @property
     def output_chunk_shift(self) -> int:
-        return self._output_chunk_shift
+        return self._config.output_chunk_shift
 
     def get_estimator(
         self, horizon: int, target_dim: int, quantile: float | None = None
@@ -565,7 +528,7 @@ class SKLearnModel(GlobalForecastingModel):
             )
             return model
 
-        strategy = self._strategy
+        strategy = self._config.strategy
         if not 0 <= horizon < strategy.output_chunk_length:
             raise_log(
                 ValueError(
@@ -645,27 +608,24 @@ class SKLearnModel(GlobalForecastingModel):
         stride: int = 1,
         last_static_covariates_shape: tuple[int, int] | None = None,
     ):
-        resolved_config = self._resolved_config
-        if resolved_config is None:
-            # ``_create_lagged_data`` is also used on unfitted instances (e.g. by
-            # tests). Resolve the config against the components at hand instead of
-            # relying on the state written by ``fit()``.
-            resolved_config = self._config.resolve(
-                target_components=get_single_series(series).components,
-                past_components=(
-                    get_single_series(past_covariates).components
-                    if past_covariates
-                    else None
-                ),
-                future_components=(
-                    get_single_series(future_covariates).components
-                    if future_covariates
-                    else None
-                ),
-            )
+        # Resolve against the components at hand; this is also used on unfitted
+        # instances (e.g. by tests) and resolving again is idempotent.
+        config = self._config.resolve(
+            target_components=get_single_series(series).components,
+            past_components=(
+                get_single_series(past_covariates).components
+                if past_covariates
+                else None
+            ),
+            future_components=(
+                get_single_series(future_covariates).components
+                if future_covariates
+                else None
+            ),
+        )
 
         data = _create_lagged_data_from_config(
-            resolved_config,
+            config,
             target_series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -808,10 +768,10 @@ class SKLearnModel(GlobalForecastingModel):
                 target_series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                lags=self._get_lags("target"),
-                lags_past_covariates=self._get_lags("past"),
-                lags_future_covariates=self._get_lags("future"),
-                output_chunk_length=self._strategy.output_chunk_length,
+                lags=_config_lags(self._config, "target"),
+                lags_past_covariates=_config_lags(self._config, "past"),
+                lags_future_covariates=_config_lags(self._config, "future"),
+                output_chunk_length=self._config.strategy.output_chunk_length,
                 concatenate=False,
                 use_static_covariates=self.uses_static_covariates,
             )
@@ -907,7 +867,7 @@ class SKLearnModel(GlobalForecastingModel):
             self._uses_static_covariates = True
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
-            has_lags = self._get_extreme_lags(name) is not None
+            has_lags = self._config.extreme_lags(name) is not None
             if covs is not None and not has_lags:
                 raise_log(
                     ValueError(
@@ -978,7 +938,7 @@ class SKLearnModel(GlobalForecastingModel):
             future_covariates=seq2series(future_covariates),
             verbose=verbose,
         )
-        resolved = config.resolve(
+        config.resolve(
             target_components=series[0].components,
             past_components=(
                 past_covariates[0].components if past_covariates else None
@@ -987,7 +947,6 @@ class SKLearnModel(GlobalForecastingModel):
                 future_covariates[0].components if future_covariates else None
             ),
         )
-        self._apply_resolved_config(resolved)
 
         self._fit_model(
             series=series,
@@ -1124,17 +1083,17 @@ class SKLearnModel(GlobalForecastingModel):
 
         # prediction preprocessing
         covariates = {
-            "past": (past_covariates, self._get_extreme_lags("past")),
-            "future": (future_covariates, self._get_extreme_lags("future")),
+            "past": (past_covariates, self._config.extreme_lags("past")),
+            "future": (future_covariates, self._config.extreme_lags("future")),
         }
 
         # prepare one_shot shift and step from the output-chunk strategy
-        strategy = self._strategy
+        strategy = self._config.strategy
         shift = strategy.feature_lag_offset
         step = strategy.pred_dim
 
         # check all target series are long enough
-        target_lags = self._get_extreme_lags("target")
+        target_lags = self._config.extreme_lags("target")
         if target_lags is not None:
             min_target_length = abs(min(target_lags)) + shift
             for idx, series_ in enumerate(series):
@@ -1230,7 +1189,7 @@ class SKLearnModel(GlobalForecastingModel):
         # prediction
         predictions = []
         last_step_shift = 0
-        lag_data = _resolve_autoregression_lags(self._resolved_config)
+        lag_data = _resolve_autoregression_lags(self._config)
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
@@ -1252,7 +1211,7 @@ class SKLearnModel(GlobalForecastingModel):
                 last_step_shift=last_step_shift,
                 series_matrix=series_matrix,
                 covariate_matrices=covariate_matrices,
-                config=self._resolved_config,
+                config=self._config,
                 num_samples=num_samples,
                 uses_static_covariates=self.uses_static_covariates,
                 last_static_covariates_shape=self._static_covariates_shape,
@@ -1331,7 +1290,7 @@ class SKLearnModel(GlobalForecastingModel):
 
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
-        return prediction.reshape(k, self._strategy.pred_dim, -1)
+        return prediction.reshape(k, self._config.strategy.pred_dim, -1)
 
     @property
     def lagged_feature_names(self) -> list[str] | None:
@@ -1371,12 +1330,12 @@ class SKLearnModel(GlobalForecastingModel):
 
     @property
     def supports_past_covariates(self) -> bool:
-        past_lags = self._get_extreme_lags("past")
+        past_lags = self._config.extreme_lags("past")
         return past_lags is not None and len(past_lags) > 0
 
     @property
     def supports_future_covariates(self) -> bool:
-        future_lags = self._get_extreme_lags("future")
+        future_lags = self._config.extreme_lags("future")
         return future_lags is not None and len(future_lags) > 0
 
     @property
@@ -1673,7 +1632,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         target_ts = get_single_series(series)
         categorical_covariates = [
             list(target_ts.components)
-            if self._get_lags("target") is not None
+            if self._config.has_lags("target")
             and self._model_type == ModelType.FORECASTING_CLASSIFIER
             else [],
             self.categorical_past_covariates
@@ -1974,7 +1933,6 @@ class _ClassifierMixin:
     model: Any
     multi_models: bool
     class_labels: list[np.ndarray] | np.ndarray
-    _output_chunk_length: int
 
     def fit(
         self,
@@ -2001,9 +1959,9 @@ class _ClassifierMixin:
         )
 
         classes = self.class_labels
-        if self._strategy.name == "direct" and self._output_chunk_length > 1:
+        if self._config.strategy.name == "direct" and self.output_chunk_length > 1:
             # make sure that all individual models have seen the same classes during training
-            num_components = len(classes) // self._output_chunk_length
+            num_components = len(classes) // self.output_chunk_length
 
             # classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ..]
             for i in range(num_components):

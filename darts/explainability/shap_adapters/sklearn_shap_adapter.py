@@ -16,6 +16,7 @@ from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization.tabularization import (
+    _config_lags,
     _create_lagged_prediction_data,
 )
 from darts.utils.multioutput import MultiOutputMixin
@@ -162,9 +163,10 @@ class SKLearnShapAdapter(ShapAdapter):
         n_samples: int | None = None,
         input_type: str = "background",
     ) -> tuple[np.ndarray, pd.Index]:
-        lags_list = self.model._get_lags("target")
-        lags_past_covariates_list = self.model._get_lags("past")
-        lags_future_covariates_list = self.model._get_lags("future")
+        config = self.model._config
+        lags_list = _config_lags(config, "target")
+        lags_past_covariates_list = _config_lags(config, "past")
+        lags_future_covariates_list = _config_lags(config, "future")
 
         X, indexes = _create_lagged_prediction_data(
             target_series=series if lags_list else None,

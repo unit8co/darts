@@ -41,10 +41,18 @@ def make_series(static: bool = False):
 
 
 def legacy_lags(config: ForecastConfig, kind: str):
-    component_lags = config.lags.legacy_component_lags_dict()
-    if kind in component_lags:
-        return component_lags[kind]
-    return config.lags.legacy_lags_dict().get(kind)
+    lags = config.lags_for(kind)
+    if lags is None:
+        return None
+    if not lags.is_component_specific:
+        return lags.shared
+    component_lags = {
+        component: list(component_lags)
+        for component, component_lags in lags.component_lags.items()
+    }
+    if lags.default is not None:
+        component_lags["default_lags"] = list(lags.default)
+    return component_lags
 
 
 def assert_same_data(actual: LaggedData, expected: tuple, series_length: int):
@@ -98,7 +106,7 @@ def config_for(
         past_lags = 2
         future_lags = (2, 3)
 
-    return ForecastConfig.from_user(
+    return ForecastConfig(
         lags=lags,
         lags_past_covariates=past_lags,
         lags_future_covariates=future_lags,
@@ -327,9 +335,7 @@ def test_autoregression_returns_lagged_features(multi_models, shift):
     n = 12
     values = np.arange(n, dtype=float).reshape(n, 1)
     target = TimeSeries.from_values(values)
-    config = ForecastConfig.from_user(
-        lags=3, output_chunk_length=2, multi_models=multi_models
-    )
+    config = ForecastConfig(lags=3, output_chunk_length=2, multi_models=multi_models)
     resolved = config.resolve(target_components=target.components)
 
     actual = _create_lagged_data_autoregression(
@@ -358,9 +364,7 @@ def test_autoregression_component_specific_returns_lagged_features():
     n = 12
     values = np.stack([np.arange(n), np.arange(n) * 10], axis=1)
     target = TimeSeries.from_values(values, columns=["a", "b"])
-    config = ForecastConfig.from_user(
-        lags={"a": [-3, -1], "b": [-2]}, output_chunk_length=2
-    )
+    config = ForecastConfig(lags={"a": [-3, -1], "b": [-2]}, output_chunk_length=2)
     resolved = config.resolve(target_components=target.components)
 
     actual = _create_lagged_data_autoregression(
@@ -390,7 +394,7 @@ def test_autoregression_component_specific_returns_lagged_features():
 
 def test_autoregression_adds_static_covariates_and_keeps_container():
     target, _, _ = make_series(static=True)
-    config = ForecastConfig.from_user(lags=3, output_chunk_length=2)
+    config = ForecastConfig(lags=3, output_chunk_length=2)
     resolved = config.resolve(target_components=target.components)
 
     actual = _create_lagged_data_autoregression(
@@ -414,7 +418,7 @@ def test_autoregression_adds_static_covariates_and_keeps_container():
 
 def test_from_config_expands_default_lags():
     target, past, future = make_series()
-    config = ForecastConfig.from_user(
+    config = ForecastConfig(
         lags={"a": [-3, -1], "default_lags": [-2]},
         lags_past_covariates={"p_a": [-2], "default_lags": [-1]},
         lags_future_covariates={

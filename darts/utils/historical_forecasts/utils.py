@@ -1276,12 +1276,12 @@ def _get_historical_forecast_boundaries(
         hist_fct_tgt_start += (min_target_lag - shift_start) * freq
 
     # target lag has a gap between the max lag and the present;
-    get_extreme_lags = getattr(model, "_get_extreme_lags", None)
-    target_lags = get_extreme_lags("target") if get_extreme_lags is not None else None
+    config = getattr(model, "_config", None)
+    target_lags = config.extreme_lags("target") if config is not None else None
     if target_lags:
         # for SKLearnModel we use the extreme lags and ignore component lags since
         # we are only interested in the maximum lags
-        hist_fct_tgt_end += 1 * freq * target_lags[-1]
+        hist_fct_tgt_end += 1 * freq * target_lags[1]
     else:
         hist_fct_tgt_end -= 1 * freq
 
