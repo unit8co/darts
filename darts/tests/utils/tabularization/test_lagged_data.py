@@ -347,7 +347,7 @@ def test_autoregression_returns_lagged_features(multi_models, shift):
     expected = np.array([[values[lag - shift, 0] for lag in [-3, -2, -1]]])
     assert isinstance(actual, ArrayLaggedFeatures)
     assert actual.shape == (1, 3)
-    assert actual.n_horizons == resolved.strategy.n_horizons
+    assert actual.n_horizons == resolved.strategy.pred_dim
     assert actual.n_horizons == (2 if multi_models else 1)
     np.testing.assert_array_equal(np.asarray(actual), expected)
     assert actual.horizon(0) is actual

@@ -522,7 +522,7 @@ def _create_lagged_data_core(
     )
     # the feature matrix is shared by all horizons with `multi_models=True`; with
     # `multi_models=False` the estimator predicts the last step of the output chunk
-    n_horizons = config.strategy.n_horizons
+    n_horizons = config.strategy.pred_dim
 
     X, y, times, sample_weights = [], [], [], []
     for i in range(max(seq_ts_lens)):
@@ -1692,9 +1692,8 @@ def _create_lagged_data_autoregression(
     """Extract lagged data from target, past covariates and future covariates for auto-regression
     with SKLearnModels.
 
-    The features are returned as a :class:`LaggedFeatures` container so the model wrapper can route
-    them per forecast horizon without knowing whether they were built from a tabular window or from
-    the autoregression matrices.
+    The features are returned as a :class:`LaggedFeatures` container so call sites do not depend
+    on the concrete feature representation.
     """
     series_length = len(target_series)
     shift = config.strategy.feature_lag_offset
@@ -1758,7 +1757,7 @@ def _create_lagged_data_autoregression(
         # concatenate retrieved lags
         X = np.concatenate(X, axis=0)
 
-    return ArrayLaggedFeatures.wrap(X, n_horizons=config.strategy.n_horizons)
+    return ArrayLaggedFeatures.wrap(X, n_horizons=config.strategy.pred_dim)
 
 
 def _extract_component_lags_autoregression(

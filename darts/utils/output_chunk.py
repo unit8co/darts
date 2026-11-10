@@ -3,9 +3,9 @@ Output-chunk strategies.
 ------------------------
 
 Internal strategies that define how a forecast horizon and target components map to the estimators
-of a multi-output model. They are independent from the feature containers and from the model so
-they can be reused by the wrapper, ``get_estimator()`` and the optimized historical forecasts.
-This module is not part of the public Darts API.
+of a multi-output model. They are independent from the model so they can be reused by
+``get_estimator()`` and the optimized historical forecasts. This module is not part of the public
+Darts API.
 """
 
 from __future__ import annotations
@@ -18,12 +18,11 @@ from darts.logging import raise_log
 class OutputChunkStrategy(ABC):
     """How output positions are assigned to estimators.
 
-    Internal API shared by ``SKLearnModel``, the multi-output wrapper and the optimized
-    historical forecasts. It is not part of the public Darts API.
+    Internal API shared by ``SKLearnModel`` and the optimized historical forecasts. It is
+    not part of the public Darts API.
     """
 
     name: str
-    n_horizons: int
     pred_dim: int
     feature_lag_offset: int
 
@@ -56,28 +55,6 @@ class OutputChunkStrategy(ABC):
         """Index of the estimator for ``horizon`` and ``component``."""
 
     @abstractmethod
-    def horizon_of(self, output_idx: int, n_components: int) -> int:
-        """Horizon that the output at ``output_idx`` belongs to."""
-
-    @abstractmethod
-    def component_of(self, output_idx: int, n_components: int) -> int:
-        """Target component that the output at ``output_idx`` belongs to."""
-
-    def chain_columns(self, output_idx: int, n_components: int) -> tuple[int, ...]:
-        """Output columns chained into the features of ``output_idx``."""
-        return ()
-
-    def fit_order(self, n_outputs: int, n_components: int) -> list[list[int]]:
-        """Groups of outputs that can be fitted in parallel."""
-        self._validate_outputs(n_outputs, n_components)
-        return [list(range(n_outputs))]
-
-    def predict_order(self, n_outputs: int, n_components: int) -> list[list[int]]:
-        """Groups of outputs that can be predicted in parallel."""
-        self._validate_outputs(n_outputs, n_components)
-        return [list(range(n_outputs))]
-
-    @abstractmethod
     def requires_wrapper(
         self,
         *,
@@ -97,16 +74,6 @@ class OutputChunkStrategy(ABC):
             raise_log(
                 ValueError(
                     f"`n_components` must be a positive integer. Given: {n_components}."
-                ),
-            )
-
-    def _validate_outputs(self, n_outputs: int, n_components: int) -> None:
-        expected = self.n_outputs(n_components)
-        if n_outputs != expected:
-            raise_log(
-                ValueError(
-                    f"`n_outputs` must be {expected} for `n_components={n_components}`; "
-                    f"received {n_outputs}."
                 ),
             )
 
@@ -143,23 +110,6 @@ class OutputChunkStrategy(ABC):
                 ),
             )
 
-    def _validate_output_idx(self, output_idx: int, n_components: int) -> None:
-        n_outputs = self.n_outputs(n_components)
-        if not isinstance(output_idx, int) or isinstance(output_idx, bool):
-            raise_log(
-                ValueError(
-                    f"`output_idx` must be an integer in `[0, {n_outputs - 1}]`; "
-                    f"received {output_idx}."
-                ),
-            )
-        if not 0 <= output_idx < n_outputs:
-            raise_log(
-                ValueError(
-                    f"`output_idx` must be in `[0, {n_outputs - 1}]`; "
-                    f"received {output_idx}."
-                ),
-            )
-
 
 class DirectOutputStrategy(OutputChunkStrategy):
     """One estimator per horizon and target component (``multi_models=True``)."""
@@ -168,7 +118,6 @@ class DirectOutputStrategy(OutputChunkStrategy):
 
     def __init__(self, output_chunk_length: int):
         super().__init__(output_chunk_length)
-        self.n_horizons = output_chunk_length
         self.pred_dim = output_chunk_length
         self.feature_lag_offset = 0
 
@@ -176,14 +125,6 @@ class DirectOutputStrategy(OutputChunkStrategy):
         self._validate_horizon(horizon)
         self._validate_component(component, n_components)
         return horizon * n_components + component
-
-    def horizon_of(self, output_idx: int, n_components: int) -> int:
-        self._validate_output_idx(output_idx, n_components)
-        return output_idx // n_components
-
-    def component_of(self, output_idx: int, n_components: int) -> int:
-        self._validate_output_idx(output_idx, n_components)
-        return output_idx % n_components
 
     def requires_wrapper(
         self,
@@ -201,7 +142,6 @@ class RecursiveOutputStrategy(OutputChunkStrategy):
 
     def __init__(self, output_chunk_length: int):
         super().__init__(output_chunk_length)
-        self.n_horizons = 1
         self.pred_dim = 1
         self.feature_lag_offset = output_chunk_length - 1
 
@@ -209,14 +149,6 @@ class RecursiveOutputStrategy(OutputChunkStrategy):
         self._validate_horizon(horizon)
         self._validate_component(component, n_components)
         return component
-
-    def horizon_of(self, output_idx: int, n_components: int) -> int:
-        self._validate_output_idx(output_idx, n_components)
-        return 0
-
-    def component_of(self, output_idx: int, n_components: int) -> int:
-        self._validate_output_idx(output_idx, n_components)
-        return output_idx
 
     def requires_wrapper(
         self,

@@ -1583,7 +1583,7 @@ class TestSKLearnModels:
         model.fit(series=self.sine_multivariate_multiseries)
         check_only_non_native_are_wrapped(model, supports_multioutput_natively)
 
-    def test_multioutput_wrapper_receives_strategy(self):
+    def test_multioutput_wrapper_estimator_mapping(self):
         model = SKLearnModel(
             model=HistGradientBoostingRegressor(),
             lags=2,
@@ -1592,8 +1592,6 @@ class TestSKLearnModels:
         model.fit(self.sine_univariate1)
 
         assert isinstance(model.model, MultiOutputRegressor)
-        assert model.model.strategy is model._config.strategy
-        assert model.model.strategy is model._resolved_config.strategy
 
         # the wrapper and the model agree on the estimator mapping
         n_components = model.input_dim["target"]

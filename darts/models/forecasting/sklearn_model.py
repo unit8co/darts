@@ -960,7 +960,6 @@ class SKLearnModel(GlobalForecastingModel):
                 "eval_set_name": val_set_name,
                 "eval_weight_name": val_weight_name,
                 "n_jobs": n_jobs_multioutput_wrapper,
-                "strategy": strategy,
             }
 
             self.model = get_multioutput_estimator_cls(self._model_type)(
@@ -1317,11 +1316,9 @@ class SKLearnModel(GlobalForecastingModel):
         or the predicted distribution parameters directly.
         """
         x, _ = self._format_samples(x)
-        if isinstance(x, LaggedFeatures) and not isinstance(
-            self.model, MultiOutputMixin
-        ):
-            # the wrapper needs the container for horizon routing; the native path can
-            # hand scikit-learn a zero-copy base view and skip subclass validation
+        if isinstance(x, LaggedFeatures):
+            # feature containers are ndarray subclasses; sklearn can consume a
+            # zero-copy base view and skip the subclass validation overhead
             x = x.array
         if self.likelihood is not None:
             return self.likelihood.predict(

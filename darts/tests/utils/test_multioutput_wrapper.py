@@ -1,13 +1,8 @@
 import numpy as np
-import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
 from darts.utils.data.tabularization.features import ArrayLaggedFeatures
 from darts.utils.multioutput import MultiOutputClassifier, MultiOutputRegressor
-from darts.utils.output_chunk import (
-    DirectOutputStrategy,
-    RecursiveOutputStrategy,
-)
 
 
 class RecordingRegressor(BaseEstimator, RegressorMixin):
@@ -94,64 +89,38 @@ class RecordingClassifier(BaseEstimator, ClassifierMixin):
         return np.tile([0.5, 0.5], (len(X), 1))
 
 
-def test_features_for_output_use_zero_copy_base_arrays():
-    base = np.arange(12, dtype=float).reshape(4, 3)
-    X = ArrayLaggedFeatures.wrap(base, n_horizons=2)
-    strategy = DirectOutputStrategy(output_chunk_length=2)
-
-    features = MultiOutputRegressor._features_for_output(X, 0, strategy, 1)
-    assert type(features) is np.ndarray
-    assert np.shares_memory(features, base)
-    assert np.array_equal(features, base)
-
-    assert MultiOutputRegressor._features_for_output(X, 0, None, None) is not X
-    assert np.shares_memory(
-        MultiOutputRegressor._features_for_output(X, 0, None, None), base
-    )
-    assert MultiOutputRegressor._features_for_output(base, 0, strategy, 1) is base
-
-
-def test_recursive_strategy_uses_the_same_features_for_all_outputs():
+def test_fit_creates_one_estimator_per_output():
     X = np.arange(12, dtype=float).reshape(4, 3)
     y = np.column_stack([np.arange(4), np.arange(4) + 10])
     RecordingRegressor.reset()
 
-    wrapper = MultiOutputRegressor(
-        RecordingRegressor(),
-        strategy=RecursiveOutputStrategy(output_chunk_length=3),
-    )
+    wrapper = MultiOutputRegressor(RecordingRegressor())
     wrapper.fit(X, y)
 
     assert len(wrapper.estimators_) == 2
-    for estimator in wrapper.estimators_:
+    for output_idx, estimator in enumerate(wrapper.estimators_):
         assert np.array_equal(estimator.fit_X_, X)
-    assert np.array_equal(wrapper.estimators_[0].fit_y_, y[:, 0])
-    assert np.array_equal(wrapper.estimators_[1].fit_y_, y[:, 1])
+        assert np.array_equal(estimator.fit_y_, y[:, output_idx])
 
-    RecordingRegressor.reset()
     predictions = wrapper.predict(X)
-
     assert predictions.shape == (4, 2)
     assert len(RecordingRegressor.predict_records) == 2
-    assert all(
-        np.array_equal(record, X) for record in RecordingRegressor.predict_records
-    )
+    for record in RecordingRegressor.predict_records:
+        assert np.array_equal(record, X)
 
 
-def test_direct_strategy_keeps_the_output_order():
-    X = np.arange(15, dtype=float).reshape(5, 3)
-    y = np.column_stack([np.arange(5) + i for i in range(4)])
+def test_array_container_is_accepted():
+    array = np.arange(12, dtype=float).reshape(4, 3)
+    X = ArrayLaggedFeatures(array, n_horizons=2)
+    y = np.column_stack([np.arange(4), np.arange(4) + 10])
     RecordingRegressor.reset()
 
-    wrapper = MultiOutputRegressor(
-        RecordingRegressor(),
-        strategy=DirectOutputStrategy(output_chunk_length=2),
-    )
+    wrapper = MultiOutputRegressor(RecordingRegressor())
     wrapper.fit(X, y)
 
-    assert len(wrapper.estimators_) == 4
-    for output_idx in range(4):
-        assert np.array_equal(wrapper.estimators_[output_idx].fit_y_, y[:, output_idx])
+    for estimator in wrapper.estimators_:
+        assert type(estimator.fit_X_) is np.ndarray
+        assert np.array_equal(estimator.fit_X_, array)
 
 
 def test_sample_weight_is_sliced_per_output():
@@ -163,83 +132,68 @@ def test_sample_weight_is_sliced_per_output():
     ])
     RecordingRegressor.reset()
 
-    wrapper = MultiOutputRegressor(
-        RecordingRegressor(),
-        strategy=DirectOutputStrategy(output_chunk_length=2),
-    )
+    wrapper = MultiOutputRegressor(RecordingRegressor())
     wrapper.fit(X, y, sample_weight=sample_weight)
 
-    for i in range(2):
+    for output_idx in range(2):
         assert np.array_equal(
-            wrapper.estimators_[i].fit_sample_weight_, sample_weight[:, i]
+            wrapper.estimators_[output_idx].fit_sample_weight_,
+            sample_weight[:, output_idx],
         )
 
 
-def test_array_container_with_direct_strategy_is_accepted():
-    array = np.arange(12, dtype=float).reshape(4, 3)
-    X = ArrayLaggedFeatures(array, n_horizons=2)
+def test_eval_set_is_routed_to_each_output():
+    X = np.arange(12, dtype=float).reshape(4, 3)
     y = np.column_stack([np.arange(4), np.arange(4) + 10])
+    eval_set = [(X, y[:, 0]), (X, y[:, 1])]
     RecordingRegressor.reset()
 
     wrapper = MultiOutputRegressor(
         RecordingRegressor(),
-        strategy=DirectOutputStrategy(output_chunk_length=2),
+        eval_set_name="eval_set",
     )
-    wrapper.fit(X, y)
+    wrapper.fit(X, y, eval_set=eval_set)
 
-    for estimator in wrapper.estimators_:
-        assert np.array_equal(estimator.fit_X_, array)
+    for output_idx, estimator in enumerate(wrapper.estimators_):
+        samples, labels = estimator.fit_eval_set_[0]
+        assert np.array_equal(samples, X)
+        assert np.array_equal(labels, y[:, output_idx])
 
 
-def test_legacy_path_without_strategy_still_works():
+def test_eval_samples_are_routed_to_each_output():
     X = np.arange(12, dtype=float).reshape(4, 3)
     y = np.column_stack([np.arange(4), np.arange(4) + 10])
     RecordingRegressor.reset()
 
-    wrapper = MultiOutputRegressor(RecordingRegressor())
-    wrapper.fit(X, y)
+    wrapper = MultiOutputRegressor(
+        RecordingRegressor(),
+        eval_set_name=("eval_samples", "eval_labels"),
+    )
+    wrapper.fit(
+        X,
+        y,
+        eval_samples=[X, X],
+        eval_labels=[y[:, 0], y[:, 1]],
+    )
 
-    assert wrapper.strategy_ is None
-    assert len(wrapper.estimators_) == 2
-    for estimator in wrapper.estimators_:
-        assert np.array_equal(estimator.fit_X_, X)
-
-    predictions = wrapper.predict(X)
-    assert predictions.shape == (4, 2)
+    for output_idx, estimator in enumerate(wrapper.estimators_):
+        assert np.array_equal(estimator.fit_eval_samples_, X)
+        assert np.array_equal(estimator.fit_eval_labels_, y[:, output_idx])
 
 
-def test_legacy_classifier_without_strategy_predict_proba_still_works():
+def test_classifier_predict_proba_returns_one_array_per_output():
     X = np.arange(12, dtype=float).reshape(4, 3)
     y = np.column_stack([np.array([0, 1, 0, 1]), np.array([1, 0, 1, 0])])
     RecordingClassifier.reset()
 
     wrapper = MultiOutputClassifier(RecordingClassifier())
     wrapper.fit(X, y)
+    RecordingClassifier.reset()
 
-    assert wrapper.strategy_ is None
     probabilities = wrapper.predict_proba(X)
+
     assert len(probabilities) == 2
     assert all(probability.shape == (4, 2) for probability in probabilities)
     assert len(RecordingClassifier.predict_proba_records) == 2
     for record in RecordingClassifier.predict_proba_records:
         assert np.array_equal(record, X)
-
-
-def test_strategy_must_match_the_number_of_outputs():
-    X = np.zeros((4, 3))
-    y = np.zeros((4, 2))
-
-    wrapper = MultiOutputRegressor(
-        RecordingRegressor(),
-        strategy=DirectOutputStrategy(output_chunk_length=3),
-    )
-
-    with pytest.raises(ValueError):
-        wrapper.fit(X, y)
-
-
-def test_invalid_strategy_type():
-    wrapper = MultiOutputRegressor(RecordingRegressor(), strategy=object())
-
-    with pytest.raises(ValueError):
-        wrapper.fit(np.zeros((4, 3)), np.zeros((4, 2)))

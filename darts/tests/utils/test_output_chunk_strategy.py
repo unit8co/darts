@@ -11,7 +11,6 @@ class TestDirectOutputStrategy:
         strategy = DirectOutputStrategy(output_chunk_length=4)
 
         assert strategy.name == "direct"
-        assert strategy.n_horizons == 4
         assert strategy.pred_dim == 4
         assert strategy.feature_lag_offset == 0
         assert strategy.n_outputs(n_components=3) == 12
@@ -27,23 +26,6 @@ class TestDirectOutputStrategy:
 
         for (horizon, component), index in expected.items():
             assert strategy.estimator_index(horizon, component, 3) == index
-
-    def test_horizon_and_component_of(self):
-        strategy = DirectOutputStrategy(output_chunk_length=4)
-
-        for output_idx in range(12):
-            horizon = strategy.horizon_of(output_idx, 3)
-            component = strategy.component_of(output_idx, 3)
-            assert horizon == output_idx // 3
-            assert component == output_idx % 3
-            assert strategy.estimator_index(horizon, component, 3) == output_idx
-
-    def test_orders(self):
-        strategy = DirectOutputStrategy(output_chunk_length=4)
-
-        assert strategy.fit_order(12, 3) == [list(range(12))]
-        assert strategy.predict_order(12, 3) == [list(range(12))]
-        assert strategy.chain_columns(0, 3) == ()
 
     @pytest.mark.parametrize(
         "native_multioutput,sample_weight,expected",
@@ -80,14 +62,6 @@ class TestDirectOutputStrategy:
             strategy.estimator_index(0, -1, 3)
         with pytest.raises(ValueError):
             strategy.estimator_index(0, 3, 3)
-        with pytest.raises(ValueError):
-            strategy.horizon_of(12, 3)
-        with pytest.raises(ValueError):
-            strategy.component_of(-1, 3)
-        with pytest.raises(ValueError):
-            strategy.fit_order(12, 0)
-        with pytest.raises(ValueError):
-            strategy.fit_order(11, 3)
 
 
 class TestRecursiveOutputStrategy:
@@ -95,7 +69,6 @@ class TestRecursiveOutputStrategy:
         strategy = RecursiveOutputStrategy(output_chunk_length=4)
 
         assert strategy.name == "recursive"
-        assert strategy.n_horizons == 1
         assert strategy.pred_dim == 1
         assert strategy.feature_lag_offset == 3
         assert strategy.n_outputs(n_components=3) == 3
@@ -106,20 +79,6 @@ class TestRecursiveOutputStrategy:
         for horizon in range(4):
             for component in range(3):
                 assert strategy.estimator_index(horizon, component, 3) == component
-
-    def test_horizon_and_component_of(self):
-        strategy = RecursiveOutputStrategy(output_chunk_length=4)
-
-        for output_idx in range(3):
-            assert strategy.horizon_of(output_idx, 3) == 0
-            assert strategy.component_of(output_idx, 3) == output_idx
-
-    def test_orders(self):
-        strategy = RecursiveOutputStrategy(output_chunk_length=4)
-
-        assert strategy.fit_order(3, 3) == [[0, 1, 2]]
-        assert strategy.predict_order(3, 3) == [[0, 1, 2]]
-        assert strategy.chain_columns(0, 3) == ()
 
     @pytest.mark.parametrize(
         "native_multioutput,sample_weight,expected",
@@ -154,12 +113,6 @@ class TestRecursiveOutputStrategy:
             strategy.estimator_index(4, 0, 3)
         with pytest.raises(ValueError):
             strategy.estimator_index(0, 3, 3)
-        with pytest.raises(ValueError):
-            strategy.horizon_of(3, 3)
-        with pytest.raises(ValueError):
-            strategy.component_of(-1, 3)
-        with pytest.raises(ValueError):
-            strategy.fit_order(4, 3)
 
 
 @pytest.mark.parametrize(
@@ -175,5 +128,3 @@ def test_invalid_index_types(strategy_cls, bad_value):
         strategy.estimator_index(bad_value, 0, 3)
     with pytest.raises(ValueError):
         strategy.estimator_index(0, bad_value, 3)
-    with pytest.raises(ValueError):
-        strategy.horizon_of(bad_value, 3)
