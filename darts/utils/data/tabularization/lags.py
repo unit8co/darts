@@ -5,14 +5,10 @@ Lag configuration for tabularization.
 Internal semantic layer for the lags of a tabularized model: parsing and validating user-provided
 lags, handling ``output_chunk_shift`` and resolving component-specific lags against the components
 of the actual series. This module is not part of the public Darts API.
-
-The classes are intentionally independent from the tabularization and model layers. This keeps
-the validation in a single place while the call sites are migrated incrementally.
 """
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Literal, NoReturn
@@ -143,32 +139,48 @@ def _normalize_component_lags(
     )
 
 
-@dataclass(frozen=True)
-class ResolvedLags:
-    """Lags resolved against the components of one series."""
+@dataclass
+class Lags:
+    """Semantic representation of the lags of one variate.
 
-    per_component: Mapping[str, tuple[int, ...]]
-    is_component_specific: bool
-    legacy_lags: tuple[int, ...]
+    A ``Lags`` instance is either shared by every component of the series (``shared``) or
+    component-specific (``component_lags``, with an optional ``default``). It is parsed with
+    :meth:`parse`, resolved in place against the actual components with :meth:`resolve`, and can be
+    shifted with :meth:`shifted`.
+    """
+
+    kind: LagsKind
+    shared: tuple[int, ...] | None = None
+    component_lags: dict[str, tuple[int, ...]] = field(default_factory=dict)
+    default: tuple[int, ...] | None = None
+    _resolved: dict[str, tuple[int, ...]] | None = field(
+        default=None, init=False, repr=False, compare=False
+    )
 
     def __post_init__(self):
-        object.__setattr__(
-            self,
-            "per_component",
-            {comp: tuple(lags) for comp, lags in self.per_component.items()},
-        )
-        object.__setattr__(self, "legacy_lags", tuple(self.legacy_lags))
-
-
-class Lags(ABC):
-    """Semantic representation of the lags of one variate."""
-
-    _kind: LagsKind
+        self.kind = _validate_kind(self.kind)
+        if self.shared is not None:
+            self.shared = tuple(self.shared)
+        self.component_lags = {
+            comp: tuple(lags) for comp, lags in self.component_lags.items()
+        }
+        if self.default is not None:
+            self.default = tuple(self.default)
+        if self.shared is not None and self.component_lags:
+            raise_log(
+                ValueError(
+                    "`Lags` cannot define both shared and component-specific lags."
+                )
+            )
+        if self.shared is None and not self.component_lags:
+            raise_log(
+                ValueError("`Lags` must define shared or component-specific lags.")
+            )
+        self._resolved = None
 
     @classmethod
-    def from_user(cls, value: object, *, kind: LagsKind) -> Lags:
-        """
-        Parse the user representation of the lags of one variate.
+    def parse(cls, value: object, *, kind: LagsKind) -> Lags:
+        """Parse the user representation of the lags of one variate.
 
         Accepted values are ``int``, ``list[int]``, and ``dict[str, int | list[int]]``
         for target and past covariates. Future covariates additionally accept
@@ -185,115 +197,108 @@ class Lags(ABC):
                     )
                 )
             if list(value.keys()) == [_DEFAULT_LAGS_KEY]:
-                return SharedLags(
-                    _normalize_component_lags(
+                return cls(
+                    kind=kind,
+                    shared=_normalize_component_lags(
                         value[_DEFAULT_LAGS_KEY], _DEFAULT_LAGS_KEY, kind
                     ),
-                    _kind=kind,
                 )
 
-            per_component: dict[str, tuple[int, ...]] = {}
+            component_lags: dict[str, tuple[int, ...]] = {}
             default: tuple[int, ...] | None = None
             for comp_name, comp_lags in value.items():
-                component_lags = _normalize_component_lags(comp_lags, comp_name, kind)
+                normalized = _normalize_component_lags(comp_lags, comp_name, kind)
                 if comp_name == _DEFAULT_LAGS_KEY:
-                    default = component_lags
+                    default = normalized
                 else:
-                    per_component[comp_name] = component_lags
-            return ComponentLags(per_component, default=default, _kind=kind)
+                    component_lags[comp_name] = normalized
+            return cls(kind=kind, component_lags=component_lags, default=default)
 
-        return SharedLags(
-            _normalize_component_lags(value, _DEFAULT_LAGS_KEY, kind), _kind=kind
+        return cls(
+            kind=kind,
+            shared=_normalize_component_lags(value, _DEFAULT_LAGS_KEY, kind),
         )
 
-    def resolve(self, components: Sequence[str]) -> ResolvedLags:
-        """Resolve the lags against the components of the series."""
-        try:
-            return _resolve_lags(self, components, self._kind)
-        except ValueError as exc:
-            raise_log(exc)
+    def resolve(self, components: Sequence[str]) -> None:
+        """Resolve the lags in place against the components of the series."""
+        components = tuple(components)
+        self._resolved = None
 
-    @abstractmethod
+        if self.shared is not None:
+            self._resolved = {comp: self.shared for comp in components}
+            return
+
+        required = set(components)
+        provided = set(self.component_lags)
+        wrong_components = [
+            comp for comp in self.component_lags if comp not in required
+        ]
+        missing_components = [comp for comp in components if comp not in provided]
+        lags_name = _LAGS_ARG_NAMES[self.kind]
+
+        if len(wrong_components) > 0:
+            raise_log(
+                ValueError(
+                    f"The `{lags_name}` dictionary specifies lags for components that are not "
+                    f"present in the series : {wrong_components}. They must be removed to avoid any ambiguity."
+                )
+            )
+        if len(missing_components) > 0 and self.default is None:
+            raise_log(
+                ValueError(
+                    f"The {lags_name} dictionary is missing the lags for the following components "
+                    f"present in the series: {missing_components}. The key 'default_lags' can "
+                    "be used to provide lags for all the non-explicitely defined components."
+                )
+            )
+
+        self._resolved = {
+            comp: self.component_lags.get(comp, self.default) for comp in components
+        }
+
     def shifted(self, n: int) -> Lags:
-        """Return a copy with every lag shifted by ``n`` steps."""
-
-    @property
-    @abstractmethod
-    def legacy_lags(self) -> tuple[int, ...]:
-        """The lag values used by the legacy ``model.lags`` representation."""
-
-
-@dataclass(frozen=True)
-class SharedLags(Lags):
-    """The same lags for every component."""
-
-    lags: tuple[int, ...]
-    _kind: LagsKind = field(default="target", repr=False, compare=False)
-
-    def __post_init__(self):
-        object.__setattr__(self, "lags", tuple(self.lags))
-
-    def shifted(self, n: int) -> SharedLags:
-        return SharedLags(tuple(lag + n for lag in self.lags), _kind=self._kind)
-
-    @property
-    def legacy_lags(self) -> tuple[int, ...]:
-        return self.lags
-
-
-@dataclass(frozen=True)
-class ComponentLags(Lags):
-    """Component-specific lags, with an optional default for unspecified components."""
-
-    per_component: Mapping[str, tuple[int, ...]]
-    default: tuple[int, ...] | None = None
-    _kind: LagsKind = field(default="target", repr=False, compare=False)
-
-    def __post_init__(self):
-        object.__setattr__(
-            self,
-            "per_component",
-            {comp: tuple(lags) for comp, lags in self.per_component.items()},
-        )
-        if self.default is not None:
-            object.__setattr__(self, "default", tuple(self.default))
-
-    def shifted(self, n: int) -> ComponentLags:
-        return ComponentLags(
-            {
+        """Return an unresolved copy with every lag shifted by ``n`` steps."""
+        return Lags(
+            kind=self.kind,
+            shared=(
+                None if self.shared is None else tuple(lag + n for lag in self.shared)
+            ),
+            component_lags={
                 comp: tuple(lag + n for lag in lags)
-                for comp, lags in self.per_component.items()
+                for comp, lags in self.component_lags.items()
             },
             default=(
                 None if self.default is None else tuple(lag + n for lag in self.default)
             ),
-            _kind=self._kind,
         )
 
     @property
-    def legacy_lags(self) -> tuple[int, ...]:
-        all_lags = [lag for lags in self.per_component.values() for lag in lags]
-        if self.default is not None:
-            all_lags.extend(self.default)
-        if len(all_lags) == 0:
-            raise ValueError("Component-specific lags must contain at least one lag.")
-        return min(all_lags), max(all_lags)
+    def is_component_specific(self) -> bool:
+        return self.shared is None
 
+    @property
+    def resolved_per_component(self) -> dict[str, tuple[int, ...]]:
+        if self._resolved is None:
+            raise_log(
+                ValueError("`Lags` have not been resolved yet; call `resolve()` first.")
+            )
+        return self._resolved
 
-@dataclass(frozen=True)
-class FutureLags:
-    """Lags for the future covariates."""
+    @property
+    def extreme_lags(self) -> tuple[int, int]:
+        """The minimum and maximum lag values."""
+        if self._resolved is not None:
+            values = [lag for lags in self._resolved.values() for lag in lags]
+        elif self.shared is not None:
+            values = list(self.shared)
+        else:
+            values = [lag for lags in self.component_lags.values() for lag in lags]
+            if self.default is not None:
+                values.extend(self.default)
 
-    lags: Lags
-
-    @classmethod
-    def from_user(cls, value: object | None) -> FutureLags | None:
-        if value is None:
-            return None
-        return cls(Lags.from_user(value, kind="future"))
-
-    def shifted(self, n: int) -> FutureLags:
-        return FutureLags(self.lags.shifted(n))
+        if len(values) == 0:
+            raise_log(ValueError("Lags must contain at least one lag."))
+        return min(values), max(values)
 
 
 @dataclass(frozen=True)
@@ -347,7 +352,7 @@ class LagConfig:
 
     target: Lags | None = None
     past: Lags | None = None
-    future: FutureLags | None = None
+    future: Lags | None = None
     output_chunk_length: int = 1
     output_chunk_shift: int = 0
 
@@ -383,13 +388,17 @@ class LagConfig:
             )
 
         return cls(
-            target=(None if lags is None else Lags.from_user(lags, kind="target")),
+            target=(None if lags is None else Lags.parse(lags, kind="target")),
             past=(
                 None
                 if lags_past_covariates is None
-                else Lags.from_user(lags_past_covariates, kind="past")
+                else Lags.parse(lags_past_covariates, kind="past")
             ),
-            future=FutureLags.from_user(lags_future_covariates),
+            future=(
+                None
+                if lags_future_covariates is None
+                else Lags.parse(lags_future_covariates, kind="future")
+            ),
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
         )
@@ -408,11 +417,12 @@ class LagConfig:
         }
 
         errors: list[str] = []
-        resolved: dict[str, ResolvedLags] = {}
+        resolved: dict[str, Lags] = {}
+        legacy_lags: dict[str, tuple[int, ...]] = {}
         for kind, lags in (
             ("target", self.target),
             ("past", self.past),
-            ("future", None if self.future is None else self.future.lags),
+            ("future", self.future),
         ):
             if lags is None:
                 continue
@@ -426,23 +436,35 @@ class LagConfig:
                 )
 
             # `output_chunk_shift` is only applied to the future covariates, exactly as in
-            # the legacy lag generation.
-            if kind == "future" and self.output_chunk_shift:
-                lags = lags.shifted(self.output_chunk_shift)
+            # the legacy lag generation. `shifted()` also returns an unresolved copy, so
+            # the config itself is never mutated by `resolve()`.
+            shift = self.output_chunk_shift if kind == "future" else 0
+            lags = lags.shifted(shift)
+
+            # The legacy `model.lags` representation keeps the full list for shared lags,
+            # and the extreme values over the user mapping for component-specific lags
+            # (including `default_lags`, even when every component defines its own lags).
+            # Capture it before `resolve()` narrows the mapping to the actual components.
+            legacy_lags[kind] = (
+                lags.extreme_lags if lags.is_component_specific else lags.shared
+            )
 
             try:
-                resolved[kind] = _resolve_lags(lags, kind_components, kind)
+                lags.resolve(kind_components)
             except ValueError as exc:
                 errors.append(str(exc))
+                continue
+            resolved[kind] = lags
 
         if errors:
             raise_log(ValueError("\n".join(errors)))
 
-        per_component = {kind: resolved[kind].per_component for kind in resolved}
-        is_component_specific = {
-            kind: resolved[kind].is_component_specific for kind in resolved
+        per_component = {
+            kind: lags.resolved_per_component for kind, lags in resolved.items()
         }
-        legacy_lags = {kind: resolved[kind].legacy_lags for kind in resolved}
+        is_component_specific = {
+            kind: lags.is_component_specific for kind, lags in resolved.items()
+        }
 
         return ResolvedLagConfig(
             target=per_component.get("target"),
@@ -457,7 +479,7 @@ class LagConfig:
             return self.target
         if kind == "past":
             return self.past
-        return None if self.future is None else self.future.lags
+        return self.future
 
     def legacy_lags_dict(self) -> dict[str, list[int]]:
         """The pre-fit ``model.lags`` representation of this config."""
@@ -468,7 +490,9 @@ class LagConfig:
                 continue
             if kind == "future" and self.output_chunk_shift:
                 lags = lags.shifted(self.output_chunk_shift)
-            processed[kind] = list(lags.legacy_lags)
+            processed[kind] = list(
+                lags.extreme_lags if lags.is_component_specific else lags.shared
+            )
         return processed
 
     def legacy_component_lags_dict(self) -> dict[str, dict[str, list[int]]]:
@@ -476,12 +500,12 @@ class LagConfig:
         processed: dict[str, dict[str, list[int]]] = {}
         for kind in _LAGS_ARG_NAMES:
             lags = self._lags_for_kind(kind)
-            if not isinstance(lags, ComponentLags):
+            if lags is None or not lags.is_component_specific:
                 continue
             if kind == "future" and self.output_chunk_shift:
                 lags = lags.shifted(self.output_chunk_shift)
             component_lags = {
-                comp: list(comp_lags) for comp, comp_lags in lags.per_component.items()
+                comp: list(comp_lags) for comp, comp_lags in lags.component_lags.items()
             }
             if lags.default is not None:
                 component_lags[_DEFAULT_LAGS_KEY] = list(lags.default)
@@ -489,55 +513,9 @@ class LagConfig:
         return processed
 
 
-def _resolve_lags(
-    lags: Lags, components: Sequence[str], kind: LagsKind
-) -> ResolvedLags:
-    """Resolve the lags against ``components``; raise ``ValueError`` on invalid components."""
-    components = tuple(components)
-
-    if isinstance(lags, SharedLags):
-        return ResolvedLags(
-            per_component={comp: lags.lags for comp in components},
-            is_component_specific=False,
-            legacy_lags=lags.legacy_lags,
-        )
-
-    if not isinstance(lags, ComponentLags):
-        raise TypeError(f"Unsupported lags type: {type(lags)}.")
-
-    required = set(components)
-    provided = set(lags.per_component)
-    wrong_components = [comp for comp in lags.per_component if comp not in required]
-    missing_components = [comp for comp in components if comp not in provided]
-    lags_name = _LAGS_ARG_NAMES[kind]
-
-    if len(wrong_components) > 0:
-        raise ValueError(
-            f"The `{lags_name}` dictionary specifies lags for components that are not "
-            f"present in the series : {wrong_components}. They must be removed to avoid any ambiguity."
-        )
-    if len(missing_components) > 0 and lags.default is None:
-        raise ValueError(
-            f"The {lags_name} dictionary is missing the lags for the following components "
-            f"present in the series: {missing_components}. The key 'default_lags' can be used to provide lags for "
-            "all the non-explicitely defined components."
-        )
-
-    return ResolvedLags(
-        per_component={
-            comp: lags.per_component.get(comp, lags.default) for comp in components
-        },
-        is_component_specific=True,
-        legacy_lags=lags.legacy_lags,
-    )
-
-
 __all__ = [
-    "ComponentLags",
-    "FutureLags",
     "LagConfig",
     "Lags",
+    "LagsKind",
     "ResolvedLagConfig",
-    "ResolvedLags",
-    "SharedLags",
 ]

@@ -1,15 +1,9 @@
 import pytest
 
-from darts.utils.data.tabularization.lags import (
-    ComponentLags,
-    FutureLags,
-    LagConfig,
-    Lags,
-    SharedLags,
-)
+from darts.utils.data.tabularization.lags import LagConfig, Lags
 
 
-class TestLagsFromUser:
+class TestLagsParse:
     @pytest.mark.parametrize(
         "value,kind,expected",
         [
@@ -24,11 +18,14 @@ class TestLagsFromUser:
         ],
     )
     def test_shared_lags(self, value, kind, expected):
-        lags = Lags.from_user(value, kind=kind)
+        lags = Lags.parse(value, kind=kind)
 
-        assert isinstance(lags, SharedLags)
-        assert lags.lags == expected
-        assert lags.legacy_lags == expected
+        assert lags.kind == kind
+        assert not lags.is_component_specific
+        assert lags.shared == expected
+        assert lags.component_lags == {}
+        assert lags.default is None
+        assert lags.extreme_lags == (expected[0], expected[-1])
 
     @pytest.mark.parametrize(
         "value,kind,per_component,default",
@@ -66,20 +63,22 @@ class TestLagsFromUser:
         ],
     )
     def test_component_lags(self, value, kind, per_component, default):
-        lags = Lags.from_user(value, kind=kind)
+        lags = Lags.parse(value, kind=kind)
 
-        assert isinstance(lags, ComponentLags)
-        assert lags.per_component == per_component
+        assert lags.kind == kind
+        assert lags.is_component_specific
+        assert lags.shared is None
+        assert lags.component_lags == per_component
         assert lags.default == default
 
     def test_input_dictionary_is_copied(self):
         value = {"a": [-2, -1]}
-        lags = Lags.from_user(value, kind="target")
+        lags = Lags.parse(value, kind="target")
 
         value["a"].append(-3)
         value["b"] = [-4]
 
-        assert lags.per_component == {"a": (-2, -1)}
+        assert lags.component_lags == {"a": (-2, -1)}
 
     @pytest.mark.parametrize(
         "value,kind,message",
@@ -198,19 +197,92 @@ class TestLagsFromUser:
     )
     def test_invalid_lags(self, value, kind, message):
         with pytest.raises(ValueError) as exc:
-            Lags.from_user(value, kind=kind)
+            Lags.parse(value, kind=kind)
 
         assert str(exc.value) == message
 
-    def test_shifted(self):
-        shared = SharedLags((-1, 0, 1), _kind="future")
-        component = ComponentLags({"a": (-1, 0)}, default=(1,), _kind="future")
+    def test_invalid_kind(self):
+        with pytest.raises(ValueError) as exc:
+            Lags.parse(2, kind="unknown")
 
-        assert shared.shifted(2).lags == (1, 2, 3)
-        assert component.shifted(3).per_component == {"a": (2, 3)}
+        assert str(exc.value) == "Unknown lags kind: 'unknown'."
+
+    def test_direct_constructor_requires_a_representation(self):
+        with pytest.raises(ValueError) as exc:
+            Lags(kind="target")
+
+        assert str(exc.value) == (
+            "`Lags` must define shared or component-specific lags."
+        )
+
+    def test_shifted(self):
+        shared = Lags(kind="future", shared=(-1, 0, 1))
+        component = Lags(kind="future", component_lags={"a": (-1, 0)}, default=(1,))
+
+        assert shared.shifted(2).shared == (1, 2, 3)
+        assert component.shifted(3).component_lags == {"a": (2, 3)}
         assert component.shifted(3).default == (4,)
-        assert shared.lags == (-1, 0, 1)
-        assert component.per_component == {"a": (-1, 0)}
+        assert shared.shared == (-1, 0, 1)
+        assert component.component_lags == {"a": (-1, 0)}
+        assert component.default == (1,)
+
+    def test_extreme_lags_before_and_after_resolution(self):
+        lags = Lags.parse(
+            {"a": [-2, -1], "b": [-3], "default_lags": [-5]}, kind="target"
+        )
+
+        # Before resolution the legacy extremes include the unused default.
+        assert lags.extreme_lags == (-5, -1)
+
+        lags.resolve(["a", "b"])
+
+        # After resolution they only cover the actual components.
+        assert lags.extreme_lags == (-3, -1)
+
+    def test_resolved_per_component_requires_resolution(self):
+        lags = Lags.parse(2, kind="target")
+
+        with pytest.raises(ValueError) as exc:
+            lags.resolved_per_component
+
+        assert "`Lags` have not been resolved yet" in str(exc.value)
+
+    def test_resolve_is_idempotent_and_re_resolves(self):
+        lags = Lags.parse({"a": [-1], "default_lags": [-2]}, kind="target")
+
+        assert lags.resolve(["a", "b"]) is None
+        assert lags.resolved_per_component == {"a": (-1,), "b": (-2,)}
+
+        lags.resolve(["a"])
+        assert lags.resolved_per_component == {"a": (-1,)}
+
+        lags.resolve(["a", "b", "c"])
+        assert lags.resolved_per_component == {
+            "a": (-1,),
+            "b": (-2,),
+            "c": (-2,),
+        }
+
+    def test_failed_resolution_does_not_keep_stale_state(self):
+        lags = Lags.parse({"a": [-1]}, kind="target")
+        lags.resolve(["a"])
+
+        with pytest.raises(ValueError):
+            lags.resolve(["a", "b"])
+
+        with pytest.raises(ValueError):
+            lags.resolved_per_component
+
+    def test_shifted_resets_the_resolved_state(self):
+        lags = Lags.parse(2, kind="target")
+        lags.resolve(["a"])
+
+        shifted = lags.shifted(1)
+
+        assert shifted.shared == (-1, 0)
+        with pytest.raises(ValueError):
+            shifted.resolved_per_component
+        assert lags.resolved_per_component == {"a": (-2, -1)}
 
 
 class TestResolve:
@@ -346,9 +418,12 @@ class TestResolve:
         second = config.resolve(["a", "b"])
 
         assert first == second
-        assert config.target.per_component == {"a": (-1,)}
+        assert config.target.component_lags == {"a": (-1,)}
         assert config.target.default == (-2,)
         assert value == {"a": [-1], "default_lags": [-2]}
+        assert config.target.extreme_lags == (-2, -1)
+        with pytest.raises(ValueError):
+            config.target.resolved_per_component
 
     def test_legacy_dictionaries_are_copies(self):
         resolved = LagConfig.from_user(lags={"a": [-1]}).resolve(["a"])
@@ -399,8 +474,11 @@ class TestLagConfig:
             output_chunk_shift=2,
         )
 
-        assert isinstance(config.target, ComponentLags)
-        assert isinstance(config.past, SharedLags)
-        assert isinstance(config.future, FutureLags)
+        assert config.target.kind == "target"
+        assert config.target.is_component_specific
+        assert config.past.shared == (-2, -1)
+        assert not config.past.is_component_specific
+        assert config.future.kind == "future"
+        assert config.future.shared == (-1, 0)
         assert config.output_chunk_length == 6
         assert config.output_chunk_shift == 2
