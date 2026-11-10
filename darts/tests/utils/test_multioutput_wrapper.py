@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 
-from darts.utils.data.tabularization.features import ArrayLaggedFeatures
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.multioutput import MultiOutputClassifier, MultiOutputRegressor
 
 
@@ -111,7 +111,7 @@ def test_fit_creates_one_estimator_per_output():
 
 def test_array_container_is_accepted():
     array = np.arange(12, dtype=float).reshape(4, 3)
-    X = ArrayLaggedFeatures(array, n_horizons=2)
+    X = LaggedFeatures(array, n_horizons=2)
     y = np.column_stack([np.arange(4), np.arange(4) + 10])
     RecordingRegressor.reset()
 

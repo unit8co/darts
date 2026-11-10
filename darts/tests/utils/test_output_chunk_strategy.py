@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from darts.utils.output_chunk import (
@@ -26,6 +27,14 @@ class TestDirectOutputStrategy:
 
         for (horizon, component), index in expected.items():
             assert strategy.estimator_index(horizon, component, 3) == index
+
+    def test_output_horizons(self):
+        strategy = DirectOutputStrategy(output_chunk_length=4)
+
+        assert np.array_equal(
+            strategy.output_horizons(3),
+            np.repeat(np.arange(4), 3),
+        )
 
     @pytest.mark.parametrize(
         "native_multioutput,sample_weight,expected",
@@ -79,6 +88,11 @@ class TestRecursiveOutputStrategy:
         for horizon in range(4):
             for component in range(3):
                 assert strategy.estimator_index(horizon, component, 3) == component
+
+    def test_output_horizons(self):
+        strategy = RecursiveOutputStrategy(output_chunk_length=4)
+
+        assert np.array_equal(strategy.output_horizons(3), np.zeros(3, dtype=int))
 
     @pytest.mark.parametrize(
         "native_multioutput,sample_weight,expected",

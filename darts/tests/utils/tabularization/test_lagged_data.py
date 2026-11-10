@@ -4,7 +4,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.utils.data.tabularization.data import LaggedData
-from darts.utils.data.tabularization.features import ArrayLaggedFeatures
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_data,
     _create_lagged_data_autoregression,
@@ -55,6 +55,10 @@ def legacy_lags(config: ForecastConfig, kind: str):
     return component_lags
 
 
+def _as_array(value):
+    return value.to_numpy() if isinstance(value, LaggedFeatures) else np.asarray(value)
+
+
 def assert_same_data(actual: LaggedData, expected: tuple, series_length: int):
     expected_X, expected_y, expected_times, expected_static_shape, expected_weights = (
         expected
@@ -64,9 +68,9 @@ def assert_same_data(actual: LaggedData, expected: tuple, series_length: int):
         assert isinstance(expected_X, list)
         assert len(actual.X) == len(expected_X)
         for left, right in zip(actual.X, expected_X):
-            np.testing.assert_array_equal(np.asarray(left), np.asarray(right))
+            np.testing.assert_array_equal(_as_array(left), _as_array(right))
     else:
-        np.testing.assert_array_equal(np.asarray(actual.X), np.asarray(expected_X))
+        np.testing.assert_array_equal(_as_array(actual.X), _as_array(expected_X))
 
     if expected_y is None:
         assert actual.y is None
@@ -199,13 +203,13 @@ def test_prediction_data_from_config_matches_legacy_wrapper(
 
     assert actual.y is None
     if concatenate:
-        assert isinstance(actual.X, ArrayLaggedFeatures)
-        np.testing.assert_array_equal(np.asarray(actual.X), np.asarray(expected_X))
+        assert isinstance(actual.X, LaggedFeatures)
+        np.testing.assert_array_equal(_as_array(actual.X), _as_array(expected_X))
     else:
         assert len(actual.X) == len(expected_X)
         for left, right in zip(actual.X, expected_X):
-            assert isinstance(left, ArrayLaggedFeatures)
-            np.testing.assert_array_equal(np.asarray(left), np.asarray(right))
+            assert isinstance(left, LaggedFeatures)
+            np.testing.assert_array_equal(_as_array(left), _as_array(right))
     assert len(actual.times) == len(expected_times)
     for left, right in zip(actual.times, expected_times):
         assert left.equals(right)
@@ -250,7 +254,7 @@ def test_prediction_data_from_config_uses_output_chunk_shift():
         concatenate=True,
     )
 
-    np.testing.assert_array_equal(np.asarray(actual.X), np.asarray(expected_X))
+    np.testing.assert_array_equal(_as_array(actual.X), _as_array(expected_X))
     assert len(actual.times) == len(expected_times)
     for left, right in zip(actual.times, expected_times):
         assert left.equals(right)
@@ -351,13 +355,13 @@ def test_autoregression_returns_lagged_features(multi_models, shift):
     )
 
     expected = np.array([[values[lag - shift, 0] for lag in [-3, -2, -1]]])
-    assert isinstance(actual, ArrayLaggedFeatures)
+    assert isinstance(actual, LaggedFeatures)
     assert actual.shape == (1, 3)
     assert actual.n_horizons == resolved.strategy.pred_dim
     assert actual.n_horizons == (2 if multi_models else 1)
-    np.testing.assert_array_equal(np.asarray(actual), expected)
-    assert actual.horizon(0) is actual
-    np.testing.assert_array_equal(np.asarray(actual.horizon(0)), expected)
+    np.testing.assert_array_equal(actual.to_numpy(), expected)
+    assert actual.for_horizon(0) is actual.array
+    np.testing.assert_array_equal(actual.for_horizon(0), expected)
 
 
 def test_autoregression_component_specific_returns_lagged_features():
@@ -387,9 +391,9 @@ def test_autoregression_component_specific_returns_lagged_features():
             values[-1, 0],
         ]
     ])
-    assert isinstance(actual, ArrayLaggedFeatures)
+    assert isinstance(actual, LaggedFeatures)
     assert actual.shape == (1, 3)
-    np.testing.assert_array_equal(np.asarray(actual), expected)
+    np.testing.assert_array_equal(actual.to_numpy(), expected)
 
 
 def test_autoregression_adds_static_covariates_and_keeps_container():
@@ -409,7 +413,7 @@ def test_autoregression_adds_static_covariates_and_keeps_container():
         num_samples=1,
     )
 
-    assert isinstance(actual, ArrayLaggedFeatures)
+    assert isinstance(actual, LaggedFeatures)
     assert actual.n_horizons == 2
     assert actual.shape == (1, 2 * 3 + 2)
     np.testing.assert_array_equal(actual.array[:, -2], np.zeros(1))

@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 from darts.logging import raise_log
 
 
@@ -53,6 +55,14 @@ class OutputChunkStrategy(ABC):
     @abstractmethod
     def estimator_index(self, horizon: int, component: int, n_components: int) -> int:
         """Index of the estimator for ``horizon`` and ``component``."""
+
+    def output_horizons(self, n_components: int) -> np.ndarray:
+        """The forecast horizon of every estimator output."""
+        self._validate_n_components(n_components)
+        n_outputs = self.n_outputs(n_components)
+        if self.name == "recursive":
+            return np.zeros(n_outputs, dtype=int)
+        return np.repeat(np.arange(self.pred_dim), n_components)
 
     @abstractmethod
     def requires_wrapper(

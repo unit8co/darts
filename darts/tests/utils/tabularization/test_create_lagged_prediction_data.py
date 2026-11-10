@@ -10,11 +10,16 @@ from darts import TimeSeries
 from darts import concatenate as darts_concatenate
 from darts.logging import raise_log
 from darts.tests.parametrize_helpers import param_product
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_prediction_data,
 )
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import n_steps_between
+
+
+def _to_numpy(features):
+    return features.to_numpy() if isinstance(features, LaggedFeatures) else features
 
 
 class TestCreateLaggedPredictionData:
@@ -436,7 +441,7 @@ class TestCreateLaggedPredictionData:
             assert X.shape[0] == len(feats_times)
             assert X.shape[0] == len(times[0])
             # Check that outputs match:
-            assert np.allclose(expected_X, X[:, :, 0])
+            assert np.allclose(expected_X, X.to_numpy()[:, :, 0])
             assert feats_times.equals(times[0])
 
     @pytest.mark.parametrize(
@@ -539,7 +544,7 @@ class TestCreateLaggedPredictionData:
             assert X.shape[0] == len(feats_times)
             assert X.shape[0] == len(times[0])
             # Check that outputs match:
-            assert np.allclose(expected_X, X[:, :, 0])
+            assert np.allclose(expected_X, X.to_numpy()[:, :, 0])
             assert feats_times.equals(times[0])
 
     @pytest.mark.parametrize(
@@ -632,7 +637,7 @@ class TestCreateLaggedPredictionData:
                 max_samples_per_ts=max_samples_per_ts,
                 use_moving_windows=False,
             )
-            assert np.allclose(X_mw, X_ti)
+            assert np.allclose(_to_numpy(X_mw), _to_numpy(X_ti))
             assert times_mw[0].equals(times_ti[0])
 
     #
@@ -686,7 +691,7 @@ class TestCreateLaggedPredictionData:
         assert X.shape[0] == len(expected_times)
         assert X.shape[0] == len(times[0])
         # Check that outputs match:
-        assert np.allclose(expected_X, X[:, :, 0])
+        assert np.allclose(expected_X, X.to_numpy()[:, :, 0])
         assert expected_times.equals(times[0])
 
     @pytest.mark.parametrize(
@@ -755,7 +760,7 @@ class TestCreateLaggedPredictionData:
             use_moving_windows=use_moving_windows,
         )
         assert times[0][0] == target.end_time() + target.freq
-        assert np.allclose(expected_X, X[:, :, 0])
+        assert np.allclose(expected_X, X.to_numpy()[:, :, 0])
 
     @pytest.mark.parametrize(
         "config",
@@ -784,7 +789,7 @@ class TestCreateLaggedPredictionData:
             use_moving_windows=use_moving_windows,
             uses_static_covariates=False,
         )
-        assert np.allclose(expected_X, X)
+        assert np.allclose(expected_X, X.to_numpy())
         # Should only have one sample, generated for
         # `t = target.end_time() + lag * target.freq`:
         assert len(times) == 1
@@ -829,7 +834,7 @@ class TestCreateLaggedPredictionData:
             uses_static_covariates=False,
             use_moving_windows=use_moving_windows,
         )
-        assert np.allclose(expected_X, X)
+        assert np.allclose(expected_X, X.to_numpy())
         assert len(times[0]) == 1
         assert times[0][0] == future.start_time()
 
@@ -873,7 +878,7 @@ class TestCreateLaggedPredictionData:
             uses_static_covariates=False,
             use_moving_windows=use_moving_windows,
         )
-        assert np.allclose(expected_X, X)
+        assert np.allclose(expected_X, X.to_numpy())
         assert len(times[0]) == 1
         assert times[0][0] == target.end_time() + target.freq
 
@@ -904,7 +909,7 @@ class TestCreateLaggedPredictionData:
             lags_future_covariates=lags_future,
             uses_static_covariates=False,
         )
-        assert np.allclose(X, expected_X)
+        assert np.allclose(X.to_numpy(), expected_X)
         assert len(times) == 2
         assert times[0].equals(expected_times_1)
         assert times[1].equals(expected_times_2)
@@ -920,8 +925,8 @@ class TestCreateLaggedPredictionData:
             concatenate=False,
         )
         assert len(X) == 2
-        assert np.allclose(X[0], expected_X_1)
-        assert np.allclose(X[1], expected_X_2)
+        assert np.allclose(_to_numpy(X[0]), expected_X_1)
+        assert np.allclose(_to_numpy(X[1]), expected_X_2)
         assert len(times) == 2
         assert times[0].equals(expected_times_1)
         assert times[1].equals(expected_times_2)
@@ -951,7 +956,7 @@ class TestCreateLaggedPredictionData:
             lags_future_covariates=lags_future,
             uses_static_covariates=False,
         )
-        assert np.allclose(X, expected_X)
+        assert np.allclose(X.to_numpy(), expected_X)
         assert times[0].equals(expected_times)
 
     def test_lagged_prediction_data_no_shared_times_error(self):

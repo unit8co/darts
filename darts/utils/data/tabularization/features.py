@@ -2,207 +2,197 @@
 Lagged feature containers.
 --------------------------
 
-Internal containers that represent the lagged features matrix together with its forecast-horizon
-metadata. They are independent from the lag semantics and from the tabularization code, so the
-model and the multi-output wrapper can consume them without branching on the container type.
+Internal container that represents the lagged features matrix together with its forecast-horizon
+metadata. It is independent from the lag semantics and from the tabularization code, so the model
+and the multi-output wrapper can consume it without branching on the container type.
 This module is not part of the public Darts API.
 """
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from collections.abc import Callable, Sequence
-from typing import Any, Self
+from collections.abc import Sequence
+from dataclasses import dataclass
 
 import numpy as np
 
 from darts.logging import raise_log
 
 
-class LaggedFeatures(ABC):
-    """Internal feature matrix that can be materialized for each forecast horizon."""
+@dataclass
+class LaggedFeatures:
+    """A feature matrix with optional per-output forecast-horizon metadata.
 
-    n_horizons: int
+    ``array`` has shape ``(n_observations, n_features)`` or
+    ``(n_observations, n_features, n_samples)``. ``output_horizons`` maps each estimator output to
+    a horizon in ``[0, n_horizons)``; when it is ``None`` every output uses horizon ``0``.
+    """
+
+    array: np.ndarray
+    n_horizons: int = 1
+    output_horizons: np.ndarray | None = None
+
+    def __post_init__(self):
+        self.array = np.asarray(self.array)
+        if self.array.ndim < 2:
+            raise_log(
+                ValueError(
+                    "`LaggedFeatures.array` must have at least 2 dimensions "
+                    f"(`n_observations`, `n_features`[, `n_samples`]); received "
+                    f"{self.array.ndim}."
+                )
+            )
+        if not isinstance(self.n_horizons, int) or isinstance(self.n_horizons, bool):
+            raise_log(
+                ValueError(
+                    f"`n_horizons` must be an integer greater than 0. Given: {self.n_horizons}."
+                )
+            )
+        if self.n_horizons < 1:
+            raise_log(
+                ValueError(
+                    f"`n_horizons` must be an integer greater than 0. Given: {self.n_horizons}."
+                )
+            )
+        if self.output_horizons is not None:
+            output_horizons = np.asarray(self.output_horizons)
+            if output_horizons.ndim != 1:
+                raise_log(
+                    ValueError(
+                        "`output_horizons` must be a one-dimensional array; received "
+                        f"{output_horizons.ndim} dimensions."
+                    )
+                )
+            if not np.issubdtype(output_horizons.dtype, np.integer):
+                raise_log(
+                    ValueError(
+                        "`output_horizons` must contain integers; received dtype "
+                        f"{output_horizons.dtype}."
+                    )
+                )
+            if np.any((output_horizons < 0) | (output_horizons >= self.n_horizons)):
+                raise_log(
+                    ValueError(
+                        "`output_horizons` must be in "
+                        f"`[0, {self.n_horizons - 1}]`; received {output_horizons}."
+                    )
+                )
+            self.output_horizons = output_horizons
 
     @property
-    @abstractmethod
-    def array(self) -> np.ndarray:
-        """The underlying feature matrix."""
-
-    @property
-    @abstractmethod
     def shape(self) -> tuple[int, ...]:
-        """The shape of the features array of a single horizon."""
+        return self.array.shape
 
     @property
-    @abstractmethod
     def ndim(self) -> int:
-        """The number of dimensions of the features array of a single horizon."""
+        return self.array.ndim
 
     @property
-    @abstractmethod
     def dtype(self) -> np.dtype:
-        """The dtype of the features array."""
-
-    @abstractmethod
-    def horizon(self, h: int) -> Any:
-        """Return the features array of horizon ``h``."""
-
-    @abstractmethod
-    def with_base(self, array: np.ndarray) -> Self:
-        """Return a new container with the base feature matrix replaced."""
-
-    @abstractmethod
-    def with_format_fn(self, format_fn: Callable[[np.ndarray], Any] | None) -> Self:
-        """Return a new container that applies ``format_fn`` on materialization."""
-
-    @abstractmethod
-    def repeat(self, repeats: int, axis: int = 0) -> Self:
-        """Repeat the observations ``repeats`` times."""
-
-    @classmethod
-    @abstractmethod
-    def concatenate(cls, items: Sequence[Self]) -> Self:
-        """Concatenate the observations of several containers."""
+        return self.array.dtype
 
     def __len__(self) -> int:
         return len(self.array)
 
+    def to_numpy(self) -> np.ndarray:
+        """Return the underlying feature matrix."""
+        return self.array
 
-class ArrayLaggedFeatures(np.ndarray, LaggedFeatures):
-    """A regular feature matrix that is identical for every forecast horizon.
+    def for_horizon(self, h: int) -> np.ndarray:
+        """Return the feature matrix of horizon ``h``.
 
-    The container is a zero-copy view of the original array: :meth:`array` returns a base
-    ``np.ndarray`` view and :meth:`horizon` returns the container itself for every valid horizon.
-    """
-
-    n_horizons: int
-    format_fn: Callable[[np.ndarray], Any] | None
-
-    def __new__(
-        cls,
-        array: np.ndarray,
-        *,
-        n_horizons: int = 1,
-        format_fn: Callable[[np.ndarray], Any] | None = None,
-    ) -> ArrayLaggedFeatures:
-        if not isinstance(n_horizons, int) or isinstance(n_horizons, bool):
+        In this version the same base matrix is shared by every horizon.
+        """
+        if not isinstance(h, int) or isinstance(h, bool):
             raise_log(
                 ValueError(
-                    f"`n_horizons` must be an integer greater than 0. Given: {n_horizons}."
-                ),
+                    f"Horizon must be an integer in `[0, {self.n_horizons - 1}]`; received `{h}`."
+                )
             )
-        if n_horizons < 1:
-            raise_log(
-                ValueError(
-                    f"`n_horizons` must be an integer greater than 0. Given: {n_horizons}."
-                ),
-            )
-        features = np.asarray(array).view(cls)
-        features.n_horizons = n_horizons
-        features.format_fn = format_fn
-        return features
-
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return
-        self.n_horizons = getattr(obj, "n_horizons", 1)
-        self.format_fn = getattr(obj, "format_fn", None)
-
-    @classmethod
-    def wrap(
-        cls,
-        array: np.ndarray,
-        *,
-        n_horizons: int = 1,
-        format_fn: Callable[[np.ndarray], Any] | None = None,
-    ) -> ArrayLaggedFeatures:
-        """Wrap ``array`` in a zero-copy container."""
-        if (
-            isinstance(array, cls)
-            and array.n_horizons == n_horizons
-            and array.format_fn is format_fn
-        ):
-            return array
-        return cls(array, n_horizons=n_horizons, format_fn=format_fn)
-
-    @property
-    def array(self) -> np.ndarray:
-        return self.view(np.ndarray)
-
-    @property
-    def shape(self) -> tuple[int, ...]:
-        return super().shape
-
-    @property
-    def ndim(self) -> int:
-        return super().ndim
-
-    @property
-    def dtype(self) -> np.dtype:
-        return super().dtype
-
-    def horizon(self, h: int) -> Any:
         if not 0 <= h < self.n_horizons:
             raise_log(
                 IndexError(
                     f"Horizon must be in `[0, {self.n_horizons - 1}]`; received `{h}`."
-                ),
+                )
             )
-        if self.format_fn is not None:
-            return self.format_fn(self.array)
-        return self
+        return self.array
 
-    def with_base(self, array: np.ndarray) -> ArrayLaggedFeatures:
-        return type(self).wrap(
-            array, n_horizons=self.n_horizons, format_fn=self.format_fn
+    def for_output(self, output_idx: int) -> np.ndarray:
+        """Return the feature matrix for the estimator output ``output_idx``."""
+        if self.output_horizons is None:
+            h = 0
+        else:
+            if not isinstance(output_idx, int) or isinstance(output_idx, bool):
+                raise_log(
+                    ValueError(
+                        "`output_idx` must be an integer in "
+                        f"`[0, {len(self.output_horizons) - 1}]`; received `{output_idx}`."
+                    )
+                )
+            if not 0 <= output_idx < len(self.output_horizons):
+                raise_log(
+                    IndexError(
+                        "`output_idx` must be in "
+                        f"`[0, {len(self.output_horizons) - 1}]`; received `{output_idx}`."
+                    )
+                )
+            h = int(self.output_horizons[output_idx])
+        return self.for_horizon(h)
+
+    def with_base(self, array: np.ndarray) -> LaggedFeatures:
+        """Return a new container with the base matrix replaced."""
+        return LaggedFeatures(
+            array=array,
+            n_horizons=self.n_horizons,
+            output_horizons=self.output_horizons,
         )
 
-    def with_format_fn(
-        self, format_fn: Callable[[np.ndarray], Any] | None
-    ) -> ArrayLaggedFeatures:
-        return type(self).wrap(
-            self.array, n_horizons=self.n_horizons, format_fn=format_fn
-        )
+    def repeat(self, repeats: int, axis: int = 0) -> LaggedFeatures:
+        """Repeat the observations ``repeats`` times along ``axis=0``."""
+        if axis != 0:
+            raise_log(
+                ValueError("`LaggedFeatures.repeat()` only supports `axis=0`."),
+            )
+        return self.with_base(np.repeat(self.array, repeats, axis=0))
 
-    def repeat(self, repeats: int, axis: int = 0) -> ArrayLaggedFeatures:
-        repeated = np.asarray(self).repeat(repeats, axis=axis)
-        return type(self).wrap(
-            repeated, n_horizons=self.n_horizons, format_fn=self.format_fn
-        )
+    def select_samples(self, index: int) -> LaggedFeatures:
+        """Select the sample at position ``index`` from a 3D feature matrix."""
+        if self.array.ndim != 3:
+            raise_log(
+                ValueError(
+                    "`select_samples()` requires a 3D feature matrix "
+                    f"(`n_observations`, `n_features`, `n_samples`); received `ndim={self.ndim}`."
+                )
+            )
+        return self.with_base(self.array[..., index])
 
     @classmethod
-    def concatenate(cls, items: Sequence[ArrayLaggedFeatures]) -> ArrayLaggedFeatures:
+    def concatenate(cls, items: Sequence[LaggedFeatures]) -> LaggedFeatures:
+        """Concatenate the observations of several containers."""
         if not items:
             raise_log(ValueError("Cannot concatenate an empty sequence."))
 
         first = items[0]
-        n_horizons = getattr(first, "n_horizons", 1)
-        format_fn = getattr(first, "format_fn", None)
         for item in items[1:]:
-            if getattr(item, "n_horizons", 1) != n_horizons:
+            if item.n_horizons != first.n_horizons:
                 raise_log(
                     ValueError(
-                        "All `ArrayLaggedFeatures` must share the same number of horizons "
-                        "to be concatenated."
+                        "All `LaggedFeatures` must share the same number of horizons to be "
+                        "concatenated."
                     ),
                 )
-            if getattr(item, "format_fn", None) is not format_fn:
+            if not np.array_equal(item.output_horizons, first.output_horizons):
                 raise_log(
                     ValueError(
-                        "All `ArrayLaggedFeatures` must share the same `format_fn` to be "
+                        "All `LaggedFeatures` must share the same `output_horizons` to be "
                         "concatenated."
                     ),
                 )
 
-        return cls.wrap(
-            np.concatenate([np.asarray(item) for item in items], axis=0),
-            n_horizons=n_horizons,
-            format_fn=format_fn,
+        return cls(
+            array=np.concatenate([item.array for item in items], axis=0),
+            n_horizons=first.n_horizons,
+            output_horizons=first.output_horizons,
         )
 
 
-__all__ = [
-    "ArrayLaggedFeatures",
-    "LaggedFeatures",
-]
+__all__ = ["LaggedFeatures"]

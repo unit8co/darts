@@ -21,10 +21,7 @@ from darts import TimeSeries
 from darts.logging import raise_log
 from darts.typing import Frequency, TimeIndex, TimeSeriesLike, TimeStamp
 from darts.utils.data.tabularization.data import LaggedData
-from darts.utils.data.tabularization.features import (
-    ArrayLaggedFeatures,
-    LaggedFeatures,
-)
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
@@ -549,7 +546,12 @@ def _create_lagged_data_core(
                 stride=stride,
                 show_warnings=show_warnings,
             )
-        X_i = ArrayLaggedFeatures.wrap(X_i, n_horizons=n_horizons)
+        n_components = target_i.width if target_i is not None else 1
+        X_i = LaggedFeatures(
+            array=X_i,
+            n_horizons=n_horizons,
+            output_horizons=config.strategy.output_horizons(n_components),
+        )
         X_i, last_static_covariates_shape = _add_static_covariates_to_lagged_data(
             features=X_i,
             target_series=target_i,
@@ -563,7 +565,7 @@ def _create_lagged_data_core(
             sample_weights.append(weights_i)
 
     if concatenate:
-        X = ArrayLaggedFeatures.wrap(np.concatenate(X, axis=0), n_horizons=n_horizons)
+        X = LaggedFeatures.concatenate(X)
     if not is_training:
         y = None
     elif concatenate:
@@ -942,11 +944,11 @@ def _create_lagged_prediction_data(
 
 
 def _add_static_covariates_to_lagged_data(
-    features: np.ndarray | Sequence[np.ndarray],
+    features: LaggedFeatures | np.ndarray | Sequence[LaggedFeatures | np.ndarray],
     target_series: TimeSeriesLike,
     uses_static_covariates: bool = True,
     last_shape: tuple[int, int] | None = None,
-) -> np.ndarray | Sequence[np.ndarray]:
+) -> LaggedFeatures | np.ndarray | Sequence[LaggedFeatures | np.ndarray]:
     """
     Add static covariates to the features' table for SKLearnModels.
     If `uses_static_covariates=True`, all target series used in `fit()` and `predict()` must have static
@@ -1017,9 +1019,10 @@ def _add_static_covariates_to_lagged_data(
             # flatten static covariates along columns -> results in [scov0_comp0, scov0_comp1, scov1_comp0, ...]
             static_covs = ts.static_covariates.values.flatten(order="F")
             feature = features[idx]
-            feature_array = getattr(feature, "array", None)
             feature_array = (
-                np.asarray(feature) if feature_array is None else feature_array
+                feature.array
+                if isinstance(feature, LaggedFeatures)
+                else np.asarray(feature)
             )
             # we stack the static covariates to the right of lagged features
             # the broadcasting repeats the static covariates along axis=0 to match the number of feature rows
@@ -1034,7 +1037,7 @@ def _add_static_covariates_to_lagged_data(
             ])
             features[idx] = (
                 feature.with_base(feature_with_static)
-                if hasattr(feature, "with_base")
+                if isinstance(feature, LaggedFeatures)
                 else feature_with_static
             )
 
@@ -1746,7 +1749,12 @@ def _create_lagged_data_autoregression(
         # concatenate retrieved lags
         X = np.concatenate(X, axis=0)
 
-    return ArrayLaggedFeatures.wrap(X, n_horizons=config.strategy.pred_dim)
+    n_components = series2seq(target_series)[0].width
+    return LaggedFeatures(
+        array=X,
+        n_horizons=config.strategy.pred_dim,
+        output_horizons=config.strategy.output_horizons(n_components),
+    )
 
 
 def _extract_component_lags_autoregression(

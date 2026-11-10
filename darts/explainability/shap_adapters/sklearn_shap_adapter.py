@@ -183,7 +183,7 @@ class SKLearnShapAdapter(ShapAdapter):
             last_static_covariates_shape=self.model._static_covariates_shape,
         )
         # Remove sample axis:
-        X = X[:, :, 0]
+        X = X.to_numpy()[:, :, 0]
 
         if input_type == "background" and len(X) <= MIN_BACKGROUND_SAMPLE:
             raise_log(

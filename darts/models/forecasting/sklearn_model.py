@@ -664,12 +664,12 @@ class SKLearnModel(GlobalForecastingModel):
                             f"{ts[i].width} components at index {i} of `{arg_name}`."
                         )
                 raise_log(ValueError("\n".join(shape_error_msg)))
-            features[i] = X_i[:, :, 0]
+            features[i] = X_i.select_samples(0)
             labels[i] = y_i[:, :, 0]
             if sample_weights is not None:
                 sample_weights[i] = sample_weights[i][:, :, 0]
 
-        features = np.concatenate(features, axis=0)
+        features = LaggedFeatures.concatenate(features)
         labels = np.concatenate(labels, axis=0)
         if sample_weights is not None:
             sample_weights = np.concatenate(sample_weights, axis=0)
@@ -685,6 +685,11 @@ class SKLearnModel(GlobalForecastingModel):
             sample_weights = sample_weights.ravel()
 
         features, labels = self._format_samples(features, labels)
+        if isinstance(features, LaggedFeatures) and not isinstance(
+            self.model, MultiOutputMixin
+        ):
+            # the wrapper routes the container per output; native estimators need the array
+            features = features.to_numpy()
 
         return features, labels, sample_weights
 
@@ -695,6 +700,11 @@ class SKLearnModel(GlobalForecastingModel):
         Subclasses can override this method to format the samples and labels before fit and predict.
         """
         return samples, labels
+
+    @staticmethod
+    def _samples_array(samples):
+        """Return the raw array for formatting while preserving the feature container elsewhere."""
+        return samples.array if isinstance(samples, LaggedFeatures) else samples
 
     def _fit_model(
         self,
@@ -1275,10 +1285,11 @@ class SKLearnModel(GlobalForecastingModel):
         or the predicted distribution parameters directly.
         """
         x, _ = self._format_samples(x)
-        if isinstance(x, LaggedFeatures):
-            # feature containers are ndarray subclasses; sklearn can consume a
-            # zero-copy base view and skip the subclass validation overhead
-            x = x.array
+        if isinstance(x, LaggedFeatures) and not isinstance(
+            self.model, MultiOutputMixin
+        ):
+            # the wrapper materializes features per output; the native path needs the array
+            x = x.to_numpy()
         if self.likelihood is not None:
             return self.likelihood.predict(
                 model=self,
@@ -1750,6 +1761,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         Validate and format the categorical columns listed in self._categorical_indices accordingly to the model's
         requirements.
         """
+        samples = self._samples_array(samples)
         if len(self._categorical_indices) != 0:
             self._validate_categorical_components(samples)
         return samples, labels

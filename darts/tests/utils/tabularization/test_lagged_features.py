@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts.utils.data.tabularization.features import ArrayLaggedFeatures
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
     _add_static_covariates_to_lagged_data,
     _create_lagged_prediction_data,
@@ -11,128 +11,163 @@ from darts.utils.data.tabularization.tabularization import (
 from darts.utils.timeseries_generation import linear_timeseries
 
 
-class TestArrayLaggedFeatures:
-    def test_construction_is_zero_copy(self):
+class TestLaggedFeatures:
+    def test_construction_and_properties(self):
         array = np.arange(12).reshape(4, 3)
-        features = ArrayLaggedFeatures(array, n_horizons=3)
+        features = LaggedFeatures(array, n_horizons=3)
 
-        assert isinstance(features, np.ndarray)
         assert features.n_horizons == 3
+        assert features.output_horizons is None
         assert features.shape == array.shape
         assert features.ndim == array.ndim
         assert features.dtype == array.dtype
         assert len(features) == len(array)
-        assert features.format_fn is None
-        assert np.shares_memory(features, array)
-        assert isinstance(features.array, np.ndarray)
-        assert np.shares_memory(features.array, array)
+        assert features.to_numpy() is features.array
+        assert np.shares_memory(features.to_numpy(), array)
 
     @pytest.mark.parametrize("n_horizons", [0, -1, 1.5, True])
     def test_invalid_n_horizons(self, n_horizons):
         with pytest.raises(ValueError):
-            ArrayLaggedFeatures(np.zeros((2, 2)), n_horizons=n_horizons)
+            LaggedFeatures(np.zeros((2, 2)), n_horizons=n_horizons)
 
-    def test_wrap(self):
+    def test_invalid_array_ndim(self):
+        with pytest.raises(ValueError):
+            LaggedFeatures(np.zeros(3))
+
+    @pytest.mark.parametrize(
+        "output_horizons",
+        [
+            np.array([[0, 1]]),
+            np.array([0.0, 1.0]),
+            np.array([0, 3]),
+            np.array([-1, 0]),
+        ],
+    )
+    def test_invalid_output_horizons(self, output_horizons):
+        with pytest.raises(ValueError):
+            LaggedFeatures(
+                np.zeros((4, 2)),
+                n_horizons=2,
+                output_horizons=output_horizons,
+            )
+
+    def test_for_horizon_returns_the_base_array(self):
         array = np.arange(12).reshape(4, 3)
-        features = ArrayLaggedFeatures.wrap(array, n_horizons=2)
-
-        assert isinstance(features, ArrayLaggedFeatures)
-        assert np.shares_memory(features, array)
-        assert ArrayLaggedFeatures.wrap(features, n_horizons=2) is features
-
-        rewrapped = ArrayLaggedFeatures.wrap(features, n_horizons=3)
-        assert rewrapped is not features
-        assert rewrapped.n_horizons == 3
-        assert np.shares_memory(rewrapped, array)
-
-    def test_horizon_identity(self):
-        features = ArrayLaggedFeatures(np.zeros((3, 4)), n_horizons=3)
+        features = LaggedFeatures(array, n_horizons=3)
 
         for h in range(features.n_horizons):
-            assert features.horizon(h) is features
+            assert features.for_horizon(h) is features.array
 
         with pytest.raises(IndexError):
-            features.horizon(-1)
+            features.for_horizon(-1)
         with pytest.raises(IndexError):
-            features.horizon(features.n_horizons)
+            features.for_horizon(features.n_horizons)
 
-    def test_slicing_preserves_container(self):
-        array = np.arange(24).reshape(4, 6)
-        features = ArrayLaggedFeatures(array, n_horizons=2)
+    def test_for_output(self):
+        array = np.arange(12).reshape(4, 3)
+        features = LaggedFeatures(
+            array,
+            n_horizons=2,
+            output_horizons=np.array([1, 0]),
+        )
 
-        sliced = features[1:3]
-        assert isinstance(sliced, ArrayLaggedFeatures)
-        assert sliced.n_horizons == 2
-        assert np.shares_memory(sliced, array)
+        assert features.for_output(0) is features.array
+        assert features.for_output(1) is features.array
 
-        column_slice = features[:, [0, 2]]
-        assert isinstance(column_slice, ArrayLaggedFeatures)
-        assert column_slice.n_horizons == 2
-        assert np.array_equal(column_slice, array[:, [0, 2]])
+        with pytest.raises(IndexError):
+            features.for_output(2)
 
-    def test_with_base(self):
-        features = ArrayLaggedFeatures(np.zeros((4, 3)), n_horizons=3)
+        without_mapping = LaggedFeatures(array, n_horizons=2)
+        assert without_mapping.for_output(10) is without_mapping.array
+
+    def test_with_base_preserves_metadata(self):
+        features = LaggedFeatures(
+            np.zeros((4, 3)),
+            n_horizons=3,
+            output_horizons=np.array([2, 1, 0]),
+        )
         base = np.ones((2, 3))
 
         with_base = features.with_base(base)
 
-        assert isinstance(with_base, ArrayLaggedFeatures)
+        assert isinstance(with_base, LaggedFeatures)
         assert with_base is not features
         assert with_base.n_horizons == 3
-        assert np.shares_memory(with_base, base)
-        assert with_base.horizon(0) is with_base
+        assert np.array_equal(with_base.output_horizons, [2, 1, 0])
+        assert np.shares_memory(with_base.array, base)
 
-    def test_with_format_fn(self):
+    def test_repeat_preserves_metadata(self):
         array = np.arange(12).reshape(4, 3)
-        features = ArrayLaggedFeatures(array, n_horizons=2)
-        formatted = features.with_format_fn(pd.DataFrame)
-
-        assert isinstance(formatted, ArrayLaggedFeatures)
-        assert formatted is not features
-        assert np.shares_memory(formatted, array)
-        assert isinstance(formatted.horizon(0), pd.DataFrame)
-        assert isinstance(formatted.horizon(1), pd.DataFrame)
-        # the original container is unchanged
-        assert features.horizon(0) is features
-
-        cleared = formatted.with_format_fn(None)
-        assert cleared.format_fn is None
-        assert cleared.horizon(0) is cleared
-
-    def test_repeat_preserves_container_and_metadata(self):
-        array = np.arange(12).reshape(4, 3)
-        features = ArrayLaggedFeatures(array, n_horizons=2)
+        features = LaggedFeatures(
+            array,
+            n_horizons=2,
+            output_horizons=np.array([0, 1]),
+        )
 
         repeated = features.repeat(2, axis=0)
 
-        assert isinstance(repeated, ArrayLaggedFeatures)
+        assert isinstance(repeated, LaggedFeatures)
         assert repeated.n_horizons == 2
+        assert np.array_equal(repeated.output_horizons, [0, 1])
         assert repeated.shape == (8, 3)
-        assert np.array_equal(repeated, np.repeat(array, 2, axis=0))
+        assert np.array_equal(repeated.to_numpy(), np.repeat(array, 2, axis=0))
 
-    def test_concatenate_preserves_container_and_metadata(self):
+        with pytest.raises(ValueError):
+            features.repeat(2, axis=1)
+
+    def test_select_samples(self):
+        array = np.arange(24).reshape(4, 3, 2)
+        features = LaggedFeatures(
+            array,
+            n_horizons=2,
+            output_horizons=np.array([0, 1]),
+        )
+
+        selected = features.select_samples(1)
+
+        assert isinstance(selected, LaggedFeatures)
+        assert selected.shape == (4, 3)
+        assert selected.n_horizons == 2
+        assert np.array_equal(selected.output_horizons, [0, 1])
+        assert np.array_equal(selected.to_numpy(), array[..., 1])
+
+        with pytest.raises(ValueError):
+            LaggedFeatures(np.zeros((4, 3))).select_samples(0)
+
+    def test_concatenate_preserves_metadata(self):
         array = np.arange(12).reshape(4, 3)
-        features = ArrayLaggedFeatures(array, n_horizons=2)
+        features = LaggedFeatures(
+            array,
+            n_horizons=2,
+            output_horizons=np.array([0, 1]),
+        )
 
-        concatenated = ArrayLaggedFeatures.concatenate([features, features])
+        concatenated = LaggedFeatures.concatenate([features, features])
 
-        assert isinstance(concatenated, ArrayLaggedFeatures)
+        assert isinstance(concatenated, LaggedFeatures)
         assert concatenated.n_horizons == 2
+        assert np.array_equal(concatenated.output_horizons, [0, 1])
         assert concatenated.shape == (8, 3)
-        assert np.array_equal(concatenated, np.concatenate([array, array], axis=0))
+        assert np.array_equal(
+            concatenated.to_numpy(), np.concatenate([array, array], axis=0)
+        )
 
     def test_concatenate_validation(self):
         with pytest.raises(ValueError):
-            ArrayLaggedFeatures.concatenate([])
+            LaggedFeatures.concatenate([])
 
-        first = ArrayLaggedFeatures(np.zeros((2, 3)), n_horizons=2)
-        second = ArrayLaggedFeatures(np.zeros((2, 3)), n_horizons=3)
+        first = LaggedFeatures(np.zeros((2, 3)), n_horizons=2)
+        second = LaggedFeatures(np.zeros((2, 3)), n_horizons=3)
         with pytest.raises(ValueError):
-            ArrayLaggedFeatures.concatenate([first, second])
+            LaggedFeatures.concatenate([first, second])
 
-        third = first.with_format_fn(pd.DataFrame)
+        third = LaggedFeatures(
+            np.zeros((2, 3)),
+            n_horizons=2,
+            output_horizons=np.array([1, 0]),
+        )
         with pytest.raises(ValueError):
-            ArrayLaggedFeatures.concatenate([first, third])
+            LaggedFeatures.concatenate([first, third])
 
 
 class TestTabularizationContainers:
@@ -150,12 +185,11 @@ class TestTabularizationContainers:
             uses_static_covariates=False,
         )
 
-        assert isinstance(features, ArrayLaggedFeatures)
+        assert isinstance(features, LaggedFeatures)
         assert features.n_horizons == 4
-        assert features.horizon(0) is features
-        assert features.horizon(3) is features
-        assert np.shares_memory(features, features.array)
-        assert not isinstance(labels, ArrayLaggedFeatures)
+        assert features.for_horizon(0) is features.array
+        assert features.for_horizon(3) is features.array
+        assert not isinstance(labels, LaggedFeatures)
         assert isinstance(labels, np.ndarray)
 
     def test_recursive_training_data_has_one_horizon(self):
@@ -169,7 +203,7 @@ class TestTabularizationContainers:
             uses_static_covariates=False,
         )
 
-        assert isinstance(features, ArrayLaggedFeatures)
+        assert isinstance(features, LaggedFeatures)
         assert features.n_horizons == 1
 
     def test_sequence_without_concatenation(self):
@@ -185,7 +219,7 @@ class TestTabularizationContainers:
 
         assert isinstance(features, list)
         assert len(features) == 2
-        assert all(isinstance(item, ArrayLaggedFeatures) for item in features)
+        assert all(isinstance(item, LaggedFeatures) for item in features)
         assert all(item.n_horizons == 3 for item in features)
 
     def test_prediction_data_returns_container(self):
@@ -196,9 +230,9 @@ class TestTabularizationContainers:
             uses_static_covariates=False,
         )
 
-        assert isinstance(features, ArrayLaggedFeatures)
+        assert isinstance(features, LaggedFeatures)
         assert features.n_horizons == 1
-        assert features.horizon(0) is features
+        assert features.for_horizon(0) is features.array
 
     def test_training_data_with_static_covariates(self):
         target = self.target()
@@ -213,7 +247,7 @@ class TestTabularizationContainers:
             uses_static_covariates=True,
         )
 
-        assert isinstance(features, ArrayLaggedFeatures)
+        assert isinstance(features, LaggedFeatures)
         assert features.n_horizons == 2
         assert static_shape == (1, 2)
         assert np.array_equal(
@@ -239,7 +273,7 @@ class TestTabularizationContainers:
             uses_static_covariates=True,
         )
 
-        assert isinstance(features_with_static, ArrayLaggedFeatures)
+        assert isinstance(features_with_static, LaggedFeatures)
         assert features_with_static.n_horizons == 3
         assert static_shape == (1, 1)
         assert np.array_equal(
@@ -264,7 +298,7 @@ class TestTabularizationContainers:
         assert features_with_static.shape == (6, 3)
 
     def test_disabled_static_covariates_returns_input(self):
-        features = ArrayLaggedFeatures(np.zeros((4, 2)), n_horizons=2)
+        features = LaggedFeatures(np.zeros((4, 2)), n_horizons=2)
         target = self.target()
 
         returned, _ = _add_static_covariates_to_lagged_data(

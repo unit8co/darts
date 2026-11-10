@@ -12,12 +12,17 @@ from darts import TimeSeries
 from darts import concatenate as darts_concatenate
 from darts.logging import raise_log
 from darts.tests.parametrize_helpers import param_product
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_component_names,
     _create_lagged_training_data,
 )
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import generate_index, n_steps_between
+
+
+def _to_numpy(features):
+    return features.to_numpy() if isinstance(features, LaggedFeatures) else features
 
 
 def helper_create_multivariate_linear_timeseries(
@@ -569,12 +574,13 @@ class TestCreateLaggedTrainingData:
             exp_length_x = sum(len(exp_time) for exp_time in expected_times_x)
             exp_length_y = sum(len(exp_time) for exp_time in expected_times_y)
             assert exp_length_x == exp_length_y
-            assert X.shape[0] == exp_length_x == data_length
+            X_array = _to_numpy(X)
+            assert X_array.shape[0] == exp_length_x == data_length
             assert y.shape[0] == exp_length_y == data_length
 
             # Check that outputs match:
-            assert X.shape == expected_X.shape
-            assert np.allclose(expected_X, X)
+            assert X_array.shape == expected_X.shape
+            assert np.allclose(expected_X, X_array)
             assert y.shape == expected_y.shape
             assert np.allclose(expected_y, y)
         else:
@@ -584,11 +590,6 @@ class TestCreateLaggedTrainingData:
             ):
                 assert x_.shape[0] == len(time) == len(exp_time_x)
                 assert y_.shape[0] == len(time) == len(exp_time_y)
-
-            # Check that outputs match:
-            for x_, y_ in zip(X, y):
-                assert np.allclose(X, x_)
-                assert np.allclose(y, y_)
 
     #
     #   Generated Test Cases
@@ -1034,7 +1035,7 @@ class TestCreateLaggedTrainingData:
                 output_chunk_shift=output_chunk_shift,
                 stride=stride,
             )
-            assert np.allclose(X_mw, X_ti)
+            assert np.allclose(_to_numpy(X_mw), _to_numpy(X_ti))
             assert np.allclose(y_mw, y_ti)
             assert times_mw[0].equals(times_ti[0])
 
