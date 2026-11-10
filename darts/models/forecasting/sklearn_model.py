@@ -72,11 +72,10 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
-    _config_lags,
-    _create_lagged_component_names,
     _create_lagged_data_autoregression,
-    _create_lagged_data_from_config,
     _resolve_autoregression_lags,
+    create_lagged_component_names,
+    create_lagged_data,
 )
 from darts.utils.forecast_config import ForecastConfig
 from darts.utils.historical_forecasts import (
@@ -608,24 +607,14 @@ class SKLearnModel(GlobalForecastingModel):
         stride: int = 1,
         last_static_covariates_shape: tuple[int, int] | None = None,
     ):
-        # Resolve against the components at hand; this is also used on unfitted
-        # instances (e.g. by tests) and resolving again is idempotent.
-        config = self._config.resolve(
-            target_components=get_single_series(series).components,
-            past_components=(
-                get_single_series(past_covariates).components
-                if past_covariates
-                else None
-            ),
-            future_components=(
-                get_single_series(future_covariates).components
-                if future_covariates
-                else None
-            ),
-        )
-
-        data = _create_lagged_data_from_config(
-            config,
+        (
+            features,
+            labels,
+            _,
+            self._static_covariates_shape,
+            sample_weights,
+        ) = create_lagged_data(
+            self._config,
             target_series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -636,13 +625,6 @@ class SKLearnModel(GlobalForecastingModel):
             sample_weight=sample_weight,
             stride=stride,
         )
-        (
-            features,
-            labels,
-            _,
-            self._static_covariates_shape,
-            sample_weights,
-        ) = data.to_tuple()
 
         expected_nb_feat = (
             features[0].shape[1]
@@ -774,14 +756,11 @@ class SKLearnModel(GlobalForecastingModel):
 
         # generate and store the lagged components names (for feature importance analysis)
         self._lagged_feature_names, self._lagged_label_names = (
-            _create_lagged_component_names(
+            create_lagged_component_names(
+                self._config,
                 target_series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                lags=_config_lags(self._config, "target"),
-                lags_past_covariates=_config_lags(self._config, "past"),
-                lags_future_covariates=_config_lags(self._config, "future"),
-                output_chunk_length=self._config.strategy.output_chunk_length,
                 concatenate=False,
                 use_static_covariates=self.uses_static_covariates,
             )

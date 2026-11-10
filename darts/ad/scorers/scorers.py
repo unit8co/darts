@@ -25,7 +25,8 @@ from darts.ad.utils import (
 from darts.logging import get_logger, raise_log
 from darts.metrics.utils import METRIC_TYPE
 from darts.typing import TimeSeriesLike
-from darts.utils.data.tabularization.tabularization import _create_lagged_data
+from darts.utils.data.tabularization import create_lagged_data
+from darts.utils.forecast_config import ForecastConfig
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
 
@@ -859,13 +860,18 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
             For `component_wise=False`, an array of shape (time - (window - 1), window * components).
         """
         # n series * (time, components, sample) -> (time - (window - 1), window * components)
-        data = _create_lagged_data(
-            target_series=series,
-            lags=[i for i in range(-self.window, 0)],
-            uses_static_covariates=False,
-            is_training=False,
-            concatenate=True,
-        )[0].squeeze(-1)
+        config = ForecastConfig(lags=[i for i in range(-self.window, 0)])
+        data = (
+            create_lagged_data(
+                config,
+                target_series=series,
+                uses_static_covariates=False,
+                is_training=False,
+                concatenate=True,
+            )[0]
+            .to_numpy()
+            .squeeze(-1)
+        )
 
         # bring into required model input shape
         if component_wise:

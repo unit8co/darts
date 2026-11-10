@@ -647,6 +647,191 @@ def _create_lagged_data_from_config(
     )
 
 
+def _series_components(series: TimeSeriesLike | None) -> Sequence[str] | None:
+    series = get_single_series(series)
+    return None if series is None else series.components
+
+
+def _resolve_public_config(
+    config: "ForecastConfig",
+    target_series: TimeSeriesLike | None,
+    past_covariates: TimeSeriesLike | None,
+    future_covariates: TimeSeriesLike | None,
+) -> "ForecastConfig":
+    """Resolve a config against the components of the series passed to a public helper."""
+    target_components = _series_components(target_series)
+    if target_components is None:
+        if config.has_lags("target"):
+            raise_log(
+                ValueError(
+                    "`target_series` must be specified when target lags are defined."
+                )
+            )
+        target_components = ()
+    return config.resolve(
+        target_components=target_components,
+        past_components=_series_components(past_covariates),
+        future_components=_series_components(future_covariates),
+    )
+
+
+def create_lagged_data(
+    config: "ForecastConfig",
+    target_series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    *,
+    uses_static_covariates: bool = True,
+    last_static_covariates_shape: tuple[int, int] | None = None,
+    max_samples_per_ts: int | None = None,
+    check_inputs: bool = True,
+    use_moving_windows: bool = True,
+    is_training: bool = True,
+    concatenate: bool = True,
+    sample_weight: str | TimeSeriesLike | None = None,
+    stride: int = 1,
+    show_warnings: bool = True,
+) -> tuple[
+    LaggedFeatures | Sequence[LaggedFeatures],
+    None | np.ndarray | Sequence[np.ndarray],
+    Sequence[pd.Index],
+    tuple[int, int] | None,
+    np.ndarray | Sequence[np.ndarray] | None,
+]:
+    """Create lagged features and labels from a :class:`ForecastConfig`.
+
+    The config is resolved against the components of the series before tabularizing. See
+    :func:`_create_lagged_data` for the meaning of the remaining arguments and the returned tuple.
+    """
+    config = _resolve_public_config(
+        config, target_series, past_covariates, future_covariates
+    )
+    data = _create_lagged_data_from_config(
+        config,
+        target_series=target_series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        uses_static_covariates=uses_static_covariates,
+        last_static_covariates_shape=last_static_covariates_shape,
+        max_samples_per_ts=max_samples_per_ts,
+        check_inputs=check_inputs,
+        use_moving_windows=use_moving_windows,
+        is_training=is_training,
+        concatenate=concatenate,
+        sample_weight=sample_weight,
+        stride=stride,
+        show_warnings=show_warnings,
+    )
+    return (
+        data.X,
+        data.y,
+        data.times,
+        data.last_static_covariates_shape,
+        data.sample_weights,
+    )
+
+
+def create_lagged_training_data(
+    config: "ForecastConfig",
+    target_series: TimeSeriesLike,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    *,
+    uses_static_covariates: bool = True,
+    last_static_covariates_shape: tuple[int, int] | None = None,
+    max_samples_per_ts: int | None = None,
+    check_inputs: bool = True,
+    use_moving_windows: bool = True,
+    concatenate: bool = True,
+    sample_weight: str | TimeSeriesLike | None = None,
+    stride: int = 1,
+    show_warnings: bool = True,
+) -> tuple[
+    LaggedFeatures | Sequence[LaggedFeatures],
+    None | np.ndarray | Sequence[np.ndarray],
+    Sequence[pd.Index],
+    tuple[int, int] | None,
+    np.ndarray | Sequence[np.ndarray] | None,
+]:
+    """Config-first wrapper around :func:`create_lagged_data` for training data."""
+    return create_lagged_data(
+        config,
+        target_series=target_series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        uses_static_covariates=uses_static_covariates,
+        last_static_covariates_shape=last_static_covariates_shape,
+        max_samples_per_ts=max_samples_per_ts,
+        check_inputs=check_inputs,
+        use_moving_windows=use_moving_windows,
+        is_training=True,
+        concatenate=concatenate,
+        sample_weight=sample_weight,
+        stride=stride,
+        show_warnings=show_warnings,
+    )
+
+
+def create_lagged_prediction_data(
+    config: "ForecastConfig",
+    target_series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    *,
+    uses_static_covariates: bool = True,
+    last_static_covariates_shape: tuple[int, int] | None = None,
+    max_samples_per_ts: int | None = None,
+    check_inputs: bool = True,
+    use_moving_windows: bool = True,
+    concatenate: bool = True,
+    stride: int = 1,
+    show_warnings: bool = True,
+) -> tuple[LaggedFeatures | Sequence[LaggedFeatures], Sequence[pd.Index]]:
+    """Config-first wrapper around :func:`create_lagged_data` for prediction data."""
+    X, _, times, _, _ = create_lagged_data(
+        config,
+        target_series=target_series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        uses_static_covariates=uses_static_covariates,
+        last_static_covariates_shape=last_static_covariates_shape,
+        max_samples_per_ts=max_samples_per_ts,
+        check_inputs=check_inputs,
+        use_moving_windows=use_moving_windows,
+        is_training=False,
+        concatenate=concatenate,
+        stride=stride,
+        show_warnings=show_warnings,
+    )
+    return X, times
+
+
+def create_lagged_component_names(
+    config: "ForecastConfig",
+    target_series: TimeSeriesLike | None = None,
+    past_covariates: TimeSeriesLike | None = None,
+    future_covariates: TimeSeriesLike | None = None,
+    *,
+    concatenate: bool = True,
+    use_static_covariates: bool = False,
+) -> tuple[list[str], list[str]]:
+    """Config-first wrapper around :func:`_create_lagged_component_names`."""
+    config = _resolve_public_config(
+        config, target_series, past_covariates, future_covariates
+    )
+    return _create_lagged_component_names(
+        target_series=target_series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        lags=_config_lags(config, "target"),
+        lags_past_covariates=_config_lags(config, "past"),
+        lags_future_covariates=_config_lags(config, "future"),
+        output_chunk_length=config.output_chunk_length,
+        concatenate=concatenate,
+        use_static_covariates=use_static_covariates,
+    )
+
+
 def _create_lagged_training_data(
     target_series: TimeSeriesLike,
     output_chunk_length: int,

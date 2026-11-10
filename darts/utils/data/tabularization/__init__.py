@@ -1,40 +1,41 @@
 """
-Tabularization internals for SKLearnModel
------------------------------------------
+Tabularization API
+------------------
 
-Internal helpers that convert time series data into tabular format with lagged
-features. This package is not part of the public API; every exported name is
-private and may change without notice.
+Helpers that convert time series data into tabular format with lagged features. The public helpers
+consume a :class:`ForecastConfig` and resolve it against the components of the series they receive.
 """
 
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
-    _add_static_covariates_to_lagged_data,
-    _create_lagged_component_names,
-    _create_lagged_data,
-    _create_lagged_data_autoregression,
-    _create_lagged_data_from_config,
-    _create_lagged_prediction_data,
-    _create_lagged_training_data,
-    _extend_time_index,
-    _get_feature_times,
-    _get_shared_times,
-    _get_shared_times_bounds,
-    _resolve_autoregression_lags,
-    _strided_moving_window,
+    _add_static_covariates_to_lagged_data as add_static_covariates_to_lagged_data,
 )
+from darts.utils.data.tabularization.tabularization import (
+    _get_shared_times as get_shared_times,
+)
+from darts.utils.data.tabularization.tabularization import (
+    _get_shared_times_bounds as get_shared_times_bounds,
+)
+from darts.utils.data.tabularization.tabularization import (
+    _strided_moving_window as strided_moving_window,
+)
+from darts.utils.data.tabularization.tabularization import (
+    create_lagged_component_names,
+    create_lagged_data,
+    create_lagged_prediction_data,
+    create_lagged_training_data,
+)
+from darts.utils.forecast_config import ForecastConfig
 
 __all__ = [
-    "_add_static_covariates_to_lagged_data",
-    "_create_lagged_component_names",
-    "_create_lagged_data",
-    "_create_lagged_data_autoregression",
-    "_create_lagged_data_from_config",
-    "_create_lagged_prediction_data",
-    "_create_lagged_training_data",
-    "_extend_time_index",
-    "_get_feature_times",
-    "_get_shared_times",
-    "_get_shared_times_bounds",
-    "_resolve_autoregression_lags",
-    "_strided_moving_window",
+    "ForecastConfig",
+    "LaggedFeatures",
+    "add_static_covariates_to_lagged_data",
+    "create_lagged_component_names",
+    "create_lagged_data",
+    "create_lagged_prediction_data",
+    "create_lagged_training_data",
+    "get_shared_times",
+    "get_shared_times_bounds",
+    "strided_moving_window",
 ]

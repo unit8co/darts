@@ -15,10 +15,7 @@ from darts.explainability.shap_adapters.shap_adapter import (
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
-from darts.utils.data.tabularization.tabularization import (
-    _config_lags,
-    _create_lagged_prediction_data,
-)
+from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.multioutput import MultiOutputMixin
 
 logger = get_logger(__name__)
@@ -164,20 +161,12 @@ class SKLearnShapAdapter(ShapAdapter):
         input_type: str = "background",
     ) -> tuple[np.ndarray, pd.Index]:
         config = self.model._config
-        lags_list = _config_lags(config, "target")
-        lags_past_covariates_list = _config_lags(config, "past")
-        lags_future_covariates_list = _config_lags(config, "future")
-
-        X, indexes = _create_lagged_prediction_data(
-            target_series=series if lags_list else None,
-            past_covariates=past_covariates if lags_past_covariates_list else None,
+        X, indexes = create_lagged_prediction_data(
+            config,
+            target_series=series if config.has_lags("target") else None,
+            past_covariates=(past_covariates if config.has_lags("past") else None),
             future_covariates=(
-                future_covariates if lags_future_covariates_list else None
-            ),
-            lags=lags_list,
-            lags_past_covariates=lags_past_covariates_list if past_covariates else None,
-            lags_future_covariates=(
-                lags_future_covariates_list if future_covariates else None
+                future_covariates if config.has_lags("future") else None
             ),
             uses_static_covariates=self.model.uses_static_covariates,
             last_static_covariates_shape=self.model._static_covariates_shape,
