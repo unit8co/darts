@@ -46,6 +46,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed `ForecastingModel.historical_forecasts()` with `retrain=True` mutating caller-provided `Pipeline` instances under `data_transformers`. [#3312](https://github.com/unit8co/darts/pull/3312) by [Pallav Biyala](https://github.com/Pallav-Biyala).
 - Fixed `darts.logging.SuppressStdoutStderr` (used to suppress `Prophet` fit output) permanently redirecting the process-level stdout and stderr to `devnull` when contexts were used at the same time, and crashing in interpreters without usable standard streams (e.g. `pythonw` on Windows). [#3290](https://github.com/unit8co/darts/pull/3290) by [Manas Choksi](https://github.com/choksi2212).
 - Fixed some typos and docstrings for data transformers. [#3330](https://github.com/unit8co/darts/pull/3330) by [GolemCode](https://github.com/GolemCode).
+- Fixed an issue where `RegressionEnsembleModel` failed with `regression_train_samples_reduction` set to a quantile when `forecasting_models` contained deterministic models. [#3356](https://github.com/unit8co/darts/pull/PR_NUMBER) by [Parth Kale](https://github.com/parthkale275).
 
 **Dependencies**
 
