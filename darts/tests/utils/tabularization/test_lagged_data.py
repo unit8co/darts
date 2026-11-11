@@ -3,12 +3,14 @@ import pandas as pd
 import pytest
 
 from darts import TimeSeries
-from darts.utils.data.tabularization import create_lagged_training_data
+from darts.utils.data.tabularization import (
+    ForecastConfig,
+    create_lagged_training_data,
+)
 from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_data_autoregression,
 )
-from darts.utils.forecast_config import ForecastConfig
 
 
 def make_series(static: bool = False):

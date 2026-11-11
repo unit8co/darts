@@ -20,7 +20,7 @@ from darts.utils.data.tabularization.lags import (
     Lags,
     LagsKind,
 )
-from darts.utils.output_chunk import (
+from darts.utils.data.tabularization.output_chunk import (
     DirectOutputStrategy,
     OutputChunkStrategy,
     RecursiveOutputStrategy,

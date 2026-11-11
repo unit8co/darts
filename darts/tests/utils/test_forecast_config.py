@@ -1,7 +1,7 @@
 import pytest
 
-from darts.utils.forecast_config import ForecastConfig
-from darts.utils.output_chunk import (
+from darts.utils.data.tabularization.forecast_config import ForecastConfig
+from darts.utils.data.tabularization.output_chunk import (
     DirectOutputStrategy,
     RecursiveOutputStrategy,
 )

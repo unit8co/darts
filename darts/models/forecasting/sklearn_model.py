@@ -71,13 +71,13 @@ from darts.logging import get_logger, raise_deprecation_warning, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.data.tabularization.features import LaggedFeatures
+from darts.utils.data.tabularization.forecast_config import ForecastConfig
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_data_autoregression,
     _resolve_autoregression_lags,
     create_lagged_component_names,
     create_lagged_data,
 )
-from darts.utils.forecast_config import ForecastConfig
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
     _optimized_historical_forecasts_regression,

@@ -7,6 +7,7 @@ consume a :class:`ForecastConfig` and resolve it against the components of the s
 """
 
 from darts.utils.data.tabularization.features import LaggedFeatures
+from darts.utils.data.tabularization.forecast_config import ForecastConfig
 from darts.utils.data.tabularization.tabularization import (
     _add_static_covariates_to_lagged_data as add_static_covariates_to_lagged_data,
 )
@@ -25,7 +26,6 @@ from darts.utils.data.tabularization.tabularization import (
     create_lagged_prediction_data,
     create_lagged_training_data,
 )
-from darts.utils.forecast_config import ForecastConfig
 
 __all__ = [
     "ForecastConfig",

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from darts.utils.output_chunk import (
+from darts.utils.data.tabularization.output_chunk import (
     DirectOutputStrategy,
     RecursiveOutputStrategy,
 )

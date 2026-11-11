@@ -22,9 +22,11 @@ from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data import TorchInferenceBatch
-from darts.utils.data.tabularization import create_lagged_component_names
+from darts.utils.data.tabularization import (
+    ForecastConfig,
+    create_lagged_component_names,
+)
 from darts.utils.data.torch_datasets.utils import TorchInferenceSample
-from darts.utils.forecast_config import ForecastConfig
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
     _create_dataset_bounds,
 )

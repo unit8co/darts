@@ -26,8 +26,8 @@ from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between
 
 if TYPE_CHECKING:
+    from darts.utils.data.tabularization.forecast_config import ForecastConfig
     from darts.utils.data.tabularization.lags import Lags
-    from darts.utils.forecast_config import ForecastConfig
 
 NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
 STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
