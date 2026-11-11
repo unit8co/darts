@@ -2,8 +2,10 @@
 Data Tabularization Methods
 ---------------------------
 
-Internal tabularization methods to convert time series data into tabular format for usage with
-SKLearn-like models. This module is not part of the public Darts API.
+Tabularization methods to convert time series data into tabular format for usage with
+SKLearn-like models. The config-first helpers (``create_lagged_*``) are public and exported from
+``darts.utils.data.tabularization``; ``add_static_covariates_to_lagged_data`` and the
+time-window utilities keep their existing signatures. The remaining helpers are internal.
 """
 
 import warnings
@@ -436,7 +438,7 @@ def _add_static_covariates_to_lagged_data(
     last_shape: tuple[int, int] | None = None,
 ) -> LaggedFeatures | np.ndarray | Sequence[LaggedFeatures | np.ndarray]:
     """
-    Add static covariates to the features' table for SKLearnModels.
+    Add static covariates to the lagged features for SKLearnModels.
     If `uses_static_covariates=True`, all target series used in `fit()` and `predict()` must have static
     covariates with identical dimensionality. Otherwise, will not consider static covariates.
 
@@ -452,9 +454,10 @@ def _add_static_covariates_to_lagged_data(
     Parameters
     ----------
     features
-        The features' numpy array(s) to which the static covariates will be added. Can either be a lone feature
-        matrix or a `Sequence` of feature matrices; in the latter case, static covariates will be appended to
-        each feature matrix in this `Sequence`.
+        The :class:`LaggedFeatures` container(s) or feature matrix/matrices to which the static
+        covariates will be added. Can either be a lone container, a lone ``np.ndarray``, or a
+        `Sequence` of them; in the latter case, static covariates will be appended to each feature
+        matrix in this `Sequence`. The type of the input is preserved in the output.
     target_series
         The target series from which to read the static covariates.
     uses_static_covariates
@@ -467,9 +470,10 @@ def _add_static_covariates_to_lagged_data(
     Returns
     -------
     (features, last_shape)
-        The features' array(s) with appended static covariates columns. If the `features` input was passed as a
-        `Sequence` of `np.array`s, then a `Sequence` is also returned; if `features` was passed as an `np.array`,
-        a `np.array` is returned.
+        The features with appended static covariates columns. The type of the input is preserved:
+        a :class:`LaggedFeatures` input returns a :class:`LaggedFeatures`, an ``np.ndarray`` input
+        returns an ``np.ndarray``, and a `Sequence` input returns a `Sequence` of the same
+        element type.
         `last_shape` is the shape of the static covariates.
 
     """

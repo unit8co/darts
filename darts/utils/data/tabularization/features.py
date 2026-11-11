@@ -2,10 +2,11 @@
 Lagged feature containers.
 --------------------------
 
-Internal container that represents the lagged features matrix together with its forecast-horizon
+Container that represents the lagged features matrix together with its forecast-horizon
 metadata. It is independent from the lag semantics and from the tabularization code, so the model
 and the multi-output wrapper can consume it without branching on the container type.
-This module is not part of the public Darts API.
+
+``LaggedFeatures`` is part of the public tabularization API.
 """
 
 from __future__ import annotations

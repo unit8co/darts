@@ -2,11 +2,12 @@
 Forecast configuration.
 -----------------------
 
-Internal high-level configuration shared by the tabularization, model and historical-forecast
-layers. It owns the parsed lags and the output-chunk strategy, and resolves the lags in place
-against the components of the actual series.
+Configuration shared by the tabularization, model and historical-forecast layers. It owns the
+parsed lags and the output-chunk strategy, and resolves the lags in place against the components
+of the actual series.
 
-This module is not part of the public Darts API.
+Build it directly with the same arguments as ``SKLearnModel``. ``ForecastConfig`` is part of the
+public tabularization API.
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ from darts.utils.data.tabularization.output_chunk import (
 
 @dataclass(init=False)
 class ForecastConfig:
-    """Internal configuration of a tabularized forecasting model.
+    """Configuration of a tabularized forecasting model.
 
     Build it directly with the same arguments as ``SKLearnModel``. Call :meth:`resolve` once the
     components of the actual series are known; the lags are resolved in place.
