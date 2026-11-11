@@ -79,6 +79,20 @@ class LaggedFeatures:
                 )
             self.output_horizons = output_horizons
 
+    @classmethod
+    def _from_array(
+        cls,
+        array: np.ndarray,
+        n_horizons: int,
+        output_horizons: np.ndarray | None = None,
+    ) -> LaggedFeatures:
+        """Internal fast path for already validated arrays and metadata."""
+        obj = object.__new__(cls)
+        obj.array = array
+        obj.n_horizons = n_horizons
+        obj.output_horizons = output_horizons
+        return obj
+
     @property
     def shape(self) -> tuple[int, ...]:
         return self.array.shape

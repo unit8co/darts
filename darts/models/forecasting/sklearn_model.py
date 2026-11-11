@@ -1280,7 +1280,7 @@ class SKLearnModel(GlobalForecastingModel):
 
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
-        return prediction.reshape(k, self._config.strategy.pred_dim, -1)
+        return prediction.reshape(k, self.pred_dim, -1)
 
     @property
     def lagged_feature_names(self) -> list[str] | None:

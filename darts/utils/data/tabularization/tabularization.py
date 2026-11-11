@@ -1220,8 +1220,12 @@ def _create_lagged_data_autoregression(
         # concatenate retrieved lags
         X = np.concatenate(X, axis=0)
 
-    n_components = series2seq(target_series)[0].width
-    return LaggedFeatures(
+    n_components = (
+        target_series.width
+        if isinstance(target_series, TimeSeries)
+        else target_series[0].width
+    )
+    return LaggedFeatures._from_array(
         array=X,
         n_horizons=config.strategy.pred_dim,
         output_horizons=config.strategy.output_horizons(n_components),

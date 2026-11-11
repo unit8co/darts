@@ -46,6 +46,7 @@ class OutputChunkStrategy(ABC):
                 ),
             )
         self.output_chunk_length = output_chunk_length
+        self._output_horizons_cache: dict[int, np.ndarray] = {}
 
     def n_outputs(self, n_components: int) -> int:
         """Number of estimator outputs for ``n_components`` target components."""
@@ -58,11 +59,16 @@ class OutputChunkStrategy(ABC):
 
     def output_horizons(self, n_components: int) -> np.ndarray:
         """The forecast horizon of every estimator output."""
-        self._validate_n_components(n_components)
-        n_outputs = self.n_outputs(n_components)
-        if self.name == "recursive":
-            return np.zeros(n_outputs, dtype=int)
-        return np.repeat(np.arange(self.pred_dim), n_components)
+        cached = self._output_horizons_cache.get(n_components)
+        if cached is None:
+            n_outputs = self.n_outputs(n_components)
+            if self.name == "recursive":
+                cached = np.zeros(n_outputs, dtype=int)
+            else:
+                cached = np.repeat(np.arange(self.pred_dim), n_components)
+            cached.setflags(write=False)
+            self._output_horizons_cache[n_components] = cached
+        return cached
 
     @abstractmethod
     def requires_wrapper(
