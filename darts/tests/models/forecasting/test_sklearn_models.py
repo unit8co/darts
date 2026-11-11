@@ -1185,6 +1185,38 @@ class TestSKLearnModels:
         )
         assert len(model_instance.lags.get("past")) == 3
 
+    def test_fit_rejects_cancelling_component_mismatches(self):
+        series = [self.sine_univariate1[:30], self.sine_univariate1[:30]]
+        past_covariates = [
+            self.sine_univariate1[:30],
+            self.sine_multivariate1[:30],
+        ]
+        future_covariates = [
+            self.sine_multivariate1[:30],
+            self.sine_univariate1[:30],
+        ]
+        model = LinearRegressionModel(
+            lags=2,
+            lags_past_covariates=2,
+            lags_future_covariates=[0, 1],
+        )
+
+        with pytest.raises(ValueError) as err:
+            model.fit(
+                series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+
+        assert (
+            "Expected 1 components but received 2 components at index 1 of "
+            "`past_covariates`."
+        ) in str(err.value)
+        assert (
+            "Expected 2 components but received 1 components at index 1 of "
+            "`future_covariates`."
+        ) in str(err.value)
+
     def helper_test_models_accuracy(
         self,
         series,
