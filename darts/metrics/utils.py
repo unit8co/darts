@@ -631,6 +631,14 @@ def _get_values_or_raise(
                 actual_series, copy=make_copy
             )
 
+        if intersect and (len(vals_actual_common) == 0 or len(vals_pred_common) == 0):
+            raise_log(
+                ValueError(
+                    "The `actual_series` and `pred_series` must have at least "
+                    "one overlapping time step."
+                ),
+            )
+
         vals_b = _get_values(
             vals=vals_pred_common,
             vals_components=pred_series.components,

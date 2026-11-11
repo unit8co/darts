@@ -2878,6 +2878,28 @@ def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):
         slice_intersect([series, seriesF])
 
 
+@pytest.mark.parametrize(
+    "index_a,index_b",
+    [
+        (
+            pd.RangeIndex(start=0, stop=8, step=2),
+            pd.RangeIndex(start=1, stop=9, step=2),
+        ),
+        (
+            pd.date_range("2024-01-01", periods=4, freq="D"),
+            pd.date_range("2024-01-01 12:00", periods=4, freq="D"),
+        ),
+    ],
+)
+def test_intersect_phase_shifted_same_frequency(index_a, index_b):
+    series_a = TimeSeries.from_times_and_values(index_a, np.arange(4.0))
+    series_b = TimeSeries.from_times_and_values(index_b, np.arange(10.0, 14.0))
+
+    assert len(series_a.slice_intersect(series_b)) == 0
+    assert len(series_a.slice_intersect_values(series_b)) == 0
+    assert len(series_a.slice_intersect_times(series_b)) == 0
+
+
 def helper_test_shift(test_series: TimeSeries):
     seriesA = test_series.shift(0)
     assert seriesA == test_series

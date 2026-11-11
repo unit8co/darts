@@ -2743,8 +2743,10 @@ class TimeSeries:
         if other.has_same_time_as(self):
             return self.copy()
         elif other.freq == self.freq and len(self) and len(other):
-            start, end = self._slice_intersect_bounds(other)
-            return self[start:end]
+            if self._can_use_slice_intersect_bounds(other):
+                start, end = self._slice_intersect_bounds(other)
+                return self[start:end]
+            return self[:0]
         else:
             time_index = self.time_index.intersection(other.time_index)
             # frequency is lost when len(time_index) < 3
@@ -2778,8 +2780,10 @@ class TimeSeries:
         if other.has_same_time_as(self):
             return vals
         if other.freq == self.freq:
-            start, end = self._slice_intersect_bounds(other)
-            return vals[start:end]
+            if self._can_use_slice_intersect_bounds(other):
+                start, end = self._slice_intersect_bounds(other)
+                return vals[start:end]
+            return vals[:0]
         else:
             return vals[self._time_index.isin(other._time_index)]
 
@@ -2806,10 +2810,23 @@ class TimeSeries:
         if other.has_same_time_as(self):
             return time_index
         if other.freq == self.freq:
-            start, end = self._slice_intersect_bounds(other)
-            return time_index[start:end]
+            if self._can_use_slice_intersect_bounds(other):
+                start, end = self._slice_intersect_bounds(other)
+                return time_index[start:end]
+            return time_index[:0]
         else:
             return time_index[time_index.isin(other._time_index)]
+
+    def _can_use_slice_intersect_bounds(self, other: Self) -> bool:
+        """Whether two regular time indexes share a grid and can use bounds slicing."""
+        if not len(self) or not len(other) or other.freq != self.freq:
+            return False
+        self_start, other_start = self.start_time(), other.start_time()
+        return (
+            other_start in self._time_index
+            if self_start <= other_start
+            else self_start in other._time_index
+        )
 
     def _slice_intersect_bounds(self, other: Self) -> tuple[int, int]:
         """Find the start (absolute index) and end (index relative to the end) indices that represent the time
