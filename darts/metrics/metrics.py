@@ -2852,6 +2852,7 @@ def dtw_metric(
         METRIC_OUTPUT_TYPE,
     ] = mae,
     *,
+    q: float | list[float] | tuple[np.ndarray, pd.Index] | None = None,
     component_reduction: Callable[[np.ndarray], float] | None = np.nanmean,
     series_reduction: Callable[[np.ndarray], float | np.ndarray] | None = None,
     n_jobs: int = 1,
@@ -2875,6 +2876,9 @@ def dtw_metric(
         The (sequence of) predicted series.
     metric
         The selected metric with signature '[[TimeSeries, TimeSeries], float]' to use. Default: `mae`.
+        The metric must support the `q` parameter.
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
     component_reduction
         Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
         of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
@@ -2922,6 +2926,7 @@ def dtw_metric(
     return _get_wrapped_metric(metric)(
         warped_actual_series,
         warped_pred_series,
+        q=q,
     )
 
 
