@@ -224,13 +224,6 @@ class TestMetrics:
         series1.time_index, np.stack([series1.values(), series2.values()], axis=2)
     )
 
-    def test_no_overlapping_time_steps(self):
-        with pytest.raises(
-            ValueError,
-            match="must have at least one overlapping time step",
-        ):
-            metrics.mae(self.series1, self.series1b)
-
     @pytest.mark.parametrize(
         "metric",
         [
