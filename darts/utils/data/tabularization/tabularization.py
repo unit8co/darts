@@ -119,9 +119,6 @@ def _create_lagged_data_core(
 
     # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
     lags_extract, lags_order = _get_lagged_indices(config)
-    # the feature matrix is shared by all horizons with `multi_models=True`; with
-    # `multi_models=False` the estimator predicts the last step of the output chunk
-    n_horizons = config.strategy.pred_dim
 
     X, y, times, sample_weights = [], [], [], []
     for i in range(max(seq_ts_lens)):
@@ -167,12 +164,6 @@ def _create_lagged_data_core(
                 stride=stride,
                 show_warnings=show_warnings,
             )
-        n_components = target_i.width if target_i is not None else 1
-        X_i = LaggedFeatures(
-            array=X_i,
-            n_horizons=n_horizons,
-            output_horizons=config.strategy.output_horizons(n_components),
-        )
         X_i, last_static_covariates_shape = _add_static_covariates_to_lagged_data(
             features=X_i,
             target_series=target_i,
@@ -186,7 +177,7 @@ def _create_lagged_data_core(
             sample_weights.append(weights_i)
 
     if concatenate:
-        X = LaggedFeatures.concatenate(X)
+        X = np.concatenate(X, axis=0)
     if not is_training:
         y = None
     elif concatenate:
@@ -554,8 +545,14 @@ def create_lagged_data(
         stride=stride,
         show_warnings=show_warnings,
     )
+    # only the public helpers wrap the features; the model works with the plain arrays
+    X = (
+        LaggedFeatures(data.X)
+        if concatenate
+        else [LaggedFeatures(X_i) for X_i in data.X]
+    )
     return (
-        data.X,
+        X,
         data.y,
         data.times,
         data.last_static_covariates_shape,
@@ -1027,11 +1024,8 @@ def _add_static_covariates_to_lagged_data(
             # flatten static covariates along columns -> results in [scov0_comp0, scov0_comp1, scov1_comp0, ...]
             static_covs = ts.static_covariates.values.flatten(order="F")
             feature = features[idx]
-            feature_array = (
-                feature.array
-                if isinstance(feature, LaggedFeatures)
-                else np.asarray(feature)
-            )
+            is_container = isinstance(feature, LaggedFeatures)
+            feature_array = feature.to_numpy() if is_container else feature
             # we stack the static covariates to the right of lagged features
             # the broadcasting repeats the static covariates along axis=0 to match the number of feature rows
             shape_out = (
@@ -1044,8 +1038,8 @@ def _add_static_covariates_to_lagged_data(
                 np.broadcast_to(static_covs, shape_out[:2]).reshape(shape_out),
             ])
             features[idx] = (
-                feature.with_base(feature_with_static)
-                if isinstance(feature, LaggedFeatures)
+                LaggedFeatures(feature_with_static)
+                if is_container
                 else feature_with_static
             )
 
@@ -1589,12 +1583,9 @@ def _create_lagged_data_autoregression(
         dict[str, np.ndarray],
     ]
     | None = None,
-) -> LaggedFeatures:
+) -> np.ndarray:
     """Extract lagged data from target, past covariates and future covariates for auto-regression
     with SKLearnModels.
-
-    The features are returned as a :class:`LaggedFeatures` container so call sites do not depend
-    on the concrete feature representation.
     """
     series_length = len(target_series)
     shift = config.strategy.feature_lag_offset
@@ -1658,16 +1649,7 @@ def _create_lagged_data_autoregression(
         # concatenate retrieved lags
         X = np.concatenate(X, axis=0)
 
-    n_components = (
-        target_series.width
-        if isinstance(target_series, TimeSeries)
-        else target_series[0].width
-    )
-    return LaggedFeatures._from_array(
-        array=X,
-        n_horizons=config.strategy.pred_dim,
-        output_horizons=config.strategy.output_horizons(n_components),
-    )
+    return X
 
 
 def _extract_component_lags_autoregression(

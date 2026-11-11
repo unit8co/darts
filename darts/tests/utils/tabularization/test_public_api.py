@@ -31,14 +31,12 @@ def test_create_lagged_data_returns_lagged_features():
     )
 
     assert isinstance(X, LaggedFeatures)
-    assert X.n_horizons == 4
-    assert X.output_horizons is not None
-    assert len(X.output_horizons) == 4
+    assert isinstance(X.to_numpy(), np.ndarray)
     assert isinstance(y, np.ndarray)
     assert len(times) == 1
     assert last_shape is None
     assert weights is None
-    np.testing.assert_array_equal(X.array[0, :, 0], target.values()[:3, 0])
+    np.testing.assert_array_equal(X.to_numpy()[0, :, 0], target.values()[:3, 0])
 
 
 def test_create_lagged_training_data_wrapper():
@@ -59,7 +57,6 @@ def test_create_lagged_training_data_wrapper():
     )
 
     assert isinstance(X, LaggedFeatures)
-    assert X.n_horizons == 3
     assert X.shape[0] == len(y) == len(times[0])
 
 
@@ -74,7 +71,6 @@ def test_create_lagged_prediction_data_wrapper():
     )
 
     assert isinstance(X, LaggedFeatures)
-    assert X.n_horizons == 1
     assert len(times) == 1
 
 
@@ -123,7 +119,6 @@ def test_component_specific_and_sequence_outputs():
     assert len(X) == 1
     assert isinstance(X[0], LaggedFeatures)
     assert X[0].shape[1] == 3
-    assert len(X[0].output_horizons) == 4
 
     # the helper resolves a copy; the caller's config stays unresolved
     with pytest.raises(ValueError, match="have not been resolved yet"):
@@ -186,7 +181,7 @@ def test_static_covariates_preserve_container():
 
     assert isinstance(X, LaggedFeatures)
     assert last_shape == (1, 1)
-    assert np.all(X.array[:, -1, 0] == 5.0)
+    assert np.all(X.to_numpy()[:, -1, 0] == 5.0)
 
 
 def test_target_lags_require_target_series():

@@ -179,7 +179,7 @@ class SKLearnShapAdapter(ShapAdapter):
         )
         indexes = data.times
         # Remove sample axis:
-        X = data.X.to_numpy()[:, :, 0]
+        X = data.X[:, :, 0]
 
         if input_type == "background" and len(X) <= MIN_BACKGROUND_SAMPLE:
             raise_log(

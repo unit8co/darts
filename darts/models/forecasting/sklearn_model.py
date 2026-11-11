@@ -70,7 +70,6 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_deprecation_warning, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.typing import TimeSeriesLike, TimeStamp
-from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.forecast_config import ForecastConfig
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_component_names,
@@ -644,12 +643,12 @@ class SKLearnModel(GlobalForecastingModel):
                             f"{ts[i].width} components at index {i} of `{arg_name}`."
                         )
                 raise_log(ValueError("\n".join(shape_error_msg)))
-            features[i] = X_i.select_samples(0)
+            features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
             if sample_weights is not None:
                 sample_weights[i] = sample_weights[i][:, :, 0]
 
-        features = LaggedFeatures.concatenate(features)
+        features = np.concatenate(features, axis=0)
         labels = np.concatenate(labels, axis=0)
         if sample_weights is not None:
             sample_weights = np.concatenate(sample_weights, axis=0)
@@ -665,11 +664,6 @@ class SKLearnModel(GlobalForecastingModel):
             sample_weights = sample_weights.ravel()
 
         features, labels = self._format_samples(features, labels)
-        if isinstance(features, LaggedFeatures) and not isinstance(
-            self.model, MultiOutputMixin
-        ):
-            # the wrapper routes the container per output; native estimators need the array
-            features = features.to_numpy()
 
         return features, labels, sample_weights
 
@@ -680,11 +674,6 @@ class SKLearnModel(GlobalForecastingModel):
         Subclasses can override this method to format the samples and labels before fit and predict.
         """
         return samples, labels
-
-    @staticmethod
-    def _samples_array(samples):
-        """Return the raw array for formatting while preserving the feature container elsewhere."""
-        return samples.array if isinstance(samples, LaggedFeatures) else samples
 
     def _fit_model(
         self,
@@ -908,6 +897,7 @@ class SKLearnModel(GlobalForecastingModel):
                 "eval_weight_name": val_weight_name,
                 "n_jobs": n_jobs_multioutput_wrapper,
             }
+            mor_kwargs["output_chunk_length"] = self.output_chunk_length
 
             self.model = get_multioutput_estimator_cls(self._model_type)(
                 estimator=self.model, **mor_kwargs
@@ -1262,11 +1252,6 @@ class SKLearnModel(GlobalForecastingModel):
         or the predicted distribution parameters directly.
         """
         x, _ = self._format_samples(x)
-        if isinstance(x, LaggedFeatures) and not isinstance(
-            self.model, MultiOutputMixin
-        ):
-            # the wrapper materializes features per output; the native path needs the array
-            x = x.to_numpy()
         if self.likelihood is not None:
             return self.likelihood.predict(
                 model=self,
@@ -1738,7 +1723,6 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         Validate and format the categorical columns listed in self._categorical_indices accordingly to the model's
         requirements.
         """
-        samples = self._samples_array(samples)
         if len(self._categorical_indices) != 0:
             self._validate_categorical_components(samples)
         return samples, labels

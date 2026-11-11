@@ -15,8 +15,6 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from darts.utils.data.tabularization.features import LaggedFeatures
-
 __all__ = ["LaggedData"]
 
 
@@ -24,12 +22,12 @@ __all__ = ["LaggedData"]
 class LaggedData:
     """Tabularized features, labels and their metadata.
 
-    ``X`` is a lagged-features container (or a sequence of them when
-    ``concatenate=False``). ``y`` is ``None`` for prediction data. The remaining
-    fields mirror the values returned by the historical positional API.
+    ``X`` is the feature matrix (or a sequence of them when ``concatenate=False``).
+    ``y`` is ``None`` for prediction data. The remaining fields mirror the values
+    returned by the historical positional API.
     """
 
-    X: LaggedFeatures | Sequence[LaggedFeatures]
+    X: np.ndarray | Sequence[np.ndarray]
     y: np.ndarray | Sequence[np.ndarray] | None
     times: Sequence[pd.Index]
     sample_weights: np.ndarray | Sequence[np.ndarray] | None = None

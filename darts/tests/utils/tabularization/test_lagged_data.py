@@ -8,7 +8,6 @@ from darts.utils.data.tabularization import (
     create_lagged_component_names,
     create_lagged_training_data,
 )
-from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_data_autoregression,
 )
@@ -40,7 +39,7 @@ def make_series(static: bool = False):
 
 
 @pytest.mark.parametrize("multi_models,shift", [(True, 0), (False, 1)])
-def test_autoregression_returns_lagged_features(multi_models, shift):
+def test_autoregression_returns_the_feature_array(multi_models, shift):
     n = 12
     values = np.arange(n, dtype=float).reshape(n, 1)
     target = TimeSeries.from_values(values)
@@ -60,16 +59,11 @@ def test_autoregression_returns_lagged_features(multi_models, shift):
     )
 
     expected = np.array([[values[lag - shift, 0] for lag in [-3, -2, -1]]])
-    assert isinstance(actual, LaggedFeatures)
-    assert actual.shape == (1, 3)
-    assert actual.n_horizons == resolved.strategy.pred_dim
-    assert actual.n_horizons == (2 if multi_models else 1)
-    np.testing.assert_array_equal(actual.to_numpy(), expected)
-    assert actual.for_horizon(0) is actual.array
-    np.testing.assert_array_equal(actual.for_horizon(0), expected)
+    assert isinstance(actual, np.ndarray)
+    np.testing.assert_array_equal(actual, expected)
 
 
-def test_autoregression_component_specific_returns_lagged_features():
+def test_autoregression_component_specific_lags():
     n = 12
     values = np.stack([np.arange(n), np.arange(n) * 10], axis=1)
     target = TimeSeries.from_values(values, columns=["a", "b"])
@@ -96,12 +90,10 @@ def test_autoregression_component_specific_returns_lagged_features():
             values[-1, 0],
         ]
     ])
-    assert isinstance(actual, LaggedFeatures)
-    assert actual.shape == (1, 3)
-    np.testing.assert_array_equal(actual.to_numpy(), expected)
+    np.testing.assert_array_equal(actual, expected)
 
 
-def test_autoregression_adds_static_covariates_and_keeps_container():
+def test_autoregression_adds_static_covariates():
     target, _, _ = make_series(static=True)
     config = ForecastConfig(lags=3, output_chunk_length=2)
     resolved = config.resolve(target_components=target.components)
@@ -118,11 +110,9 @@ def test_autoregression_adds_static_covariates_and_keeps_container():
         num_samples=1,
     )
 
-    assert isinstance(actual, LaggedFeatures)
-    assert actual.n_horizons == 2
     assert actual.shape == (1, 2 * 3 + 2)
-    np.testing.assert_array_equal(actual.array[:, -2], np.zeros(1))
-    np.testing.assert_array_equal(actual.array[:, -1], np.ones(1))
+    np.testing.assert_array_equal(actual[:, -2], np.zeros(1))
+    np.testing.assert_array_equal(actual[:, -1], np.ones(1))
 
 
 def test_from_config_expands_default_lags():

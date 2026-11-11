@@ -193,7 +193,7 @@ def _optimized_historical_forecasts_regression(
         )
 
         # -> (n_forecasts, n_lags)
-        X = data.X[0].select_samples(0)
+        X = data.X[0][:, :, 0]
 
         # get forecast iterations and their forecast end times
         if not is_auto_regression:
@@ -228,11 +228,11 @@ def _optimized_historical_forecasts_regression(
             # -> (n_forecasts, n_lags)
             start_idx = pred_idx * n_output_steps - roll_shift
             end_idx = min(-(forecast_horizon - t_pred), 0) or None
-            current_X = X.with_base(X.array[start_idx:end_idx:stride_tabularization])
+            current_X = X[start_idx:end_idx:stride_tabularization]
 
             # generate `num_samples` examples for probabilistic predictions
             # -> (n_forecasts * n_samples, n_lags)
-            current_X = current_X.repeat(num_samples, axis=0)
+            current_X = np.repeat(current_X, num_samples, axis=0)
 
             if pred_idx > 0:
                 # auto-regression requires updating current X with previous predictions;
@@ -263,8 +263,8 @@ def _optimized_historical_forecasts_regression(
                             take_y_indices.append(y_pos)
 
                     # update X with matched predictions (move around axes for correct reshaping
-                    # of samples); the base array holds the target columns
-                    current_X.array[:, update_x_indices] = np.moveaxis(
+                    # of samples)
+                    current_X[:, update_x_indices] = np.moveaxis(
                         predictions[:, take_y_indices, comp_idx], 1, -1
                     ).reshape(len(current_X), -1)
 
