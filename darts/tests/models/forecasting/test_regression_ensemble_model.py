@@ -9,6 +9,7 @@ from sklearn.linear_model import LinearRegression
 from darts import TimeSeries
 from darts.metrics import mape, rmse
 from darts.models import (
+    ExponentialSmoothing,
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
@@ -1170,6 +1171,25 @@ class TestRegressionEnsembleModels:
         # multi-series support
         ensemble_model_median.fit([train, train + 100])
         ensemble_model_mean.predict(len(val), series=train)
+
+    def test_train_samples_reduction_quantile_with_deterministic_models(self):
+        """Quantile reduction of the training samples must leave the predictions of
+        deterministic forecasting models unchanged."""
+        model = RegressionEnsembleModel(
+            forecasting_models=[ExponentialSmoothing(), Theta()],
+            regression_train_n_points=10,
+            regression_train_num_samples=10,
+            regression_train_samples_reduction=0.5,
+        )
+        model.fit(self.ts_sum1)
+        assert model.predict(3).n_samples == 1
+
+        # deterministic predictions are unchanged, stochastic ones are reduced
+        pred_det = Theta().fit(self.ts_sum1).predict(3)
+        pred_stoch = ExponentialSmoothing().fit(self.ts_sum1).predict(3, num_samples=10)
+        reduced = model._predictions_reduction([pred_det, pred_stoch])
+        assert reduced[0] == pred_det
+        assert reduced[1] == pred_stoch.quantile(0.5)
 
     def test_predict_likelihood_parameters_univariate_regression_ensemble(self):
         quantiles = [0.05, 0.5, 0.95]
