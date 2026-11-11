@@ -521,12 +521,6 @@ class SKLearnModel(GlobalForecastingModel):
         else:
             model = self.model
 
-        if not isinstance(model, MultiOutputMixin):
-            logger.warning(
-                "Model supports multi-output; a single estimator forecasts all the horizons and components."
-            )
-            return model
-
         strategy = self._config.strategy
         if not 0 <= horizon < strategy.output_chunk_length:
             raise_log(
@@ -540,6 +534,12 @@ class SKLearnModel(GlobalForecastingModel):
                     f"`target_dim` must be `>= 0`, and `< n_target_components={self.input_dim['target']}`."
                 ),
             )
+
+        if not isinstance(model, MultiOutputMixin):
+            logger.warning(
+                "Model supports multi-output; a single estimator forecasts all the horizons and components."
+            )
+            return model
 
         idx_estimator = strategy.estimator_index(
             horizon, target_dim, self.input_dim["target"]
