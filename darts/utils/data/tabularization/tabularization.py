@@ -92,10 +92,22 @@ def _create_lagged_data_core(
         config.is_component_specific(kind) for kind in ("target", "past", "future")
     )
     if (not use_moving_windows) and lags_passed_as_dict:
+        received = []
+        for kind in ("target", "past", "future"):
+            lags_i = config.lags_for(kind)
+            if lags_i is None:
+                received.append(None)
+            elif lags_i.is_component_specific:
+                received.append({
+                    component: list(values)
+                    for component, values in lags_i.component_lags.items()
+                })
+            else:
+                received.append(list(lags_i.shared))
         raise_log(
             ValueError(
                 "`use_moving_windows=False` is not supported when any of the lags is "
-                "provided as a dictionary."
+                f"provided as a dictionary. Received: {received}."
             ),
         )
 
