@@ -987,6 +987,27 @@ class TestShapExplainer:
             comps_out = explanation_results.explained_forecasts[1][comp].columns
             assert all(comps_out == expected_columns)
 
+    def test_explain_does_not_modify_the_fitted_model(self):
+        # explaining a series whose components are in another order must not re-resolve the
+        # component-specific lags of the fitted model
+        model = LinearRegressionModel(
+            lags={"price": [-3, -2], "power": [-1]},
+            output_chunk_length=1,
+        )
+        values = np.random.default_rng(0).normal(size=(60, 2))
+        ts = TimeSeries.from_values(values, columns=["price", "power"])
+        model.fit(ts)
+        expected_lags = list(model._config.resolved_per_component("target").items())
+        expected_pred = model.predict(3, series=ts)
+
+        ShapExplainer(model).explain(foreground_series=ts[["power", "price"]])
+
+        assert (
+            list(model._config.resolved_per_component("target").items())
+            == expected_lags
+        )
+        assert_array_equal(model.predict(3, series=ts).values(), expected_pred.values())
+
     def test_explain_single(self):
         model = LinearRegressionModel(
             lags=4,

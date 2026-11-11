@@ -38,9 +38,7 @@ def test_create_lagged_data_returns_lagged_features():
     assert len(times) == 1
     assert last_shape is None
     assert weights is None
-    assert config.resolved_per_component("target") == {
-        target.components[0]: (-3, -2, -1)
-    }
+    np.testing.assert_array_equal(X.array[0, :, 0], target.values()[:3, 0])
 
 
 def test_create_lagged_training_data_wrapper():
@@ -127,11 +125,50 @@ def test_component_specific_and_sequence_outputs():
     assert X[0].shape[1] == 3
     assert len(X[0].output_horizons) == 4
 
-    # the config can be re-resolved for the same series
-    assert config.resolved_per_component("target") == {
-        target.components[0]: (-2, -1),
-        target.components[1]: (-3,),
-    }
+    # the helper resolves a copy; the caller's config stays unresolved
+    with pytest.raises(ValueError, match="have not been resolved yet"):
+        config.resolved_per_component("target")
+
+
+def _call_public_helper(helper, config, target):
+    kwargs = {"target_series": target}
+    if helper is not create_lagged_component_names:
+        kwargs["uses_static_covariates"] = False
+    return helper(config, **kwargs)
+
+
+@pytest.mark.parametrize(
+    "helper",
+    [
+        create_lagged_data,
+        create_lagged_training_data,
+        create_lagged_prediction_data,
+        create_lagged_component_names,
+    ],
+)
+def test_public_helpers_do_not_modify_the_config(helper):
+    target = linear_timeseries(length=20, column_name="a").stack(
+        linear_timeseries(length=20, start_value=10, column_name="b")
+    )
+    config = ForecastConfig(lags={"a": [-2, -1], "b": [-3]}, output_chunk_length=2)
+
+    # an unresolved config stays unresolved
+    _call_public_helper(helper, config, target)
+    with pytest.raises(ValueError, match="have not been resolved yet"):
+        config.resolved_per_component("target")
+
+    # a resolved config (e.g. the one of a fitted model) keeps its resolution, also with
+    # series whose components are in another order
+    config.resolve(target.components)
+    expected = list(config.resolved_per_component("target").items())
+    reordered = target[["b", "a"]]
+    _call_public_helper(helper, config, reordered)
+    assert list(config.resolved_per_component("target").items()) == expected
+
+    # and a failed resolution leaves it untouched as well
+    with pytest.raises(ValueError, match="not present in the series"):
+        _call_public_helper(helper, config, target["a"])
+    assert list(config.resolved_per_component("target").items()) == expected
 
 
 def test_static_covariates_preserve_container():

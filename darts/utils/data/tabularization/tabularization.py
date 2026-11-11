@@ -8,6 +8,7 @@ SKLearn-like models. The config-first helpers (``create_lagged_*``) are public a
 time-window utilities keep their existing signatures. The remaining helpers are internal.
 """
 
+import copy
 import warnings
 from collections.abc import Sequence
 from functools import reduce
@@ -260,7 +261,10 @@ def _resolve_public_config(
     past_covariates: TimeSeriesLike | None,
     future_covariates: TimeSeriesLike | None,
 ) -> "ForecastConfig":
-    """Resolve a config against the components of the series passed to a public helper."""
+    """Resolve a copy of the config against the components of the series passed to a public helper.
+
+    The caller's config is never modified, so the same config can be reused with other series.
+    """
     target_components = _series_components(target_series)
     if target_components is None:
         if config.has_lags("target"):
@@ -270,7 +274,7 @@ def _resolve_public_config(
                 )
             )
         target_components = ()
-    return config.resolve(
+    return copy.deepcopy(config).resolve(
         target_components=target_components,
         past_components=_series_components(past_covariates),
         future_components=_series_components(future_covariates),
@@ -302,8 +306,9 @@ def create_lagged_data(
 ]:
     """Create lagged features and labels from a :class:`ForecastConfig`.
 
-    The config is resolved against the components of the series before tabularizing. The
-    returned tuple is ``(X, y, times, last_static_covariates_shape, sample_weights)``.
+    A copy of the config is resolved against the components of the series before tabularizing;
+    ``config`` itself is not modified. The returned tuple is
+    ``(X, y, times, last_static_covariates_shape, sample_weights)``.
     """
     config = _resolve_public_config(
         config, target_series, past_covariates, future_covariates

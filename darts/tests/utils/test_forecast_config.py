@@ -223,6 +223,33 @@ class TestResolve:
         assert "`lags` dictionary specifies lags for components" in message
         assert "lags_past_covariates dictionary is missing the lags" in message
 
+    def test_failed_resolution_leaves_the_config_unchanged(self):
+        config = ForecastConfig(
+            lags={"a": [-2], "b": [-1]},
+            lags_past_covariates={"p1": [-1]},
+        )
+        config.resolve(["a", "b"], ["p1"])
+
+        # the target components are valid but the past components are not: nothing is assigned
+        with pytest.raises(ValueError):
+            config.resolve(["b", "a"], ["p2"])
+
+        assert list(config.resolved_per_component("target").items()) == [
+            ("a", (-2,)),
+            ("b", (-1,)),
+        ]
+        assert config.resolved_per_component("past") == {"p1": (-1,)}
+
+    def test_failed_first_resolution_leaves_the_config_unresolved(self):
+        config = ForecastConfig(lags=2, lags_past_covariates={"p1": [-1]})
+
+        with pytest.raises(ValueError):
+            config.resolve(["a"], ["p2"])
+
+        for kind in ("target", "past"):
+            with pytest.raises(ValueError):
+                config.resolved_per_component(kind)
+
     def test_output_chunk_shift_only_applies_to_future_covariates(self):
         config = ForecastConfig(
             lags=2,

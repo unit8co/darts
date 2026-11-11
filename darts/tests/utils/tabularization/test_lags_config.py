@@ -263,12 +263,20 @@ class TestLagsParse:
             "c": (-2,),
         }
 
-    def test_failed_resolution_does_not_keep_stale_state(self):
+    def test_failed_resolution_keeps_the_previous_resolution(self):
         lags = Lags.parse({"a": [-1]}, kind="target")
         lags.resolve(["a"])
 
         with pytest.raises(ValueError):
             lags.resolve(["a", "b"])
+
+        assert lags.resolved_per_component == {"a": (-1,)}
+
+    def test_failed_first_resolution_stays_unresolved(self):
+        lags = Lags.parse({"a": [-1]}, kind="target")
+
+        with pytest.raises(ValueError):
+            lags.resolve(["b"])
 
         with pytest.raises(ValueError):
             lags.resolved_per_component

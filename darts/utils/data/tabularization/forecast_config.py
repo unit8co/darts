@@ -111,13 +111,18 @@ class ForecastConfig:
         past_components: Sequence[str] | None = None,
         future_components: Sequence[str] | None = None,
     ) -> ForecastConfig:
-        """Resolve the lags in place against the components of the series."""
+        """Resolve the lags in place against the components of the series.
+
+        Every variate is validated before anything is assigned: a failed resolution leaves the
+        config unchanged.
+        """
         components = {
             "target": tuple(target_components),
             "past": None if past_components is None else tuple(past_components),
             "future": None if future_components is None else tuple(future_components),
         }
 
+        mappings: list[tuple[Lags, dict[str, tuple[int, ...]]]] = []
         errors: list[str] = []
         for kind, lags in (
             ("target", self.target),
@@ -135,12 +140,14 @@ class ForecastConfig:
                     )
                 )
             try:
-                lags.resolve(kind_components)
+                mappings.append((lags, lags._resolve_mapping(kind_components)))
             except ValueError as exc:
                 errors.append(str(exc))
 
         if errors:
             raise_log(ValueError("\n".join(errors)))
+        for lags, mapping in mappings:
+            lags._resolved = mapping
         return self
 
     @property

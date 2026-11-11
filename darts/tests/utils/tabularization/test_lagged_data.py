@@ -5,6 +5,7 @@ import pytest
 from darts import TimeSeries
 from darts.utils.data.tabularization import (
     ForecastConfig,
+    create_lagged_component_names,
     create_lagged_training_data,
 )
 from darts.utils.data.tabularization.features import LaggedFeatures
@@ -146,15 +147,25 @@ def test_from_config_expands_default_lags():
         concatenate=False,
     )
 
-    assert config.resolved_per_component("target") == {
-        "a": (-3, -1),
-        "b": (-2,),
-    }
-    assert config.resolved_per_component("future") == {
-        "f_a": (0,),
-        "f_b": (-1, 1),
-        "f_c": (2,),
-    }
+    # `default_lags` fill the components without explicit lags (`b`, `p_b` and `f_c`)
+    feature_names, _ = create_lagged_component_names(
+        config,
+        target_series=target,
+        past_covariates=past,
+        future_covariates=future,
+        concatenate=False,
+    )
+    assert feature_names == [
+        "a_target_lag-3",
+        "b_target_lag-2",
+        "a_target_lag-1",
+        "p_a_pastcov_lag-2",
+        "p_b_pastcov_lag-1",
+        "f_b_futcov_lag-1",
+        "f_a_futcov_lag0",
+        "f_b_futcov_lag1",
+        "f_c_futcov_lag2",
+    ]
     assert isinstance(X, list)
     assert X[0].shape[1] == 9
     assert len(y) == 1

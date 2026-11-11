@@ -73,10 +73,10 @@ from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.forecast_config import ForecastConfig
 from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_component_names,
     _create_lagged_data_autoregression,
+    _create_lagged_data_from_config,
     _resolve_autoregression_lags,
-    create_lagged_component_names,
-    create_lagged_data,
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -607,13 +607,8 @@ class SKLearnModel(GlobalForecastingModel):
         stride: int = 1,
         last_static_covariates_shape: tuple[int, int] | None = None,
     ):
-        (
-            features,
-            labels,
-            _,
-            self._static_covariates_shape,
-            sample_weights,
-        ) = create_lagged_data(
+        # the config was resolved once in `fit()`; tabularize with it as is
+        data = _create_lagged_data_from_config(
             self._config,
             target_series=series,
             past_covariates=past_covariates,
@@ -621,10 +616,13 @@ class SKLearnModel(GlobalForecastingModel):
             uses_static_covariates=self.uses_static_covariates,
             last_static_covariates_shape=last_static_covariates_shape,
             max_samples_per_ts=max_samples_per_ts,
+            check_inputs=True,
             concatenate=False,
             sample_weight=sample_weight,
             stride=stride,
         )
+        features, labels, sample_weights = data.X, data.y, data.sample_weights
+        self._static_covariates_shape = data.last_static_covariates_shape
 
         expected_nb_feat = (
             features[0].shape[1]
@@ -756,7 +754,7 @@ class SKLearnModel(GlobalForecastingModel):
 
         # generate and store the lagged components names (for feature importance analysis)
         self._lagged_feature_names, self._lagged_label_names = (
-            create_lagged_component_names(
+            _create_lagged_component_names(
                 self._config,
                 target_series=series,
                 past_covariates=past_covariates,

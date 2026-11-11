@@ -655,12 +655,17 @@ class TestSKLearnModels:
         assert list(training_labels[0]) == [82, 182, 282]
 
         # lags defined using dictionaries
-        # cannot use 'default_lags' because it's converted in `fit()`, before calling `_created_lagged_data`
         model_instance = SKLearnModel(
             lags={"0-trgt-0": [-4, -3], "0-trgt-1": [-3, -2], "0-trgt-2": [-2, -1]},
             lags_past_covariates={"0-pcov-0": [-10], "0-pcov-1": [-7]},
             lags_future_covariates={"0-fcov-0": (2, 2)},
             multi_models=mode,
+        )
+        # `fit()` resolves the component-specific lags before calling `_create_lagged_data`
+        model_instance._config.resolve(
+            target_components=self.target_series[0].components,
+            past_components=self.past_covariates[0].components,
+            future_components=self.future_covariates[0].components,
         )
 
         max_samples_per_ts = 3

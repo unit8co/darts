@@ -220,13 +220,19 @@ class Lags:
         )
 
     def resolve(self, components: Sequence[str]) -> None:
-        """Resolve the lags in place against the components of the series."""
+        """Resolve the lags in place against the components of the series.
+
+        The lags are validated before anything is assigned: a failed resolution keeps the previous
+        resolution.
+        """
+        self._resolved = self._resolve_mapping(components)
+
+    def _resolve_mapping(self, components: Sequence[str]) -> dict[str, tuple[int, ...]]:
+        """Validate the lags against ``components`` and return the per-component mapping."""
         components = tuple(components)
-        self._resolved = None
 
         if self.shared is not None:
-            self._resolved = {comp: self.shared for comp in components}
-            return
+            return {comp: self.shared for comp in components}
 
         required = set(components)
         provided = set(self.component_lags)
@@ -252,7 +258,7 @@ class Lags:
                 )
             )
 
-        self._resolved = {
+        return {
             comp: self.component_lags.get(comp, self.default) for comp in components
         }
 

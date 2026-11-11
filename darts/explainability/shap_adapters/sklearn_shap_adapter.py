@@ -15,7 +15,9 @@ from darts.explainability.shap_adapters.shap_adapter import (
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
-from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_data_from_config,
+)
 from darts.utils.multioutput import MultiOutputMixin
 
 logger = get_logger(__name__)
@@ -160,8 +162,10 @@ class SKLearnShapAdapter(ShapAdapter):
         n_samples: int | None = None,
         input_type: str = "background",
     ) -> tuple[np.ndarray, pd.Index]:
+        # use the fitted model's config as is: re-resolving it against the input series
+        # would change the model's state
         config = self.model._config
-        X, indexes = create_lagged_prediction_data(
+        data = _create_lagged_data_from_config(
             config,
             target_series=series if config.has_lags("target") else None,
             past_covariates=(past_covariates if config.has_lags("past") else None),
@@ -170,9 +174,12 @@ class SKLearnShapAdapter(ShapAdapter):
             ),
             uses_static_covariates=self.model.uses_static_covariates,
             last_static_covariates_shape=self.model._static_covariates_shape,
+            check_inputs=True,
+            is_training=False,
         )
+        indexes = data.times
         # Remove sample axis:
-        X = X.to_numpy()[:, :, 0]
+        X = data.X.to_numpy()[:, :, 0]
 
         if input_type == "background" and len(X) <= MIN_BACKGROUND_SAMPLE:
             raise_log(
