@@ -304,11 +304,236 @@ def create_lagged_data(
     tuple[int, int] | None,
     np.ndarray | Sequence[np.ndarray] | None,
 ]:
-    """Create lagged features and labels from a :class:`ForecastConfig`.
+    r"""
+    Creates the features `X` and labels array `y` to train a lagged-variables `SKLearnModel` when
+    `is_training = True`; alternatively, creates the features `X` to produce a series of prediction from an
+    already-trained model when `is_training = False`. In both cases, a list of time indices corresponding to
+    each generated observation is also returned.
 
-    A copy of the config is resolved against the components of the series before tabularizing;
-    ``config`` itself is not modified. The returned tuple is
-    ``(X, y, times, last_static_covariates_shape, sample_weights)``.
+    The lags, `output_chunk_length`, `output_chunk_shift` and `multi_models` are taken from `config`, a
+    :class:`~darts.utils.data.tabularization.ForecastConfig` built with the same arguments as `SKLearnModel`.
+    A copy of `config` is resolved against the components of the series; `config` itself is not modified.
+
+    Notes
+    -----
+    Instead of calling `create_lagged_data` directly, it is instead recommended that:
+
+    - `create_lagged_training_data` be called if one wishes to create the `X` and `y` arrays
+      to train an `SKLearnModel`.
+    - `create_lagged_prediction_data` be called if one wishes to create the `X` array required
+      to generate a prediction from an already-trained `SKLearnModel`.
+
+    This is because both of these functions are merely wrappers around `create_lagged_data` that set
+    `is_training` for you. For example, `create_lagged_prediction_data` returns only `X` and `times` as outputs,
+    as opposed to returning `y` as `None` along with `X` and `times`.
+
+    The `X` array is constructed from the lagged values of up to three separate timeseries:
+
+    1. The `target_series`, which contains the values we're trying to predict. An `SKLearnModel` that
+       uses previous values of the target its predicting is referred to as *autoregressive*; please refer to
+       [1]_ for further details about autoregressive timeseries models.
+    2. The past covariates series, which contains values that are *not* known into the future. Unlike
+       the target series, however, past covariates are *not* to be predicted by the `SKLearnModel`.
+    3. The future covariates (AKA 'exogenous' covariates) series, which contains values that are known
+       into the future, even beyond the data in `target_series` and `past_covariates`.
+
+    See [2]_ for a more detailed discussion about target, past, and future covariates. Conversely, `y` is
+    comprised only of the lagged values of `target_series`.
+
+    `X` is returned as a :class:`~darts.utils.data.tabularization.LaggedFeatures` container; use `X.to_numpy()`
+    to get the underlying array. The shape of that array is: `(n_observations, n_lagged_features, n_samples)`,
+    where `n_observations` equals either the number of time points shared between all specified series, or
+    `max_samples_per_ts`, whichever is smallest. The shape of `y` is: `(n_observations, output_chunk_length,
+    n_samples)`, if `config` uses `multi_models = True`, otherwise: `(n_observations, 1, n_samples)`.
+
+    Along the `n_lagged_features` axis, `X` has the following structure (for `\*_lags=[-2,-1]` and
+    `\*_series.n_components = 2`):
+
+    .. highlight:: md
+    .. code-block:: md
+
+        lagged_target | lagged_past_covariates | lagged_future_covariates
+    ..
+
+    where each `lagged_\*` has the following structure:
+
+    .. highlight:: md
+    .. code-block:: md
+
+        lag_-2_comp_1_* | lag_-2_comp_2_* | lag_-1_comp_1_* | lag_-1_comp_2_*
+    ..
+
+    Along the `n_lagged_labels` axis, `y` has the following structure (for `output_chunk_length=4` and
+    `target_series.n_components=2`):
+
+    .. highlight:: md
+    .. code-block:: md
+
+        lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
+    ..
+
+    The target and past covariates lags of `config` must contain only values less than or equal to -1. In other
+    words, one cannot use the value of either of these series at time `t` to predict the value of the target series
+    at the same time `t`; this is because the values of `target_series` and `past_covariates` at time `t` aren't
+    available at prediction time, by definition. Conversely, since the values of `future_covariates` are known into
+    the future, the future covariates lags can contain negative, positive, and/or zero lag values (i.e. we *can* use
+    the values of `future_covariates` at time `t` or beyond to predict the value of `target_series` at time `t`).
+    `ForecastConfig` validates the lags when it is created.
+
+    The exact method used to construct `X` and `y` depends on whether all specified timeseries are
+    of the same frequency or not:
+
+    - If all specified timeseries are of the same frequency, `strided_moving_window` is used to extract
+      contiguous time blocks from each timeseries; the lagged variables are then extracted from each window.
+    - If all specified timeseries are *not* of the same frequency, then `get_shared_times` is first used
+      to find those times common to all three timeseries, after which the lagged features are extracted by
+      offsetting the time indices of these common times by the requested lags.
+
+    In cases where it can be validly applied, the 'moving window' method is expected to be faster than the
+    'intersecting time' method. However, in exceptional cases where only a small number of lags are being
+    extracted, but the difference between the lag values is large (e.g. `lags = [-1, -1000]`), the 'moving
+    window' method is expected to consume significantly more memory, since it extracts all series values
+    between the maximum and minimum lags as 'windows', before actually extracting the specific requested lag values.
+
+    In order for the lagged features of a series to be added to `X`, *both* that series and the corresponding lags
+    in `config` must be specified; if a series is specified without the corresponding lags, that series will be
+    ignored and not added to `X`. `X` and `y` arrays are constructed independently over the samples dimension
+    (i.e. the third axis) of each series.
+
+    If the provided series are stochastic (i.e. `series.n_samples > 1`), then an `X` and `y` array will be
+    constructed for each sample; the arrays corresponding to each sample are concatenated together along the `2`nd
+    axis of `X` and `y`. In other words, `create_lagged_data` is vectorized over the sample axis of the `target_series`,
+    `past_covariates`, and `future_covariates` inputs. Importantly, if stochastic series are provided, each series must
+    have the same number of samples, otherwise an error will be thrown.
+
+    Each series input (i.e. `target_series`, `past_covariates`, and `future_covariates`) can be specified either as
+    a single `TimeSeries`, or as a `Sequence` of `TimeSeries`; the specified series must all be of the same type,
+    however (i.e. either all `TimeSeries` or all `Sequence[TimeSeries]`). If `Sequence[TimeSeries]` are specified,
+    then a feature matrix `X` and labels array `y` will be constructed using the corresponding `TimeSeries` in
+    each `Sequence` (i.e. the first `TimeSeries` in each `Sequence` are used to create an `X` and `y`, then
+    the second `TimeSeries` in each `Sequence` are used to create an `X` and `y`, etc.). If `concatenate = True`,
+    these `X`'s and `y`'s will be concatenated along the `0`th axis; otherwise, a list of `X` and `y` array will
+    be returned. Note that `times` is always returned as a `Sequence[pd.Index]`, however, even when
+    `concatenate = True`.
+
+    Parameters
+    ----------
+    config
+        The :class:`~darts.utils.data.tabularization.ForecastConfig` that defines the lags of the target series,
+        past covariates and future covariates, `output_chunk_length`, `output_chunk_shift` and `multi_models`.
+        Lags passed as a dictionary are specific to each component of the corresponding series. A copy of `config`
+        is resolved against the components of the (first) series; `config` itself is not modified.
+    target_series
+        Optionally, the series for the `SKLearnModel` to predict. Must be specified if `is_training = True`,
+        or if `config` defines target lags. Can be specified as either a `TimeSeries` or as a
+        `Sequence[TimeSeries]`.
+    past_covariates
+        Optionally, the past covariates series that the `SKLearnModel` will use as inputs. Unlike the
+        `target_series`, `past_covariates` are *not* to be predicted by the `SKLearnModel`. Can be
+        specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
+    future_covariates
+        Optionally, the future covariates (i.e. exogenous covariates) series that the `SKLearnModel` will
+        use as inputs. Can be specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
+    uses_static_covariates
+        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
+        have identical shapes across all target series.
+    last_static_covariates_shape
+        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when
+        `uses_static_covariates` is ``False``.
+    max_samples_per_ts
+        Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
+        samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
+        especially in cases where many observations could be generated.
+    check_inputs
+        Optionally, specifies that the series inputs and `stride` should be checked for validity. Should be set
+        to `False` if inputs have already been checked for validity, otherwise should be set to `True`.
+    use_moving_windows
+        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all
+        provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
+        will always be used, even when all provided series are of the same frequency. In general, setting
+        to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
+        details. `use_moving_windows = False` is not supported when `config` has component-specific lags.
+    is_training
+        Optionally, specifies whether the constructed lagged data are to be used for training an `SKLearnModel`
+        (i.e. `is_training = True`), or for generating predictions from an already-trained `SKLearnModel` (i.e.
+        `is_training = False`). If `is_training = True`, `target_series` must be specified, the output chunk
+        settings of `config` are used to build the labels, and a label array `y` is returned. Conversely, if
+        `is_training = False`, the returned `y` value is `None`.
+    concatenate
+        Optionally, specifies that `X` and `y` should both be returned as a single `LaggedFeatures` and
+        `np.ndarray`, instead of as sequences. If each series input is specified as a `Sequence[TimeSeries]` and
+        `concatenate = False`, `X` and `y` will be lists whose `i`th element corresponds to the features or label
+        array formed by the `i`th `TimeSeries` in each `Sequence[TimeSeries]` input. Conversely, if `concatenate = True`
+        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be created by concatenating all
+        features/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
+        `Sequence[pd.Index]`, even when `concatenate = True`.
+    sample_weight
+        Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+        per label (each step in `output_chunk_length`), and per component.
+        If a series or sequence of series, then those weights are used. If the weight series only have a single
+        component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+        component-specific weights, the number of components must match those of `series`.
+        If a string, then the weights are generated using built-in weighting functions. The available options are
+        `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+        computed globally based on the length of the longest series in `series`. Then for each series, the weights
+        are extracted from the end of the global weights. This gives a common time weighting across all series.
+    stride
+        The number of time steps between consecutive samples, applied starting from the end of the series. This should
+        be used with caution as it might introduce bias in the forecasts.
+    show_warnings
+        Whether to show warnings.
+
+    Returns
+    -------
+    X
+        The constructed features, as :class:`~darts.utils.data.tabularization.LaggedFeatures` whose array
+        (`X.to_numpy()`) has shape `(n_observations, n_lagged_features, n_samples)`.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
+        is returned as a `Sequence[LaggedFeatures]`; otherwise, `X` is returned as a single `LaggedFeatures`.
+    y
+        The constructed labels array. If `config` uses `multi_models = True`, then `y` is a
+        `(n_observations, output_chunk_length, n_samples)`-shaped array; conversely, if
+        `multi_models =  False`, then `y` is a `(n_observations, 1, n_samples)`-shaped array.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `y`
+        is returned as a `Sequence[np.array]`; otherwise, `y` is returned as a single `np.array`.
+        `None` if `is_training = False`.
+    times
+        The `time_index` of each observation in `X` and `y`, returned as a `Sequence` of `pd.Index`es.
+        If the series inputs were specified as `Sequence[TimeSeries]`, then the `i`th list element
+        gives the times of those observations formed using the `i`th `TimeSeries` object in each
+        `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only
+        element is the times of those observations formed from the lone `TimeSeries` inputs.
+    last_static_covariates_shape
+        The last observed shape of the static covariates. This is ``None`` when `uses_static_covariates`
+        is ``False``.
+    sample_weight
+        The weights to apply to each observation in `X` and output step `y`, returned as a `Sequence` of `np.ndarray`.
+
+    Raises
+    ------
+    ValueError
+        If the specified time series do not share any times for which features (and labels if `is_training = True`) can
+        be constructed.
+    ValueError
+        If the component-specific lags of `config` do not match the components of the corresponding series.
+    ValueError
+        If any of the series are too short to create features and/or labels for the requested lags and
+        `output_chunk_length` values.
+    ValueError
+        If `target_series` is *not* specified when `is_training = True`, or when `config` defines target lags.
+    ValueError
+        If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
+        pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
+
+    References
+    ----------
+    .. [1] https://otexts.com/fpp2/AR.html#AR
+    .. [2] https://unit8.com/resources/time-series-forecasting-using-past-and-future-external-data-with-darts/
+
+    See Also
+    --------
+        tabularization.create_lagged_component_names : return the lagged features names as a list of strings.
+
     """
     config = _resolve_public_config(
         config, target_series, past_covariates, future_covariates
@@ -360,7 +585,111 @@ def create_lagged_training_data(
     tuple[int, int] | None,
     np.ndarray | Sequence[np.ndarray] | None,
 ]:
-    """Config-first wrapper around :func:`create_lagged_data` for training data."""
+    """
+    Creates the features `X` and labels array `y` to train a lagged-variables `SKLearnModel` (e.g. an
+    `sklearn` model); the time index values of each observation is also returned.
+
+    Notes
+    -----
+    This function is simply a wrapper around `create_lagged_data`; for further details on the structure of `X`, please
+    refer to `help(create_lagged_data)`.
+
+    Parameters
+    ----------
+    config
+        The :class:`~darts.utils.data.tabularization.ForecastConfig` that defines the lags of the target series,
+        past covariates and future covariates, `output_chunk_length`, `output_chunk_shift` and `multi_models`.
+        Lags passed as a dictionary are specific to each component of the corresponding series. A copy of `config`
+        is resolved against the components of the (first) series; `config` itself is not modified.
+    target_series
+        The series for the `SKLearnModel` to predict.
+    past_covariates
+        Optionally, the past covariates series that the `SKLearnModel` will use as inputs. Unlike the
+        `target_series`, `past_covariates` are *not* to be predicted by the `SKLearnModel`.
+    future_covariates
+        Optionally, the future covariates (i.e. exogenous covariates) series that the `SKLearnModel` will
+        use as inputs.
+    uses_static_covariates
+        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
+        have identical shapes across all target series.
+    last_static_covariates_shape
+        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when
+        `uses_static_covariates` is ``False``.
+    max_samples_per_ts
+        Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
+        samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
+        especially in cases where many observations could be generated.
+    check_inputs
+        Optionally, specifies that the series inputs and `stride` should be checked for validity. Should be set
+        to `False` if inputs have already been checked for validity, otherwise should be set to `True`.
+    use_moving_windows
+        Optionally, specifies that the 'moving window' method should be used to construct `X` and `y` if all
+        provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
+        will always be used, even when all provided series are of the same frequency. In general, setting
+        to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
+        details.
+    concatenate
+        Optionally, specifies that `X` and `y` should both be returned as a single `LaggedFeatures` and
+        `np.ndarray`, instead of as sequences. If each series input is specified as a `Sequence[TimeSeries]` and
+        `concatenate = False`, `X` and `y` will be lists whose `i`th element corresponds to the features or label
+        array formed by the `i`th `TimeSeries` in each `Sequence[TimeSeries]` input. Conversely, if `concatenate = True`
+        when `Sequence[TimeSeries]` are provided, then `X` and `y` will be created by concatenating all
+        features/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
+        `Sequence[pd.Index]`, even when `concatenate = True`.
+    sample_weight
+        Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
+        per label (each step in `output_chunk_length`), and per component.
+        If a series or sequence of series, then those weights are used. If the weight series only have a single
+        component / column, then the weights are applied globally to all components in `series`. Otherwise, for
+        component-specific weights, the number of components must match those of `series`.
+        If a string, then the weights are generated using built-in weighting functions. The available options are
+        `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
+        computed globally based on the length of the longest series in `series`. Then for each series, the weights
+        are extracted from the end of the global weights. This gives a common time weighting across all series.
+    stride
+        The number of time steps between consecutive samples, applied starting from the end of the series. This should
+        be used with caution as it might introduce bias in the forecasts.
+    show_warnings
+        Whether to show warnings.
+
+    Returns
+    -------
+    X
+        The constructed features, as :class:`~darts.utils.data.tabularization.LaggedFeatures` whose array
+        (`X.to_numpy()`) has shape `(n_observations, n_lagged_features, n_samples)`.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
+        is returned as a `Sequence[LaggedFeatures]`; otherwise, `X` is returned as a single `LaggedFeatures`.
+    y
+        The constructed labels array. If `config` uses `multi_models = True`, then `y` is a
+        `(n_observations, output_chunk_length, n_samples)`-shaped array; conversely, if
+        `multi_models =  False`, then `y` is a `(n_observations, 1, n_samples)`-shaped array.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `y`
+        is returned as a `Sequence[np.array]`; otherwise, `y` is returned as a single `np.array`.
+    times
+        The `time_index` of each observation in `X` and `y`, returned as a `Sequence` of `pd.Index`es.
+        If the series inputs were specified as `Sequence[TimeSeries]`, then the `i`th list element
+        gives the times of those observations formed using the `i`th `TimeSeries` object in each
+        `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only
+        element is the times of those observations formed from the lone `TimeSeries` inputs.
+    last_static_covariates_shape
+        The last observed shape of the static covariates. This is ``None`` when `uses_static_covariates`
+        is ``False``.
+    sample_weight
+        The weights to apply to each observation in `X` and output step `y`, returned as a `Sequence` of `np.ndarray`.
+
+    Raises
+    ------
+    ValueError
+        If the specified time series do not share any times for which features and labels can be constructed.
+    ValueError
+        If the component-specific lags of `config` do not match the components of the corresponding series.
+    ValueError
+        If any of the series are too short to create features and labels for the requested lags and
+        `output_chunk_length` values.
+    ValueError
+        If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
+        pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
+    """
     return create_lagged_data(
         config,
         target_series=target_series,
@@ -394,7 +723,91 @@ def create_lagged_prediction_data(
     stride: int = 1,
     show_warnings: bool = True,
 ) -> tuple[LaggedFeatures | Sequence[LaggedFeatures], Sequence[pd.Index]]:
-    """Config-first wrapper around :func:`create_lagged_data` for prediction data."""
+    """
+    Creates the features `X` to produce a series of prediction from an already-trained `SKLearnModel`; the
+    time index values of each observation is also returned.
+
+    Notes
+    -----
+    This function is simply a wrapper around `create_lagged_data`; for further details on the structure of `X`, please
+    refer to `help(create_lagged_data)`.
+
+    Parameters
+    ----------
+    config
+        The :class:`~darts.utils.data.tabularization.ForecastConfig` that defines the lags of the target series,
+        past covariates and future covariates. Lags passed as a dictionary are specific to each component of the
+        corresponding series. A copy of `config` is resolved against the components of the (first) series; `config`
+        itself is not modified.
+    target_series
+        Optionally, the series for the `SKLearnModel` to predict. Must be specified if `config` defines target lags.
+    past_covariates
+        Optionally, the past covariates series that the `SKLearnModel` will use as inputs. Unlike the
+        `target_series`, `past_covariates` are *not* to be predicted by the `SKLearnModel`.
+    future_covariates
+        Optionally, the future covariates (i.e. exogenous covariates) series that the `SKLearnModel` will
+        use as inputs.
+    uses_static_covariates
+        Whether the model uses/expects static covariates. If `True`, it enforces that static covariates must
+        have identical shapes across all target series.
+    last_static_covariates_shape
+        Optionally, the last observed shape of the static covariates. This is ``None`` before fitting, or when
+        `uses_static_covariates` is ``False``.
+    max_samples_per_ts
+        Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
+        samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
+        especially in cases where many observations could be generated.
+    check_inputs
+        Optionally, specifies that the series inputs and `stride` should be checked for validity. Should be set
+        to `False` if inputs have already been checked for validity, otherwise should be set to `True`.
+    use_moving_windows
+        Optionally, specifies that the 'moving window' method should be used to construct `X` if all
+        provided series are of the same frequency. If `use_moving_windows = False`, the 'time intersection' method
+        will always be used, even when all provided series are of the same frequency. In general, setting
+        to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
+        details.
+    concatenate
+        Optionally, specifies that `X` should be returned as a single `LaggedFeatures`, instead of as a
+        `Sequence[LaggedFeatures]`. If each series input is specified as a `Sequence[TimeSeries]` and
+        `concatenate = False`, `X` will be a list whose `i`th element corresponds to the features formed by the `i`th
+        `TimeSeries` in each `Sequence[TimeSeries]` input. Conversely, if `concatenate = True` when
+        `Sequence[TimeSeries]` are provided, then `X` will be created by concatenating all features formed by each
+        `TimeSeries` along the `0`th axis. Note that `times` is still returned as `Sequence[pd.Index]`, even when
+        `concatenate = True`.
+    stride
+        The number of time steps between consecutive samples applied, starting from the end of the series. This should
+        be used with caution as it will cause gaps in the forecasts.
+    show_warnings
+        Whether to show warnings.
+
+    Returns
+    -------
+    X
+        The constructed features, as :class:`~darts.utils.data.tabularization.LaggedFeatures` whose array
+        (`X.to_numpy()`) has shape `(n_observations, n_lagged_features, n_samples)`.
+        If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
+        is returned as a `Sequence[LaggedFeatures]`; otherwise, `X` is returned as a single `LaggedFeatures`.
+    times
+        The `time_index` of each observation in `X`, returned as a `Sequence` of `pd.Index`es.
+        If the series inputs were specified as `Sequence[TimeSeries]`, then the `i`th list element
+        gives the times of those observations formed using the `i`th `TimeSeries` object in each
+        `Sequence`. Otherwise, if the series inputs were specified as `TimeSeries`, the only
+        element is the times of those observations formed from the lone `TimeSeries` inputs.
+
+    Raises
+    ------
+    ValueError
+        If the specified time series do not share any times for which features can be constructed.
+    ValueError
+        If the component-specific lags of `config` do not match the components of the corresponding series.
+    ValueError
+        If any of the series are too short to create features for the requested lag values.
+    ValueError
+        If `target_series` is *not* specified when `config` defines target lags.
+    ValueError
+        If the provided series do not share the same type of `time_index` (e.g. `target_series` uses a
+        pd.RangeIndex, but `future_covariates` uses a `pd.DatetimeIndex`).
+    """
     X, _, times, _, _ = create_lagged_data(
         config,
         target_series=target_series,
@@ -422,7 +835,107 @@ def create_lagged_component_names(
     concatenate: bool = True,
     use_static_covariates: bool = False,
 ) -> tuple[list[str], list[str]]:
-    """Config-first wrapper around :func:`_create_lagged_component_names`."""
+    """
+    Helper function called to retrieve the name of the features and labels arrays created with
+    `create_lagged_data()`. The order of the features is the following:
+
+    Along the `n_lagged_features` axis, `X` has the following structure:
+
+    .. highlight:: md
+    .. code-block:: md
+
+        lagged_target | lagged_past_covariates | lagged_future_covariates | static covariates
+    ..
+
+    For `*_lags=[-2,-1]` and `*_series.n_components = 2` (lags shared across all the components),
+    each `lagged_*` has the following structure (grouped by lags):
+
+    .. highlight:: md
+    .. code-block:: md
+
+        comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
+    ..
+
+    For `*_lags={'comp0':[-3, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
+    specific lags), each `lagged_*` has the following structure (sorted by lags, then by components):
+
+    .. highlight:: md
+    .. code-block:: md
+
+        comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1
+    ..
+
+    and for static covariates (2 static covariates acting on 2 target components):
+
+    .. highlight:: md
+    .. code-block:: md
+
+        cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1
+    ..
+
+    Along the `n_lagged_labels` axis, `y` has the following structure (for `output_chunk_length=4` and
+    `target_series.n_components=2`):
+
+    .. highlight:: md
+    .. code-block:: md
+
+        comp0_target_hrz0 | comp1_target_hrz0 | ... | comp0_target_hrz3 | comp1_target_hrz3
+    ..
+
+    Note : will only use the component names of the first series from `target_series`, `past_covariates`,
+    `future_covariates`, and static_covariates.
+
+    The naming convention for target, past and future covariates lags is: ``"{name}_{type}_lag{i}"``, where:
+
+    - ``{name}`` the component name of the (first) series
+    - ``{type}`` is the feature type, one of "target", "pastcov", and "futcov"
+    - ``{i}`` is the lag value
+
+    The naming convention for static covariates is: ``"{name}_statcov_target_{comp}"``, where:
+
+    - ``{name}`` the static covariate name of the (first) series
+    - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
+      covariate acts globally on a multivariate target series, will show "global_components".
+
+    The naming convention for labels is: ``"{name}_target_hrz{i}"``, where:
+
+    - ``{name}`` the component name of the (first) series
+    - ``{i}`` is the step in the forecast horizon
+
+    Parameters
+    ----------
+    config
+        The :class:`~darts.utils.data.tabularization.ForecastConfig` that defines the lags of the target series,
+        past covariates and future covariates, and `output_chunk_length`. A copy of `config` is resolved against
+        the components of the (first) series; `config` itself is not modified.
+    target_series
+        Optionally, the target series. The component names of its (first) series are used for the target lags and
+        the labels.
+    past_covariates
+        Optionally, the past covariates series. The component names of its (first) series are used for the past
+        covariates lags.
+    future_covariates
+        Optionally, the future covariates series. The component names of its (first) series are used for the future
+        covariates lags.
+    concatenate
+        Whether to also append the names of the labels to the names of the features (on the right).
+    use_static_covariates
+        Whether to add the names of the static covariates of the (first) target series to the names of the features.
+
+    Returns
+    -------
+    features_cols_name
+        The names of the lagged features in the `X` array generated by `create_lagged_data()`
+        as a `List[str]`. If `concatenate=True`, also contains the columns names for
+        the `y` array (on the right).
+    labels_cols_name
+        The names of the lagged features in the `y` array generated by `create_lagged_data()`
+         as a `List[str]`.
+
+    See Also
+    --------
+        tabularization.create_lagged_data : generate the lagged features and labels as (list of) Arrays.
+    """
     config = _resolve_public_config(
         config, target_series, past_covariates, future_covariates
     )
@@ -549,87 +1062,7 @@ def _create_lagged_component_names(
     concatenate: bool = True,
     use_static_covariates: bool = False,
 ) -> tuple[list[str], list[str]]:
-    """
-    Helper function called to retrieve the name of the features and labels arrays created with
-    `create_lagged_data()`. The order of the features is the following:
-
-    Along the `n_lagged_features` axis, `X` has the following structure:
-
-    .. highlight:: md
-    .. code-block:: md
-
-        lagged_target | lagged_past_covariates | lagged_future_covariates | static covariates
-    ..
-
-    For `*_lags=[-2,-1]` and `*_series.n_components = 2` (lags shared across all the components),
-    each `lagged_*` has the following structure (grouped by lags):
-
-    .. highlight:: md
-    .. code-block:: md
-
-        comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
-    ..
-
-    For `*_lags={'comp0':[-3, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
-    specific lags), each `lagged_*` has the following structure (sorted by lags, then by components):
-
-    .. highlight:: md
-    .. code-block:: md
-
-        comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1
-    ..
-
-    and for static covariates (2 static covariates acting on 2 target components):
-
-    .. highlight:: md
-    .. code-block:: md
-
-        cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1
-    ..
-
-    Along the `n_lagged_labels` axis, `y` has the following structure (for `output_chunk_length=4` and
-    `target_series.n_components=2`):
-
-    .. highlight:: md
-    .. code-block:: md
-
-        comp0_target_lag0 | comp1_target_lag0 | ... | comp0_target_lag3 | comp1_target_lag3
-    ..
-
-    Note : will only use the component names of the first series from `target_series`, `past_covariates`,
-    `future_covariates`, and static_covariates.
-
-    The naming convention for target, past and future covariates lags is: ``"{name}_{type}_lag{i}"``, where:
-
-    - ``{name}`` the component name of the (first) series
-    - ``{type}`` is the feature type, one of "target", "pastcov", and "futcov"
-    - ``{i}`` is the lag value
-
-    The naming convention for static covariates is: ``"{name}_statcov_target_{comp}"``, where:
-
-    - ``{name}`` the static covariate name of the (first) series
-    - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
-      covariate acts globally on a multivariate target series, will show "global_components".
-
-    The naming convention for labels is: ``"{name}_target_hrz{i}"``, where:
-
-    - ``{name}`` the component name of the (first) series
-    - ``{i}`` is the step in the forecast horizon
-
-    Returns
-    -------
-    features_cols_name
-        The names of the lagged features in the `X` array generated by `create_lagged_data()`
-        as a `List[str]`. If `concatenate=True`, also contains the columns names for
-        the `y` array (on the right).
-    labels_cols_name
-        The names of the lagged features in the `y` array generated by `create_lagged_data()`
-         as a `List[str]`.
-
-    See Also
-    --------
-        tabularization._create_lagged_data : generate the lagged features and labels as (list of) Arrays.
-    """
+    """Implementation of :func:`create_lagged_component_names` for an already resolved `config`."""
     target_series = series2seq(target_series)
     past_covariates = series2seq(past_covariates)
     future_covariates = series2seq(future_covariates)

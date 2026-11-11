@@ -32,8 +32,76 @@ from darts.utils.data.tabularization.output_chunk import (
 class ForecastConfig:
     """Configuration of a tabularized forecasting model.
 
-    Build it directly with the same arguments as ``SKLearnModel``. Call :meth:`resolve` once the
-    components of the actual series are known; the lags are resolved in place.
+    Holds the lags of the target series, past covariates and future covariates, and the output chunk
+    settings (`output_chunk_length`, `output_chunk_shift` and `multi_models`). It takes the same arguments as
+    :class:`~darts.models.forecasting.sklearn_model.SKLearnModel`, and is the first argument of the public
+    tabularization helpers (:func:`~darts.utils.data.tabularization.create_lagged_data`,
+    :func:`~darts.utils.data.tabularization.create_lagged_training_data`,
+    :func:`~darts.utils.data.tabularization.create_lagged_prediction_data` and
+    :func:`~darts.utils.data.tabularization.create_lagged_component_names`).
+
+    The lags are validated when the config is created. Component-specific lags are resolved against the
+    components of the actual series with :meth:`resolve`; the public helpers resolve a copy and leave the config
+    unchanged.
+
+    Parameters
+    ----------
+    lags
+        Lagged target `series` values used as features.
+        If an integer, must be > 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`
+        corresponds the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+        lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+        If a list of integers, each value must be < 0. Uses only the specified values as lags.
+        If a dictionary, the keys correspond to the `series` component names (of the first series when
+        using multiple series) and the values correspond to the component lags (integer or list of integers). The
+        key 'default_lags' can be used to provide default lags for un-specified components.
+    lags_past_covariates
+        Lagged `past_covariates` values used as features.
+        If an integer, must be > 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,
+        where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift > 0`, then
+        lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.
+        If a list of integers, each value must be < 0. Uses only the specified values as lags.
+        If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when
+        using multiple series) and the values correspond to the component lags (integer or list of integers). The
+        key 'default_lags' can be used to provide default lags for un-specified components.
+    lags_future_covariates
+        Lagged `future_covariates` values used as features. The lags are always relative to the first step in the
+        output chunk, even when `output_chunk_shift > 0`.
+        If a tuple of `(past, future)`, both values must be >= 0 and not both 0. Uses the last `n=past` past lags
+        and `n=future` future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0`
+        corresponds the first predicted time step of each sample.
+        If a list of integers, uses only the specified values as lags.
+        If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when
+        using multiple series) and the values correspond to the component lags (tuple or list of integers). The key
+        'default_lags' can be used to provide default lags for un-specified components.
+    output_chunk_length
+        Number of time steps predicted at once (per chunk) by the model. Default: ``1``.
+    output_chunk_shift
+        Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+        input chunk end). The `lags_future_covariates` are relative to the first step in the shifted output chunk.
+        Default: ``0``.
+    multi_models
+        If ``True``, a separate model is used for each step in the output chunk, and the labels contain all
+        `output_chunk_length` steps. If ``False``, a single model predicts the last step of the output chunk, and
+        the labels contain only that step. Ignored when `output_chunk_length = 1`. Default: ``True``.
+
+    Raises
+    ------
+    ValueError
+        If none of `lags`, `lags_past_covariates` or `lags_future_covariates` is given, or if any of them, or
+        `output_chunk_length`, is invalid.
+
+    Examples
+    --------
+    >>> from darts.utils.data.tabularization import ForecastConfig, create_lagged_training_data
+    >>> from darts.utils.timeseries_generation import linear_timeseries
+    >>> series = linear_timeseries(length=10)
+    >>> config = ForecastConfig(lags=[-2, -1], output_chunk_length=2)
+    >>> X, y, times, _, _ = create_lagged_training_data(
+    ...     config, series, uses_static_covariates=False
+    ... )
+    >>> X.to_numpy().shape, y.shape
+    ((7, 2, 1), (7, 2, 1))
     """
 
     target: Lags | None
@@ -113,8 +181,30 @@ class ForecastConfig:
     ) -> ForecastConfig:
         """Resolve the lags in place against the components of the series.
 
-        Every variate is validated before anything is assigned: a failed resolution leaves the
-        config unchanged.
+        Shared lags are applied to every component; component-specific lags are matched by component name, and
+        `'default_lags'` fill the components without explicit lags. Every variate is validated before anything is
+        assigned: a failed resolution leaves the config unchanged.
+
+        Parameters
+        ----------
+        target_components
+            The component names of the target series. Can be empty if the config has no target lags.
+        past_components
+            The component names of the past covariates. Required if the config has past covariates lags.
+        future_components
+            The component names of the future covariates. Required if the config has future covariates lags.
+
+        Returns
+        -------
+        ForecastConfig
+            The same config, resolved.
+
+        Raises
+        ------
+        ValueError
+            If lags are defined for a variate without components, or if the component-specific lags name
+            components that are not in the series or miss components without `'default_lags'`. The errors of all
+            variates are reported together.
         """
         components = {
             "target": tuple(target_components),

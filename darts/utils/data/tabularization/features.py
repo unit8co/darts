@@ -21,11 +21,30 @@ from darts.logging import raise_log
 
 @dataclass
 class LaggedFeatures:
-    """A feature matrix with optional per-output forecast-horizon metadata.
+    """Lagged features created by the tabularization helpers.
 
-    ``array`` has shape ``(n_observations, n_features)`` or
-    ``(n_observations, n_features, n_samples)``. ``output_horizons`` maps each estimator output to
-    a horizon in ``[0, n_horizons)``; when it is ``None`` every output uses horizon ``0``.
+    Holds the feature matrix returned by :func:`~darts.utils.data.tabularization.create_lagged_data`,
+    :func:`~darts.utils.data.tabularization.create_lagged_training_data` and
+    :func:`~darts.utils.data.tabularization.create_lagged_prediction_data`. Use :meth:`to_numpy` to get the
+    matrix. See :func:`~darts.utils.data.tabularization.create_lagged_data` for the order of the features, and
+    :func:`~darts.utils.data.tabularization.create_lagged_component_names` for their names.
+
+    Parameters
+    ----------
+    array
+        The feature matrix, with shape `(n_observations, n_lagged_features)` or
+        `(n_observations, n_lagged_features, n_samples)`.
+    n_horizons
+        The number of forecast horizons the features are used for. Default: ``1``.
+    output_horizons
+        Optionally, the horizon in `[0, n_horizons)` of each estimator output. If ``None``, every output uses
+        horizon ``0``.
+
+    Raises
+    ------
+    ValueError
+        If `array` has less than 2 dimensions, if `n_horizons` is not a positive integer, or if `output_horizons`
+        is not a one-dimensional integer array with values in `[0, n_horizons)`.
     """
 
     array: np.ndarray
