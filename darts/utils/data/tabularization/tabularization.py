@@ -1427,7 +1427,7 @@ def _get_feature_times(
         [target_series, past_covariates, future_covariates],
         [config.lags_for(kind) for kind in ("target", "past", "future")],
     ):
-        if check_inputs and (series_i is not None):
+        if series_i is not None:
             _check_series_length(
                 series=series_i,
                 lags=lags_i,
