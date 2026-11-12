@@ -6,6 +6,7 @@ Additional TimeSeries related util functions
 from collections.abc import Sequence
 from enum import Enum
 from functools import total_ordering
+from typing import Literal, overload
 
 from darts import TimeSeries
 from darts.logging import raise_log
@@ -53,6 +54,69 @@ class SeriesType(Enum):
         return _SEQ_TYPE_NAMES[self.value]
 
 
+# `series2seq` overloads
+# ----------------------
+
+
+## GOOD ONES
+@overload
+def series2seq(
+    ts: None,
+    seq_type_out: SeriesType = ...,
+    nested: bool = ...,
+) -> None: ...
+
+
+@overload
+def series2seq(
+    ts: TimeSeriesLike,
+    seq_type_out: Literal[SeriesType.SEQ] = ...,
+    nested: bool = ...,
+) -> Sequence[TimeSeries]: ...
+
+
+@overload
+def series2seq(
+    ts: TimeSeriesLike,
+    seq_type_out: Literal[SeriesType.SEQ_SEQ],
+    nested: bool = ...,
+) -> Sequence[Sequence[TimeSeries]]: ...
+
+
+@overload
+def series2seq(
+    ts: Sequence[Sequence[TimeSeries]],
+    seq_type_out: Literal[SeriesType.SEQ, SeriesType.SEQ_SEQ] = ...,
+    nested: bool = ...,
+) -> Sequence[Sequence[TimeSeries]]: ...
+
+
+## OKAY, could be removed once callers have overloads themselves
+@overload
+def series2seq(
+    ts: TimeSeriesLike | None,
+    seq_type_out: Literal[SeriesType.SEQ] = ...,
+    nested: bool = ...,
+) -> Sequence[TimeSeries] | None: ...
+
+
+@overload
+def series2seq(
+    ts: TimeSeriesLike | None,
+    seq_type_out: Literal[SeriesType.SEQ_SEQ],
+    nested: bool = ...,
+) -> Sequence[Sequence[TimeSeries]] | None: ...
+
+
+## TO BE IMPROVED
+@overload
+def series2seq(
+    ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
+    seq_type_out: SeriesType = ...,
+    nested: bool = ...,
+) -> TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None: ...
+
+
 def series2seq(
     ts: TimeSeriesLike | Sequence[Sequence[TimeSeries]] | None,
     seq_type_out: SeriesType = SeriesType.SEQ,
@@ -74,6 +138,16 @@ def series2seq(
     nested
         Only applies with `seq_type_out=SeriesType.SEQ_SEQ` and `ts` having a sequence type `SeriesType.SEQ`.
         In this case, wrap each element in `ts` in a list ([ts1, ts2] -> [[ts1], [ts2]]).
+
+    Returns
+    -------
+    None
+        If `ts` is `None`.
+    TimeSeriesLike | Sequence[Sequence[TimeSeries]]
+        `ts` converted to `seq_type_out`. Up-conversions (e.g. `SeriesType.SINGLE` ->
+        `SeriesType.SEQ`) always succeed. Down-conversions (e.g. `SeriesType.SEQ` ->
+        `SeriesType.SINGLE`) only unwrap when `ts` holds exactly one element; otherwise `ts`
+        is returned unchanged.
 
     Raises
     ------
@@ -136,9 +210,25 @@ def series2seq(
         return ts
 
 
+@overload
+def seq2series(ts: None) -> None: ...
+
+
+@overload
+def seq2series(ts: TimeSeries) -> TimeSeries: ...
+
+
+@overload
+def seq2series(ts: Sequence[TimeSeries]) -> TimeSeries | Sequence[TimeSeries]: ...
+
+
+@overload
+def seq2series(ts: TimeSeriesLike | None) -> TimeSeriesLike | None: ...
+
+
 def seq2series(
     ts: TimeSeriesLike | None,
-) -> TimeSeries | None:
+) -> TimeSeriesLike | None:
     """If `ts` is a Sequence with only a single series, return the single series as TimeSeries.
 
     Parameters
@@ -148,7 +238,12 @@ def seq2series(
 
     Returns
     -------
-        `ts` if `ts` if is not a single element TimeSeries sequence, else `ts[0]`
+    None
+        If `ts` is `None`.
+    TimeSeriesLike
+        `ts[0]` if `ts` is a single element `TimeSeries` sequence, else `ts` unchanged. The
+        sequence is only unwrapped when it holds exactly one element, so a multi-element `ts`
+        is returned as a `Sequence[TimeSeries]`.
 
     """
     return series2seq(ts, seq_type_out=SeriesType.SINGLE)
