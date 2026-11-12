@@ -292,19 +292,38 @@ class Lags:
 
     @property
     def extreme_lags(self) -> tuple[int, int]:
-        """The minimum and maximum lag values."""
-        if self._resolved is not None:
-            values = [lag for lags in self._resolved.values() for lag in lags]
-        elif self.shared is not None:
+        """The minimum and maximum of the declared lags.
+
+        They include the `'default_lags'` even if every component has explicit lags, and do not depend on the
+        resolution. The model uses them for its extreme lags and for the input windows of `predict()`.
+        """
+        if self.shared is not None:
             values = list(self.shared)
         else:
             values = [lag for lags in self.component_lags.values() for lag in lags]
             if self.default is not None:
                 values.extend(self.default)
+        return _min_max(values)
 
-        if len(values) == 0:
-            raise_log(ValueError("Lags must contain at least one lag."))
-        return min(values), max(values)
+    @property
+    def resolved_extreme_lags(self) -> tuple[int, int]:
+        """The minimum and maximum of the lags used by the resolved components.
+
+        The tabularization uses them to compute the feature times. Shared lags do not need a resolution.
+        """
+        if self.shared is not None:
+            values = list(self.shared)
+        else:
+            values = [
+                lag for lags in self.resolved_per_component.values() for lag in lags
+            ]
+        return _min_max(values)
+
+
+def _min_max(values: list[int]) -> tuple[int, int]:
+    if len(values) == 0:
+        raise_log(ValueError("Lags must contain at least one lag."))
+    return min(values), max(values)
 
 
 __all__ = [

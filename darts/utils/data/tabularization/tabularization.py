@@ -1868,7 +1868,7 @@ def _get_feature_times(
         lags_specified = lags_i is not None
         is_label_series = is_training and name_i == _TARGET
         times_i = series_i.time_index if series_specified else None
-        lags_extent = lags_i.extreme_lags if lags_specified else None
+        lags_extent = lags_i.resolved_extreme_lags if lags_specified else None
         max_lag_i = -lags_extent[0] if lags_specified else None
         min_lag_i = -lags_extent[1] if lags_specified else None
         if is_label_series:
@@ -2237,7 +2237,7 @@ def _check_series_length(
     if not (is_label_series or lags_specified):
         return
 
-    lags_extent = lags.extreme_lags if lags_specified else None
+    lags_extent = lags.resolved_extreme_lags if lags_specified else None
     if is_label_series:
         minimum_len = (
             (-lags_extent[0] if lags_specified else 0)

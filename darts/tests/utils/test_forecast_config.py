@@ -171,12 +171,12 @@ class TestResolve:
         }
         assert config.extreme_lags("target") == (-4, -1)
 
-    def test_extreme_lags_use_the_resolved_components(self):
+    def test_extreme_lags_keep_the_unused_default(self):
         config = ForecastConfig(lags={"a": [-1], "b": [-2], "default_lags": [-5]})
         target_lags = config.lags_for("target")
 
-        # Before resolution the legacy extremes still include the unused default.
-        assert target_lags.extreme_lags == (-5, -1)
+        # the extremes include the default, even if no component uses it
+        assert config.extreme_lags("target") == (-5, -1)
 
         config.resolve(["a", "b"])
 
@@ -184,7 +184,10 @@ class TestResolve:
             "a": (-1,),
             "b": (-2,),
         }
-        assert config.extreme_lags("target") == (-2, -1)
+        # the resolution does not change them; the resolved extremes only cover the
+        # lags of the actual components
+        assert config.extreme_lags("target") == (-5, -1)
+        assert target_lags.resolved_extreme_lags == (-2, -1)
 
     def test_unknown_component(self):
         config = ForecastConfig(lags={"unknown": [-1]})

@@ -4873,6 +4873,28 @@ class TestSKLearnModelInputValidation:
         with pytest.raises(ValueError):
             model.fit(ts)
 
+    def test_unused_default_lags_count_in_the_extreme_lags(self):
+        # the extreme lags include the `default_lags` even when every component has
+        # explicit lags, and `fit()` does not change them
+        series = tg.linear_timeseries(length=40, column_name="a").stack(
+            tg.sine_timeseries(length=40, column_name="b")
+        )
+        model = LinearRegressionModel(
+            lags={"a": [-2], "b": [-1], "default_lags": [-6]}, output_chunk_length=2
+        )
+        expected = (-6, 1, None, None, None, None, 0)
+        assert model.extreme_lags == expected
+
+        model.fit(series)
+        assert model.extreme_lags == expected
+        assert model.min_train_series_length == 9
+
+        # the first forecastable point also accounts for the unused default
+        hfc = model.historical_forecasts(
+            series, forecast_horizon=2, retrain=False, last_points_only=True
+        )
+        assert hfc.start_time() == series.time_index[7]
+
     @pytest.mark.skipif(not XGB_AVAILABLE, reason="xgboost required")
     def test_xgb_quantile_loss_invalid_quantile(self):
         from darts.models.forecasting.xgboost import xgb_quantile_loss

@@ -231,13 +231,25 @@ class TestLagsParse:
             {"a": [-2, -1], "b": [-3], "default_lags": [-5]}, kind="target"
         )
 
-        # Before resolution the legacy extremes include the unused default.
+        # the declared extremes include the default, even if no component uses it
         assert lags.extreme_lags == (-5, -1)
+        with pytest.raises(ValueError, match="have not been resolved yet"):
+            _ = lags.resolved_extreme_lags
 
         lags.resolve(["a", "b"])
 
-        # After resolution they only cover the actual components.
-        assert lags.extreme_lags == (-3, -1)
+        # the resolution does not change the declared extremes; the resolved ones only
+        # cover the lags of the actual components
+        assert lags.extreme_lags == (-5, -1)
+        assert lags.resolved_extreme_lags == (-3, -1)
+
+        lags.resolve(["a", "b", "c"])
+        assert lags.resolved_extreme_lags == (-5, -1)
+
+    def test_shared_resolved_extreme_lags_do_not_need_resolution(self):
+        lags = Lags.parse([-4, -2], kind="target")
+
+        assert lags.extreme_lags == lags.resolved_extreme_lags == (-4, -2)
 
     def test_resolved_per_component_requires_resolution(self):
         lags = Lags.parse(2, kind="target")
