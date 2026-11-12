@@ -736,6 +736,9 @@ class TestTimeSeries:
             else:
                 assert ts_intersection.freq == expected
 
+            ts_intersection_other = ts_other.slice_intersect(ts_freq)
+            assert ts_intersection_other.time_index.equals(ts_intersection.time_index)
+
     @pytest.mark.parametrize(
         "index_a,index_b",
         [
