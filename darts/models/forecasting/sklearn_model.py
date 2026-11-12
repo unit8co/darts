@@ -75,7 +75,6 @@ from darts.utils.data.tabularization.tabularization import (
     _create_lagged_component_names,
     _create_lagged_data_autoregression,
     _create_lagged_data_from_config,
-    _resolve_autoregression_lags,
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -805,9 +804,6 @@ class SKLearnModel(GlobalForecastingModel):
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
-        config = self._config
-        strategy = config.strategy
-
         # guarantee that all inputs are either list of TimeSeries or None
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
@@ -843,7 +839,7 @@ class SKLearnModel(GlobalForecastingModel):
             self._uses_static_covariates = True
 
         for covs, name in zip([past_covariates, future_covariates], ["past", "future"]):
-            has_lags = self._config.extreme_lags(name) is not None
+            has_lags = self._config.has_lags(name)
             if covs is not None and not has_lags:
                 raise_log(
                     ValueError(
@@ -880,15 +876,18 @@ class SKLearnModel(GlobalForecastingModel):
         }
 
         # Check if multi-output regression is required
-        requires_multioutput = strategy.n_outputs(series[0].width) > 1
+        requires_multioutput = not series[0].is_univariate or (
+            self.output_chunk_length > 1 and self.multi_models
+        )
 
-        # If multi-output is required and the estimator needs the wrapper, add it
+        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputMixin
         if (
             requires_multioutput
             and not isinstance(self.model, MultiOutputMixin)
-            and strategy.requires_wrapper(
-                native_multioutput=self._supports_native_multioutput,
-                sample_weight=sample_weight is not None,
+            and (
+                not self._supports_native_multioutput
+                or sample_weight
+                is not None  # we have 2D sample (and time) weights, only supported in Darts
             )
         ):
             val_set_name, val_weight_name = self.val_set_params
@@ -915,7 +914,7 @@ class SKLearnModel(GlobalForecastingModel):
             future_covariates=seq2series(future_covariates),
             verbose=verbose,
         )
-        config.resolve(
+        self._config.resolve(
             target_components=series[0].components,
             past_components=(
                 past_covariates[0].components if past_covariates else None
@@ -1166,7 +1165,6 @@ class SKLearnModel(GlobalForecastingModel):
         # prediction
         predictions = []
         last_step_shift = 0
-        lag_data = _resolve_autoregression_lags(self._config)
         # t_pred indicates the number of time steps after the first prediction
         for t_pred in range(0, n, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
@@ -1192,7 +1190,6 @@ class SKLearnModel(GlobalForecastingModel):
                 num_samples=num_samples,
                 uses_static_covariates=self.uses_static_covariates,
                 last_static_covariates_shape=self._static_covariates_shape,
-                lag_data=lag_data,
             )
 
             # X has shape (n_series * n_samples, n_regression_features)
@@ -1932,7 +1929,7 @@ class _ClassifierMixin:
         )
 
         classes = self.class_labels
-        if self._config.strategy.name == "direct" and self.output_chunk_length > 1:
+        if self.multi_models and self.output_chunk_length > 1:
             # make sure that all individual models have seen the same classes during training
             num_components = len(classes) // self.output_chunk_length
 

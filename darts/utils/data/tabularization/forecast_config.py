@@ -144,26 +144,6 @@ class ForecastConfig:
         self.output_chunk_shift = output_chunk_shift
         self._validate()
 
-    @classmethod
-    def _from_lags(
-        cls,
-        *,
-        target: Lags | None = None,
-        past: Lags | None = None,
-        future: Lags | None = None,
-        strategy: OutputChunkStrategy,
-        output_chunk_shift: int = 0,
-    ) -> ForecastConfig:
-        """Build a config from already-parsed lags, without applying the shift again."""
-        config = cls.__new__(cls)
-        config.target = target
-        config.past = past
-        config.future = future
-        config.strategy = strategy
-        config.output_chunk_shift = output_chunk_shift
-        config._validate()
-        return config
-
     def _validate(self) -> None:
         if self.target is None and self.past is None and self.future is None:
             raise_log(

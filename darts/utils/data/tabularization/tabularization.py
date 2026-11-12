@@ -42,7 +42,7 @@ _PAST_COV = "past_covariates"
 _FUTURE_COV = "future_covariates"
 
 
-def _create_lagged_data_core(
+def _create_lagged_data_from_config(
     config: "ForecastConfig",
     target_series: TimeSeriesLike | None = None,
     past_covariates: TimeSeriesLike | None = None,
@@ -57,14 +57,12 @@ def _create_lagged_data_core(
     sample_weight: str | TimeSeriesLike | None = None,
     stride: int = 1,
     show_warnings: bool = True,
-) -> tuple[
-    ArrayOrArraySequence,
-    None | ArrayOrArraySequence,
-    Sequence[pd.Index],
-    tuple[int, int] | None,
-    ArrayOrArraySequence | None,
-]:
-    """Implementation of :func:`create_lagged_data`."""
+) -> LaggedData:
+    """Implementation of :func:`create_lagged_data` for an already resolved `config`.
+
+    The config is used as is (it is not resolved against the series). The features are returned as plain arrays;
+    only the public helpers wrap them in :class:`LaggedFeatures`.
+    """
     if is_training and (target_series is None):
         raise_log(
             ValueError("Must specify `target_series` if `is_training = True`."),
@@ -187,57 +185,12 @@ def _create_lagged_data_core(
         sample_weights = np.concatenate(sample_weights, axis=0)
     elif not sample_weights:
         sample_weights = None
-    return X, y, times, last_static_covariates_shape, sample_weights
-
-
-def _create_lagged_data_from_config(
-    config: "ForecastConfig",
-    target_series: TimeSeriesLike | None = None,
-    past_covariates: TimeSeriesLike | None = None,
-    future_covariates: TimeSeriesLike | None = None,
-    uses_static_covariates: bool = True,
-    last_static_covariates_shape: tuple[int, int] | None = None,
-    max_samples_per_ts: int | None = None,
-    check_inputs: bool = False,
-    is_training: bool = True,
-    concatenate: bool = True,
-    sample_weight: str | TimeSeriesLike | None = None,
-    stride: int = 1,
-    use_moving_windows: bool = True,
-    show_warnings: bool = True,
-) -> LaggedData:
-    """Create lagged data from an already resolved forecast config.
-
-    This is the config-driven entry point of the tabularization core. It does not
-    re-validate the lags (the config is already resolved) and passes the same
-    config to the internal window helpers.
-    """
-    target_sequence = None if target_series is None else series2seq(target_series)
-    X, y, times, static_shape, sample_weights = _create_lagged_data_core(
-        config,
-        target_series=target_sequence,
-        past_covariates=past_covariates,
-        future_covariates=future_covariates,
-        uses_static_covariates=uses_static_covariates,
-        last_static_covariates_shape=last_static_covariates_shape,
-        max_samples_per_ts=max_samples_per_ts,
-        check_inputs=check_inputs,
-        use_moving_windows=use_moving_windows,
-        is_training=is_training,
-        concatenate=concatenate,
-        sample_weight=sample_weight,
-        stride=stride,
-        show_warnings=show_warnings,
-    )
     return LaggedData(
         X=X,
         y=y,
         times=times,
         sample_weights=sample_weights,
-        series_lengths=(
-            None if target_sequence is None else [len(ts) for ts in target_sequence]
-        ),
-        last_static_covariates_shape=static_shape,
+        last_static_covariates_shape=last_static_covariates_shape,
     )
 
 
@@ -1194,7 +1147,7 @@ def _create_lagged_data_by_moving_window(
     """
     output_chunk_length = config.output_chunk_length
     output_chunk_shift = config.output_chunk_shift
-    multi_models = config.strategy.name == "direct"
+    multi_models = config.multi_models
 
     feature_times, min_lags, max_lags = _get_feature_times(
         config,
@@ -1412,7 +1365,7 @@ def _create_lagged_data_by_intersecting_times(
     """
     output_chunk_length = config.output_chunk_length
     output_chunk_shift = config.output_chunk_shift
-    multi_models = config.strategy.name == "direct"
+    multi_models = config.multi_models
 
     feature_times, min_lags, _ = _get_feature_times(
         config,
@@ -1532,41 +1485,6 @@ def _create_lagged_data_by_intersecting_times(
     return X, y, shared_times, weights
 
 
-def _resolve_autoregression_lags(
-    config: "ForecastConfig",
-) -> tuple[
-    dict[str, list[int]],
-    dict[str, dict[str, list[int]]],
-    dict[str, np.ndarray],
-]:
-    """Materialize the lag views used by autoregressive prediction.
-
-    The config is constant across the steps of a forecast, so callers that iterate
-    over ``t_pred`` can resolve this once and pass it to
-    :func:`_create_lagged_data_autoregression`.
-    """
-    lags: dict[str, list[int]] = {}
-    component_lags: dict[str, dict[str, list[int]]] = {}
-    for kind in ("target", "past", "future"):
-        lags_for_kind = config.lags_for(kind)
-        if lags_for_kind is None:
-            continue
-        if lags_for_kind.is_component_specific:
-            lags[kind] = list(lags_for_kind.extreme_lags)
-            component_lags[kind] = {
-                component: list(component_lags)
-                for component, component_lags in lags_for_kind.resolved_per_component.items()
-            }
-        else:
-            lags[kind] = list(lags_for_kind.shared)
-    relative_cov_lags = {
-        kind: np.array(lags[kind]) - lags[kind][0]
-        for kind in ("past", "future")
-        if kind in lags
-    }
-    return lags, component_lags, relative_cov_lags
-
-
 def _create_lagged_data_autoregression(
     target_series: TimeSeriesLike,
     t_pred: int,
@@ -1577,25 +1495,16 @@ def _create_lagged_data_autoregression(
     uses_static_covariates: bool,
     last_static_covariates_shape: tuple[int, int] | None,
     num_samples: int,
-    lag_data: tuple[
-        dict[str, list[int]],
-        dict[str, dict[str, list[int]]],
-        dict[str, np.ndarray],
-    ]
-    | None = None,
 ) -> np.ndarray:
     """Extract lagged data from target, past covariates and future covariates for auto-regression
     with SKLearnModels.
     """
     series_length = len(target_series)
     shift = config.strategy.feature_lag_offset
-    lags, component_lags, relative_cov_lags = (
-        lag_data if lag_data is not None else _resolve_autoregression_lags(config)
-    )
-
     X = []
     for series_type in ["target", "past", "future"]:
-        if series_type not in lags:
+        lags = config.lags_for(series_type)
+        if lags is None:
             continue
 
         # extract series specific data
@@ -1605,31 +1514,24 @@ def _create_lagged_data_autoregression(
             else covariate_matrices[series_type]
         )
 
-        if series_type not in component_lags:
-            # for global lags over all components, directly extract lagged values from the data
-            if series_type == "target":
-                relative_lags = [
-                    lag - (shift + last_step_shift) for lag in lags[series_type]
-                ]
-            else:
-                relative_lags = relative_cov_lags[series_type] + t_pred
+        # convert relative lags to positions in the values matrix: the target matrix ends at the
+        # last known target value, the covariate matrices start at the minimum covariate lag
+        if series_type == "target":
+            lags_shift = -shift - last_step_shift
+        else:
+            lags_shift = -lags.extreme_lags[0] + t_pred
 
-            lagged_data = values_matrix[:, relative_lags].reshape(
-                series_length * num_samples, -1
-            )
+        if not lags.is_component_specific:
+            # for global lags over all components, directly extract lagged values from the data
+            lagged_data = values_matrix[:, [lag + lags_shift for lag in lags.shared]]
         else:
             # for component-specific lags, sort by lags and components and then extract
-            tmp_X = _extract_component_lags_autoregression(
-                series_type=series_type,
+            lagged_data = _extract_component_lags_autoregression(
                 values_matrix=values_matrix,
-                shift=shift,
-                last_step_shift=last_step_shift,
-                t_pred=t_pred,
-                lags=lags,
-                component_lags=component_lags,
+                component_lags=lags.resolved_per_component,
+                lags_shift=lags_shift,
             )
-            lagged_data = tmp_X.reshape(series_length * num_samples, -1)
-        X.append(lagged_data)
+        X.append(lagged_data.reshape(series_length * num_samples, -1))
     # concatenate retrieved lags
     X = np.concatenate(X, axis=1)
 
@@ -1653,27 +1555,17 @@ def _create_lagged_data_autoregression(
 
 
 def _extract_component_lags_autoregression(
-    series_type: str,
     values_matrix: np.ndarray,
-    shift: int,
-    last_step_shift: int,
-    t_pred: int,
-    lags: dict[str, list[int]],
-    component_lags: dict[str, dict[str, list[int]]],
+    component_lags: dict[str, tuple[int, ...]],
+    lags_shift: int,
 ) -> np.ndarray:
     """Extract, concatenate and reorder component-wise lags to obtain a feature order
     identical to tabularization.
     """
     # prepare index to reorder features by lags across components
     comp_lags_reordered = np.concatenate([
-        comp_lags for comp_lags in component_lags[series_type].values()
+        comp_lags for comp_lags in component_lags.values()
     ]).argsort(**STABLE_SORT_KWARGS)
-
-    # convert relative lags to absolute
-    if series_type == "target":
-        lags_shift = -shift - last_step_shift
-    else:
-        lags_shift = -lags[series_type][0] + t_pred
 
     # extract features
     tmp_X = [
@@ -1682,7 +1574,7 @@ def _extract_component_lags_autoregression(
             [lag + lags_shift for lag in comp_lags],
             comp_i,
         ]
-        for comp_i, comp_lags in enumerate(component_lags[series_type].values())
+        for comp_i, comp_lags in enumerate(component_lags.values())
     ]
 
     # concatenate on features dimension and reorder

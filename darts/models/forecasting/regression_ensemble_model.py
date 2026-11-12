@@ -226,13 +226,14 @@ class RegressionEnsembleModel(EnsembleModel):
             )
         min_lag, max_lag = 0, regression_model.output_chunk_length - 1
         future_lags = config.lags_for("future")
-        legacy_future_lags = (
+        # component-specific lags are checked (and reported) by their extreme values
+        model_lags = (
             future_lags.extreme_lags
             if future_lags.is_component_specific
             else future_lags.shared
         )
         # adjust model lags by `output_chunk_shift` to get original lags
-        lags_observed = [lag - output_chunk_shift for lag in legacy_future_lags]
+        lags_observed = [lag - output_chunk_shift for lag in model_lags]
         if any([not (min_lag <= lag <= max_lag) for lag in lags_observed]):
             raise_log(
                 ValueError(

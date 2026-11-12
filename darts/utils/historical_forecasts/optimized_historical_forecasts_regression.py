@@ -63,10 +63,10 @@ def _optimized_historical_forecasts_regression(
         **{k: v for k, v in predict_kwargs.items() if k in super_predict_params},
     )
 
+    multi_models = model.multi_models
+    output_chunk_length = model.output_chunk_length
+    output_chunk_shift = model.output_chunk_shift
     config = model._config
-    strategy = config.strategy
-    output_chunk_length = strategy.output_chunk_length
-    output_chunk_shift = config.output_chunk_shift
 
     # get target lags and X positions for auto-regression
     target_lags_obj = config.lags_for("target")
@@ -92,20 +92,19 @@ def _optimized_historical_forecasts_regression(
 
     # determine the forecast scenario
     is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
-    is_direct = strategy.name == "direct"
 
-    if is_direct:
+    if multi_models:
         # how many steps the model predicts in a single forecast
-        n_output_steps = strategy.pred_dim
+        n_output_steps = output_chunk_length
         # how many steps to adjust the first forecasted step (from a lag perspective)
-        output_step_adjust = strategy.feature_lag_offset
+        output_step_adjust = 0
         # stride can be applied directly before `predict()`
         stride_tabularization = stride
     else:
-        # recursive strategies only predict one step at a time
-        n_output_steps = strategy.pred_dim
+        # multi_models=False only predicts one step at a time
+        n_output_steps = 1
         # the predicted step is `output_chunk_length - 1` ahead of the target end time
-        output_step_adjust = strategy.feature_lag_offset
+        output_step_adjust = output_chunk_length - 1
         # stride can only be applied directly with auto-regression since `forecast_horizon` is
         # generated through multiple forecast iterations.
         # without auto-regression, we apply a trick for efficiency: all rows will be kept since the
@@ -133,7 +132,7 @@ def _optimized_historical_forecasts_regression(
         # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
         (
             hist_fct_start,
-            _,
+            hist_fct_end,
             hist_fct_tgt_start,
             hist_fct_tgt_end,
             hist_fct_pc_start,
@@ -290,7 +289,7 @@ def _optimized_historical_forecasts_regression(
                 -1,
             )
 
-            if not is_direct and not is_auto_regression:
+            if not multi_models and not is_auto_regression:
                 # forecast horizon can include multiple forecasts (of consecutive rows) -> apply
                 # sliding window -> (n_forecasts, 1, 1, forecast_horizon, n_components, n_samples)
                 forecast = sliding_window_view(

@@ -45,23 +45,9 @@ class OutputChunkStrategy(ABC):
             )
         self.output_chunk_length = output_chunk_length
 
-    def n_outputs(self, n_components: int) -> int:
-        """Number of estimator outputs for ``n_components`` target components."""
-        self._validate_n_components(n_components)
-        return self.pred_dim * n_components
-
     @abstractmethod
     def estimator_index(self, horizon: int, component: int, n_components: int) -> int:
         """Index of the estimator for ``horizon`` and ``component``."""
-
-    @abstractmethod
-    def requires_wrapper(
-        self,
-        *,
-        native_multioutput: bool,
-        sample_weight: bool,
-    ) -> bool:
-        """Whether the model needs the multi-output wrapper."""
 
     def _validate_n_components(self, n_components: int) -> None:
         if not isinstance(n_components, int) or isinstance(n_components, bool):
@@ -126,14 +112,6 @@ class DirectOutputStrategy(OutputChunkStrategy):
         self._validate_component(component, n_components)
         return horizon * n_components + component
 
-    def requires_wrapper(
-        self,
-        *,
-        native_multioutput: bool,
-        sample_weight: bool,
-    ) -> bool:
-        return not native_multioutput or sample_weight
-
 
 class RecursiveOutputStrategy(OutputChunkStrategy):
     """One estimator per target component predicting the last chunk step (``multi_models=False``)."""
@@ -149,14 +127,6 @@ class RecursiveOutputStrategy(OutputChunkStrategy):
         self._validate_horizon(horizon)
         self._validate_component(component, n_components)
         return component
-
-    def requires_wrapper(
-        self,
-        *,
-        native_multioutput: bool,
-        sample_weight: bool,
-    ) -> bool:
-        return not native_multioutput or sample_weight
 
 
 __all__ = [

@@ -13,7 +13,6 @@ class TestDirectOutputStrategy:
         assert strategy.name == "direct"
         assert strategy.pred_dim == 4
         assert strategy.feature_lag_offset == 0
-        assert strategy.n_outputs(n_components=3) == 12
 
     def test_estimator_index(self):
         strategy = DirectOutputStrategy(output_chunk_length=4)
@@ -26,25 +25,6 @@ class TestDirectOutputStrategy:
 
         for (horizon, component), index in expected.items():
             assert strategy.estimator_index(horizon, component, 3) == index
-
-    @pytest.mark.parametrize(
-        "native_multioutput,sample_weight,expected",
-        [
-            (True, False, False),
-            (False, False, True),
-            (True, True, True),
-        ],
-    )
-    def test_requires_wrapper(self, native_multioutput, sample_weight, expected):
-        strategy = DirectOutputStrategy(output_chunk_length=4)
-
-        assert (
-            strategy.requires_wrapper(
-                native_multioutput=native_multioutput,
-                sample_weight=sample_weight,
-            )
-            is expected
-        )
 
     @pytest.mark.parametrize("output_chunk_length", [0, -1, 1.5, True])
     def test_invalid_output_chunk_length(self, output_chunk_length):
@@ -71,7 +51,6 @@ class TestRecursiveOutputStrategy:
         assert strategy.name == "recursive"
         assert strategy.pred_dim == 1
         assert strategy.feature_lag_offset == 3
-        assert strategy.n_outputs(n_components=3) == 3
 
     def test_estimator_index(self):
         strategy = RecursiveOutputStrategy(output_chunk_length=4)
@@ -79,25 +58,6 @@ class TestRecursiveOutputStrategy:
         for horizon in range(4):
             for component in range(3):
                 assert strategy.estimator_index(horizon, component, 3) == component
-
-    @pytest.mark.parametrize(
-        "native_multioutput,sample_weight,expected",
-        [
-            (True, False, False),
-            (False, False, True),
-            (True, True, True),
-        ],
-    )
-    def test_requires_wrapper(self, native_multioutput, sample_weight, expected):
-        strategy = RecursiveOutputStrategy(output_chunk_length=4)
-
-        assert (
-            strategy.requires_wrapper(
-                native_multioutput=native_multioutput,
-                sample_weight=sample_weight,
-            )
-            is expected
-        )
 
     @pytest.mark.parametrize("output_chunk_length", [0, -1, 1.5, True])
     def test_invalid_output_chunk_length(self, output_chunk_length):
@@ -123,8 +83,8 @@ def test_invalid_index_types(strategy_cls, bad_value):
     strategy = strategy_cls(output_chunk_length=4)
 
     with pytest.raises(ValueError):
-        strategy.n_outputs(bad_value)
-    with pytest.raises(ValueError):
         strategy.estimator_index(bad_value, 0, 3)
     with pytest.raises(ValueError):
         strategy.estimator_index(0, bad_value, 3)
+    with pytest.raises(ValueError):
+        strategy.estimator_index(0, 0, bad_value)

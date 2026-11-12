@@ -31,5 +31,4 @@ class LaggedData:
     y: np.ndarray | Sequence[np.ndarray] | None
     times: Sequence[pd.Index]
     sample_weights: np.ndarray | Sequence[np.ndarray] | None = None
-    series_lengths: list[int] | None = None
     last_static_covariates_shape: tuple[int, int] | None = None
