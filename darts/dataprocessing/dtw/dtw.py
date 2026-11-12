@@ -329,12 +329,17 @@ def dtw(
 
         distance = _default_distance_uni if both_univariate else _default_distance_multi
 
+    values_x = series1.all_values(copy=False)
+    values_y = series2.all_values(copy=False)
+    values_x = (
+        np.median(values_x, axis=2) if series1.is_stochastic else values_x[:, :, 0]
+    )
+    values_y = (
+        np.median(values_y, axis=2) if series2.is_stochastic else values_y[:, :, 0]
+    )
     if both_univariate:
-        values_x = series1.univariate_values(copy=False)
-        values_y = series2.univariate_values(copy=False)
-    else:
-        values_x = series1.values(copy=False)
-        values_y = series2.values(copy=False)
+        values_x = values_x[:, 0]
+        values_y = values_y[:, 0]
 
     if np.any(np.isnan(values_x)):
         raise_log(
