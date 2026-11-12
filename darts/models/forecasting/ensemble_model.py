@@ -506,7 +506,10 @@ class EnsembleModel(GlobalForecastingModel):
             predictions = [pred.mean(axis=2) for pred in predictions]
         else:
             predictions = [
-                pred.quantile(self.train_samples_reduction) for pred in predictions
+                pred.quantile(self.train_samples_reduction)
+                if pred.is_stochastic
+                else pred
+                for pred in predictions
             ]
         return predictions[0] if is_single_series else predictions
 
