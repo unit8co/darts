@@ -34,6 +34,7 @@ from darts.models import (
     TiRex2Model,
     TiRexModel,
 )
+from darts.models.components.layer_norm_variants import RINorm
 from darts.tests.models.forecasting.foundation_test_utils import (
     CHRONOS2_TINY_DIR,
     HF_HUB_DOWNLOAD_PATCH_TARGET,
@@ -47,6 +48,17 @@ from darts.tests.models.forecasting.foundation_test_utils import (
     timesfm2p5_tiny_context,
     tiny_t0_dir,
 )
+
+
+def _expected_normalized_rin(
+    params, series=True, past_covariates=False, future_covariates=False
+):
+    return {
+        "params": params,
+        "series": series,
+        "past_covariates": past_covariates,
+        "future_covariates": future_covariates,
+    }
 
 
 def generate_series(n_variables: int, length: int, prefix: str):
@@ -63,6 +75,7 @@ def generate_series(n_variables: int, length: int, prefix: str):
 
 class TestFoundationModel:
     series = generate_series(n_variables=2, length=100, prefix="A")
+    past_cov = generate_series(n_variables=2, length=100, prefix="B")
     future_cov = generate_series(n_variables=3, length=200, prefix="C")
 
     @patch(
@@ -117,25 +130,41 @@ class TestFoundationModel:
     @pytest.mark.parametrize(
         "user_rin, expected_rin",
         [
-            (True, {"affine": False}),
-            ({"eps": 1e-7}, {"affine": False, "eps": 1e-7}),
-            ({"affine": True}, {"affine": False}),
-            ({"eps": 1e-9, "affine": True}, {"affine": False, "eps": 1e-9}),
+            (True, _expected_normalized_rin({"affine": False})),
+            (
+                {"eps": 1e-7},
+                _expected_normalized_rin({"eps": 1e-7, "affine": False}),
+            ),
+            ({"affine": True}, _expected_normalized_rin({"affine": False})),
+            (
+                {"eps": 1e-9, "affine": True},
+                _expected_normalized_rin({"eps": 1e-9, "affine": False}),
+            ),
+            # when `affine` is already `False`, no override is needed, and the original
+            # (un-normalized) input is left untouched in `pl_module_params`
             ({"affine": False}, {"affine": False}),
             ({"eps": 1e-8, "affine": False}, {"eps": 1e-8, "affine": False}),
             (False, False),
+            # regression test: the newer per-group dict format must also get its `affine`
+            # override applied (under `"params"`, not as a stray top-level key)
+            (
+                {"series": True, "past_covariates": True},
+                _expected_normalized_rin({"affine": False}, past_covariates=True),
+            ),
+            (
+                {"params": {"affine": False}, "series": True, "past_covariates": True},
+                {"params": {"affine": False}, "series": True, "past_covariates": True},
+            ),
         ],
     )
     def test_rinorm(self, mock_method, caplog, user_rin, expected_rin):
         """Checks that RINorm works, and that affine=True is overridden to affine=False."""
-        # `affine=True` is overridden to `affine=False`
-        affine_override = False
-        if user_rin is True or (
-            isinstance(user_rin, dict) and user_rin.get("affine", True)
-        ):
-            affine_override = True
+        # `affine=True` (explicitly, or by omission/default) is overridden to `affine=False`
+        affine_override = RINorm.parse_config(
+            user_rin
+        ) is not None and RINorm.parse_config(user_rin)["params"].get("affine", True)
 
-        # `use_reversible_instance_norm` is overridden to `use_reversible_instance_norm={"affine": False}`
+        # `use_reversible_instance_norm` is overridden with `affine=False` set on its `"params"`
         with caplog.at_level(logging.WARNING):
             model = Chronos2Model(
                 input_chunk_length=12,
@@ -149,7 +178,15 @@ class TestFoundationModel:
         ) is affine_override
         # RINorm affine transformation is disabled
         assert model.pl_module_params["use_reversible_instance_norm"] == expected_rin
-        model.fit(series=self.series)
+        # the model must actually be fit with `past_covariates` for a `use_reversible_instance_norm`
+        # config that enables its `"past_covariates"` group to be valid
+        uses_past_covariates = (
+            isinstance(user_rin, dict) and user_rin.get("past_covariates") is True
+        )
+        model.fit(
+            series=self.series,
+            past_covariates=self.past_cov if uses_past_covariates else None,
+        )
 
         if user_rin:
             assert model.model.rin.affine is False
