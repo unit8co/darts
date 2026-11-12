@@ -27,6 +27,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Theta and FourTheta parameters `season_mode`, `model_mode`, `trend_mode`.
   - `darts.utils.statistics` parameter `model`.
 - Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
+- `TFTExplainer` can now explain more series than the model's batch size. [#3182](https://github.com/unit8co/darts/pull/3182) by [Mahimn](https://github.com/mahimn01).
 
 **Fixed**
 
