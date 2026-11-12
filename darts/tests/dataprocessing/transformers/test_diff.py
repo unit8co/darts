@@ -332,6 +332,46 @@ class TestDiff:
         self.assert_series_equal(expected, result_insample, equal_nan=(not dropna))
         self.assert_series_equal(expected, result_full_series, equal_nan=(not dropna))
 
+    @pytest.mark.parametrize(
+        "lags,dropna",
+        [(1, True), (1, False), ([1, 12], True), ([1, 2], False)],
+    )
+    def test_diff_inverse_transform_stochastic_after_deterministic_fit(
+        self, lags, dropna
+    ):
+        n_forecast = 10
+        n_samples = 3
+        diff = Diff(lags=lags, dropna=dropna)
+        series_tf = diff.fit_transform(self.sine_series)
+        stochastic_vals = np.repeat(series_tf.all_values(copy=False), n_samples, axis=2)
+        stochastic_vals += np.array([0.0, 0.1, -0.2]).reshape(1, 1, n_samples)
+        stochastic_tf = series_tf.with_values(stochastic_vals)
+
+        result_full = diff.inverse_transform(stochastic_tf)
+        insample_tf = series_tf[:-n_forecast]
+        result_forecast = diff.inverse_transform(
+            stochastic_tf[-n_forecast:], insample=insample_tf
+        )
+
+        assert result_full.n_samples == n_samples
+        assert result_forecast.n_samples == n_samples
+        for sample_idx in range(n_samples):
+            sample_tf = series_tf.with_values(stochastic_vals[:, :, sample_idx])
+            expected_full = diff.inverse_transform(sample_tf)
+            expected_forecast = diff.inverse_transform(
+                sample_tf[-n_forecast:], insample=insample_tf
+            )
+            np.testing.assert_allclose(
+                result_full.all_values(copy=False)[:, :, sample_idx],
+                expected_full.values(copy=False),
+                equal_nan=True,
+            )
+            np.testing.assert_allclose(
+                result_forecast.all_values(copy=False)[:, :, sample_idx],
+                expected_forecast.values(copy=False),
+                equal_nan=True,
+            )
+
     def test_diff_inverse_transform_insample_extends_beyond_fit(self):
         """
         Tests ``insample`` that extends beyond the fitted range still inverse-transforms
