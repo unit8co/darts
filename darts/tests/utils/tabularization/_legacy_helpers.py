@@ -1,11 +1,9 @@
 """Test-only wrappers for the pre-config tabularization signatures.
 
-The public API is config-first. These helpers keep the existing generated test suites readable while
-they are migrated incrementally.
+The public API takes a `ForecastConfig`. These helpers let the existing generated test suites keep passing
+the lags and output chunk arguments directly: they build the `ForecastConfig` (which validates them) and call
+the public functions.
 """
-
-from itertools import chain
-from math import inf
 
 from darts import TimeSeries
 from darts.typing import TimeSeriesLike
@@ -18,28 +16,28 @@ from darts.utils.data.tabularization import (
 from darts.utils.data.tabularization.tabularization import _get_feature_times
 
 
-def _check_lags(lags, lags_past_covariates, lags_future_covariates):
-    all_lags = [lags, lags_past_covariates, lags_future_covariates]
-    suffixes = ["", "_past_covariates", "_future_covariates"]
-    lags_is_none = []
-    for i, (suffix, lags_i) in enumerate(zip(suffixes, all_lags)):
-        lags_is_none.append(lags_i is None)
-        if lags_i is None:
-            continue
-        is_target_or_past = i < 2
-        max_lag = -1 if is_target_or_past else inf
-        if isinstance(lags_i, dict):
-            lags_i = list(set(chain(*lags_i.values())))
-        if any((lag > max_lag or not isinstance(lag, int)) for lag in lags_i):
-            raise ValueError(
-                f"`lags{suffix}` must be a `Sequence` or `Dict` containing only `int` "
-                f"values less than {max_lag + 1}."
-            )
-    if all(lags_is_none):
-        raise ValueError(
-            "Must specify at least one of: `lags`, `lags_past_covariates`, "
-            "`lags_future_covariates`."
-        )
+def _unshift_future_lags(lags_future_covariates, output_chunk_shift):
+    """Undo the `output_chunk_shift` that `ForecastConfig` applies to the future lags.
+
+    The legacy helpers took future lags that were already relative to the shifted output chunk.
+    """
+    if not output_chunk_shift or lags_future_covariates is None:
+        return lags_future_covariates
+
+    def unshift(lags):
+        if (
+            isinstance(lags, tuple)
+            and len(lags) == 2
+            and all(isinstance(lag, int) for lag in lags)
+        ):
+            lags = list(range(-lags[0], lags[1]))
+        if isinstance(lags, list) and all(isinstance(lag, int) for lag in lags):
+            return [lag - output_chunk_shift for lag in lags]
+        return lags
+
+    if isinstance(lags_future_covariates, dict):
+        return {comp: unshift(lags) for comp, lags in lags_future_covariates.items()}
+    return unshift(lags_future_covariates)
 
 
 def _config(
@@ -50,24 +48,17 @@ def _config(
     output_chunk_length=1,
     output_chunk_shift=0,
     multi_models=True,
-    check_inputs=True,
 ):
-    if check_inputs:
-        if not isinstance(output_chunk_length, int) or output_chunk_length < 1:
-            raise ValueError("`output_chunk_length` must be a positive `int`.")
-        _check_lags(lags, lags_past_covariates, lags_future_covariates)
-    # Build with no shift and then set the field: the legacy helpers applied
-    # ``output_chunk_shift`` to the time index, not to the future lags.
-    config = ForecastConfig(
+    return ForecastConfig(
         lags=lags,
         lags_past_covariates=lags_past_covariates,
-        lags_future_covariates=lags_future_covariates,
+        lags_future_covariates=_unshift_future_lags(
+            lags_future_covariates, output_chunk_shift
+        ),
         output_chunk_length=output_chunk_length,
-        output_chunk_shift=0,
+        output_chunk_shift=output_chunk_shift,
         multi_models=multi_models,
     )
-    config.output_chunk_shift = output_chunk_shift
-    return config
 
 
 def _create_lagged_training_data(
@@ -96,7 +87,6 @@ def _create_lagged_training_data(
         output_chunk_length=output_chunk_length,
         output_chunk_shift=output_chunk_shift,
         multi_models=multi_models,
-        check_inputs=check_inputs,
     )
     return create_lagged_training_data(
         config,
@@ -134,7 +124,6 @@ def _create_lagged_prediction_data(
         lags=lags,
         lags_past_covariates=lags_past_covariates,
         lags_future_covariates=lags_future_covariates,
-        check_inputs=check_inputs,
     )
     return create_lagged_prediction_data(
         config,
@@ -207,7 +196,6 @@ def _get_feature_times_legacy(
         lags_future_covariates=lags_future_covariates,
         output_chunk_length=output_chunk_length,
         output_chunk_shift=output_chunk_shift,
-        check_inputs=check_inputs,
     )
     return _get_feature_times(
         config,

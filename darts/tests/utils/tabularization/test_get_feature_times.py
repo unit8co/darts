@@ -870,7 +870,7 @@ class TestGetFeatureTimes:
         with pytest.raises(ValueError) as err:
             _get_feature_times(target_series=target, is_training=False)
         assert (
-            "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
+            "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None."
             == str(err.value)
         )
 
@@ -958,7 +958,7 @@ class TestGetFeatureTimes:
         with pytest.raises(ValueError) as err:
             _get_feature_times(target_series=series, lags=[0], is_training=False)
         assert (
-            "`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0."
+            "`lags` - `default_lags`: list must contain only strictly negative integers. Given: [0]."
         ) == str(err.value)
         # `lags_past_covariates` not <= -1:
         with pytest.raises(ValueError) as err:
@@ -966,7 +966,8 @@ class TestGetFeatureTimes:
                 past_covariates=series, lags_past_covariates=[0], is_training=False
             )
         assert (
-            "`lags_past_covariates` must be a `Sequence` or `Dict` containing only `int` values less than 0."
+            "`lags_past_covariates` - `default_lags`: list must contain only strictly negative "
+            "integers. Given: [0]."
         ) == str(err.value)
         # `lags_future_covariates` can be positive, negative, and/or zero - no error should be thrown:
         _get_feature_times(

@@ -1041,7 +1041,7 @@ class TestCreateLaggedPredictionData:
                     uses_static_covariates=False,
                 )
             assert (
-                "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
+                "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None."
                 == str(err.value)
             )
 
@@ -1101,7 +1101,7 @@ class TestCreateLaggedPredictionData:
                     use_moving_windows=use_moving_windows,
                 )
             assert (
-                "`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0."
+                "`lags` - `default_lags`: list must contain only strictly negative integers. Given: [0]."
             ) == str(err.value)
             # Test invalid `lags_past_covariates` values:
             with pytest.raises(ValueError) as err:
@@ -1112,7 +1112,8 @@ class TestCreateLaggedPredictionData:
                     use_moving_windows=use_moving_windows,
                 )
             assert (
-                "`lags_past_covariates` must be a `Sequence` or `Dict` containing only `int` values less than 0."
+                "`lags_past_covariates` - `default_lags`: list must contain only strictly negative "
+                "integers. Given: [0]."
             ) == str(err.value)
             # This should *not* throw an error:
             _create_lagged_prediction_data(

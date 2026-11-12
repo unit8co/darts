@@ -2081,7 +2081,10 @@ class TestCreateLaggedTrainingData:
                     use_moving_windows=use_moving_windows,
                     output_chunk_shift=0,
                 )
-            assert "`output_chunk_length` must be a positive `int`." == str(err.value)
+            assert (
+                "`output_chunk_length` must be a positive integer greater than 0. Given: 0."
+                == str(err.value)
+            )
             with pytest.raises(ValueError) as err:
                 _create_lagged_training_data(
                     target_series=target,
@@ -2091,7 +2094,10 @@ class TestCreateLaggedTrainingData:
                     use_moving_windows=use_moving_windows,
                     output_chunk_shift=0,
                 )
-            assert "`output_chunk_length` must be a positive `int`." == str(err.value)
+            assert (
+                "`output_chunk_length` must be a positive integer greater than 0. Given: 1.1."
+                == str(err.value)
+            )
 
     def test_lagged_training_data_invalid_stride_error(self):
         """
@@ -2148,7 +2154,7 @@ class TestCreateLaggedTrainingData:
                     output_chunk_shift=0,
                 )
             assert (
-                "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
+                "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None."
                 == str(err.value)
             )
 
@@ -2222,7 +2228,7 @@ class TestCreateLaggedTrainingData:
                     output_chunk_shift=0,
                 )
             assert (
-                "`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0."
+                "`lags` - `default_lags`: list must contain only strictly negative integers. Given: [0]."
             ) == str(err.value)
             # Test invalid `lags_past_covariates` values:
             with pytest.raises(ValueError) as err:
@@ -2236,7 +2242,8 @@ class TestCreateLaggedTrainingData:
                     output_chunk_shift=0,
                 )
             assert (
-                "`lags_past_covariates` must be a `Sequence` or `Dict` containing only `int` values less than 0."
+                "`lags_past_covariates` - `default_lags`: list must contain only strictly negative "
+                "integers. Given: [0]."
             ) == str(err.value)
             # Test invalid `lags_future_covariates` values:
             _create_lagged_training_data(
