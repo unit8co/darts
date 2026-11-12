@@ -9,7 +9,6 @@ from sklearn.linear_model import LinearRegression
 from darts import TimeSeries
 from darts.metrics import mape, rmse
 from darts.models import (
-    ExponentialSmoothing,
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
@@ -1176,7 +1175,14 @@ class TestRegressionEnsembleModels:
         """Quantile reduction of the training samples must leave the predictions of
         deterministic forecasting models unchanged."""
         model = RegressionEnsembleModel(
-            forecasting_models=[ExponentialSmoothing(), Theta()],
+            forecasting_models=[
+                LinearRegressionModel(lags=5),
+                LinearRegressionModel(
+                    lags=5,
+                    likelihood="quantile",
+                    quantiles=[0.1, 0.5, 0.9],
+                ),
+            ],
             regression_train_n_points=10,
             regression_train_num_samples=10,
             regression_train_samples_reduction=0.5,
@@ -1185,8 +1191,8 @@ class TestRegressionEnsembleModels:
         assert model.predict(3).n_samples == 1
 
         # deterministic predictions are unchanged, stochastic ones are reduced
-        pred_det = Theta().fit(self.ts_sum1).predict(3)
-        pred_stoch = ExponentialSmoothing().fit(self.ts_sum1).predict(3, num_samples=10)
+        pred_det = TimeSeries.from_values(np.arange(3))
+        pred_stoch = TimeSeries.from_values(np.arange(3 * 10).reshape(3, 1, 10))
         reduced = model._predictions_reduction([pred_det, pred_stoch])
         assert reduced[0] == pred_det
         assert reduced[1] == pred_stoch.quantile(0.5)
