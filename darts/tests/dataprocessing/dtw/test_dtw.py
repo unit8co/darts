@@ -201,6 +201,39 @@ class TestDynamicTimeWarping:
         assert 0.5 > metric1
         assert 5 > metric2
 
+    def test_stochastic_series(self):
+        rng = np.random.default_rng(42)
+        sample_values = np.repeat(self.series2.all_values(copy=False), 20, axis=2)
+        sample_values += rng.normal(scale=0.1, size=sample_values.shape)
+        stochastic = self.series2.with_values(sample_values)
+
+        alignment = dtw.dtw(self.series1, stochastic)
+        median_alignment = dtw.dtw(self.series1, stochastic.median())
+        np.testing.assert_array_equal(alignment.path(), median_alignment.path())
+
+        warped_actual, warped_pred = alignment.warped()
+        assert warped_pred.n_samples == stochastic.n_samples
+        assert dtw_metric(self.series1, stochastic) == pytest.approx(
+            dtw_metric(self.series1, stochastic.median())
+        )
+        np.testing.assert_allclose(
+            dtw_metric(self.series1, stochastic, q=[0.1, 0.9]),
+            mae(warped_actual, warped_pred, q=[0.1, 0.9]),
+        )
+
+        actual_sample_values = np.repeat(
+            self.series1.all_values(copy=False), 20, axis=2
+        )
+        actual_sample_values += rng.normal(scale=0.1, size=actual_sample_values.shape)
+        stochastic_actual = self.series1.with_values(actual_sample_values)
+        actual_alignment = dtw.dtw(stochastic_actual, self.series2)
+        actual_median_alignment = dtw.dtw(stochastic_actual.median(), self.series2)
+        np.testing.assert_array_equal(
+            actual_alignment.path(), actual_median_alignment.path()
+        )
+        warped_stochastic_actual, _ = actual_alignment.warped()
+        assert warped_stochastic_actual.n_samples == stochastic_actual.n_samples
+
     def test_nans(self):
         with pytest.raises(ValueError):
             series1 = _series_from_values([np.nan, 0, 1, 2, 3])

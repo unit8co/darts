@@ -811,20 +811,13 @@ class SKLearnModel(GlobalForecastingModel):
             else features.shape[1]
         )
         for i, (X_i, y_i) in enumerate(zip(features, labels)):
-            # TODO: account for scenario where two wrong shapes can silently hide the problem
-            if expected_nb_feat != X_i.shape[1]:
-                shape_error_msg = []
-                for ts, cov_name, arg_name in zip(
-                    [series, past_covariates, future_covariates],
-                    ["target", "past", "future"],
-                    ["series", "past_covariates", "future_covariates"],
-                ):
-                    if ts is not None and ts[i].width != self.input_dim[cov_name]:
-                        shape_error_msg.append(
-                            f"Expected {self.input_dim[cov_name]} components but received "
-                            f"{ts[i].width} components at index {i} of `{arg_name}`."
-                        )
-                raise_log(ValueError("\n".join(shape_error_msg)))
+            if expected_nb_feat != X_i.shape[1]:  # pragma: no cover
+                raise_log(
+                    ValueError(
+                        f"Expected {expected_nb_feat} lagged features but received "
+                        f"{X_i.shape[1]} at series index {i}."
+                    ),
+                )
             features[i] = X_i[:, :, 0]
             labels[i] = y_i[:, :, 0]
             if sample_weights is not None:
