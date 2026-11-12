@@ -209,6 +209,8 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                     "`component_mask` specified when `fit` was called."
                 ),
             )
+        if start_vals.shape[2] == 1 and series.n_samples > 1:
+            start_vals = np.repeat(start_vals, series.n_samples, axis=2)
         if dropna:
             start_shape = (sum(lags), series.n_components, series.n_samples)
             start_fill_vals = np.full(start_shape, fill_value=np.nan)
