@@ -2812,16 +2812,24 @@ class TimeSeries:
             return time_index[time_index.isin(other._time_index)]
 
     def _slice_intersect_bounds(self, other: Self) -> tuple[int, int]:
-        """Find the start (absolute index) and end (index relative to the end) indices that represent the time
-        intersection from `self` and `other`."""
-        shift_start = n_steps_between(
-            other.start_time(), self.start_time(), freq=self.freq
-        )
-        shift_end = len(other) - (len(self) - shift_start)
+        """Find the slice start and end that represent the time intersection from `self` and `other`.
 
-        shift_start = shift_start if shift_start >= 0 else 0
-        shift_end = shift_end if shift_end < 0 else None
-        return shift_start, shift_end
+        Note: `self` and `other` must share the same frequency.
+        """
+        self_start, other_start = self.start_time(), other.start_time()
+        if self_start <= other_start:
+            try:
+                start_idx = int(self._time_index.get_loc(other_start))
+                max_end_idx = start_idx + len(other)
+            except KeyError:
+                return 0, 0
+        else:
+            try:
+                start_idx = 0
+                max_end_idx = len(other) - int(other._time_index.get_loc(self_start))
+            except KeyError:
+                return 0, 0
+        return start_idx, max_end_idx if max_end_idx <= len(self) else len(self)
 
     def strip(self, how: str = "all") -> Self:
         """Return a slice of the deterministic time series where NaN-containing entries at the beginning and the end
