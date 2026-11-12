@@ -5,11 +5,9 @@ import pytest
 from darts.utils.data.tabularization import (
     ForecastConfig,
     LaggedFeatures,
+    add_static_covariates_to_lagged_data,
     create_lagged_prediction_data,
     create_lagged_training_data,
-)
-from darts.utils.data.tabularization.tabularization import (
-    _add_static_covariates_to_lagged_data,
 )
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -104,7 +102,7 @@ class TestTabularizationContainers:
         static = pd.DataFrame({"sc": [5.0]}, index=target.columns)
         target = target.with_static_covariates(static)
 
-        features_with_static, static_shape = _add_static_covariates_to_lagged_data(
+        features_with_static, static_shape = add_static_covariates_to_lagged_data(
             features=features,
             target_series=target,
             uses_static_covariates=True,
@@ -126,7 +124,7 @@ class TestTabularizationContainers:
         static = pd.DataFrame({"sc": [5.0]}, index=target.columns)
         target = target.with_static_covariates(static)
 
-        features_with_static, _ = _add_static_covariates_to_lagged_data(
+        features_with_static, _ = add_static_covariates_to_lagged_data(
             features=features,
             target_series=target,
             uses_static_covariates=True,
@@ -139,7 +137,7 @@ class TestTabularizationContainers:
         features = LaggedFeatures(np.zeros((4, 2)))
         target = self.target()
 
-        returned, _ = _add_static_covariates_to_lagged_data(
+        returned, _ = add_static_covariates_to_lagged_data(
             features=features,
             target_series=target,
             uses_static_covariates=False,

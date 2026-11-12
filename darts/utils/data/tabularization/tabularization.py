@@ -162,7 +162,7 @@ def _create_lagged_data_from_config(
                 stride=stride,
                 show_warnings=show_warnings,
             )
-        X_i, last_static_covariates_shape = _add_static_covariates_to_lagged_data(
+        X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
             features=X_i,
             target_series=target_i,
             uses_static_covariates=uses_static_covariates,
@@ -899,7 +899,7 @@ def create_lagged_component_names(
     )
 
 
-def _add_static_covariates_to_lagged_data(
+def add_static_covariates_to_lagged_data(
     features: LaggedFeatures | np.ndarray | Sequence[LaggedFeatures | np.ndarray],
     target_series: TimeSeriesLike,
     uses_static_covariates: bool = True,
@@ -1132,7 +1132,7 @@ def _create_lagged_data_by_moving_window(
 ) -> tuple[np.ndarray, np.ndarray | None, pd.Index, np.ndarray | None]:
     """
     Helper function called by `_create_lagged_data` that computes `X`, `y`, and `times` by
-    extracting 'moving windows' from each series using the `_strided_moving_window`
+    extracting 'moving windows' from each series using the `strided_moving_window`
     function. More specifically, to extract the features of a particular series for an
     arbitrary time `t`, a 'window' between times `t - max_lag` and `t - min_lag` is
     extracted, where `max_lag` and `min_lag` are the largest and smallest magnitude lags
@@ -1171,7 +1171,7 @@ def _create_lagged_data_by_moving_window(
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
 
-    time_bounds = _get_shared_times_bounds(*feature_times)
+    time_bounds = get_shared_times_bounds(*feature_times)
     if time_bounds is None:
         raise_log(
             ValueError(
@@ -1232,7 +1232,7 @@ def _create_lagged_data_by_moving_window(
                 :,
                 :,
             ]
-            windows = _strided_moving_window(
+            windows = strided_moving_window(
                 x=vals, window_len=window_len, stride=stride, axis=0, check_inputs=False
             )
 
@@ -1276,7 +1276,7 @@ def _create_lagged_data_by_moving_window(
                 :,
                 :,
             ]
-            windows = _strided_moving_window(
+            windows = strided_moving_window(
                 x=vals,
                 window_len=output_chunk_length,
                 stride=stride,
@@ -1300,7 +1300,7 @@ def _extract_lagged_vals_from_windows(
 ) -> np.ndarray:
     """
     Helper function called by `_create_lagged_data_by_moving_window` that
-    reshapes the `windows` formed by `_strided_moving_window` from the
+    reshapes the `windows` formed by `strided_moving_window` from the
     shape `(num_windows, num_components, num_series, window_len)` to the
     shape `(num_windows, num_components * window_len, num_series)`. This reshaping
     is done such that the order of elements along axis 1 matches the pattern
@@ -1388,7 +1388,7 @@ def _create_lagged_data_by_intersecting_times(
                 ValueError("`stride` must be a positive integer greater than 0."),
             )
     sample_weight_vals = _extract_sample_weight(sample_weight, target_series)
-    shared_times = _get_shared_times(*feature_times, sort=True)
+    shared_times = get_shared_times(*feature_times, sort=True)
     if shared_times is None:
         raise_log(
             ValueError(
@@ -1541,7 +1541,7 @@ def _create_lagged_data_autoregression(
         # static covariates can be added to each block; valid since
         # each block contains same number of observations:
         X = np.split(X, series_length, axis=0)
-        X, _ = _add_static_covariates_to_lagged_data(
+        X, _ = add_static_covariates_to_lagged_data(
             features=X,
             target_series=target_series,
             uses_static_covariates=uses_static_covariates,
@@ -1604,7 +1604,7 @@ def _get_feature_times(
     """
     Returns a tuple containing the times in `target_series`, the times in `past_covariates`, and the times in
     `future_covariates` that *could* be used to create features. The returned tuple of times can then be passed
-    to `_get_shared_times` to compute the 'eligible time points' shared by all specified series.
+    to `get_shared_times` to compute the 'eligible time points' shared by all specified series.
 
     Notes
     -----
@@ -1821,7 +1821,7 @@ def _get_feature_times(
     )
 
 
-def _get_shared_times(
+def get_shared_times(
     *series_or_times: TimeSeries | pd.Index | None, sort: bool = True
 ) -> pd.Index:
     """
@@ -1894,7 +1894,7 @@ def _get_shared_times(
     return shared_times
 
 
-def _get_shared_times_bounds(
+def get_shared_times_bounds(
     *series_or_times: Sequence[TimeSeries | pd.Index | None],
 ) -> tuple[pd.Index, pd.Index] | None:
     """
@@ -1904,7 +1904,7 @@ def _get_shared_times_bounds(
 
     Notes
     -----
-    If all specified `series_or_times` are of the same frequency, then `_get_shared_times_bounds`
+    If all specified `series_or_times` are of the same frequency, then `get_shared_times_bounds`
     returns tight `bounds` (i.e. the earliest and latest time within the intersection of all the timeseries
     is returned). To see this, suppose we have three equal-frequency series with observations made at different
     times:
@@ -1980,7 +1980,7 @@ def _get_shared_times_bounds(
     return bounds
 
 
-def _strided_moving_window(
+def strided_moving_window(
     x: np.ndarray,
     window_len: int,
     stride: int = 1,
@@ -1996,12 +1996,12 @@ def _strided_moving_window(
     -----
     This function is similar to `sliding_window_view` in `np.lib.stride_tricks`, except that:
 
-    - `_strided_moving_window` allows for consecutive windows to be separated by a specified `stride`,
+    - `strided_moving_window` allows for consecutive windows to be separated by a specified `stride`,
       whilst `sliding_window_view` does not.
-    - `_strided_moving_window` can only operate along a single axis, whereas `sliding_window_view` can
+    - `strided_moving_window` can only operate along a single axis, whereas `sliding_window_view` can
       operate along multiple axes.
 
-    Additionally, unlike `sliding_window_view`, using `_strided_moving_window` doesn't require `numpy >= 1.20.0`.
+    Additionally, unlike `sliding_window_view`, using `strided_moving_window` doesn't require `numpy >= 1.20.0`.
 
     Parameters
     ----------

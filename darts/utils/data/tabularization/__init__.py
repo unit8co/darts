@@ -9,22 +9,14 @@ consume a :class:`ForecastConfig` and resolve it against the components of the s
 from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.data.tabularization.forecast_config import ForecastConfig
 from darts.utils.data.tabularization.tabularization import (
-    _add_static_covariates_to_lagged_data as add_static_covariates_to_lagged_data,
-)
-from darts.utils.data.tabularization.tabularization import (
-    _get_shared_times as get_shared_times,
-)
-from darts.utils.data.tabularization.tabularization import (
-    _get_shared_times_bounds as get_shared_times_bounds,
-)
-from darts.utils.data.tabularization.tabularization import (
-    _strided_moving_window as strided_moving_window,
-)
-from darts.utils.data.tabularization.tabularization import (
+    add_static_covariates_to_lagged_data,
     create_lagged_component_names,
     create_lagged_data,
     create_lagged_prediction_data,
     create_lagged_training_data,
+    get_shared_times,
+    get_shared_times_bounds,
+    strided_moving_window,
 )
 
 __all__ = [
