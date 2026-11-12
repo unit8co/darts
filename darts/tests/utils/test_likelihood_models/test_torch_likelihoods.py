@@ -208,6 +208,31 @@ class TestTorchLikelihoodModel:
         target = torch.tensor([0.0, 3.0, 60.0, 2e4], dtype=torch.float64)
         assert torch.isfinite(distr.log_prob(target)).all()
 
+    def test_dirichlet_learns_concentration(self):
+        likelihood = DirichletLikelihood()
+        expected_alphas = torch.tensor(
+            [[1.0, 2.0, 3.0], [10.0, 20.0, 30.0]],
+            dtype=torch.float64,
+        )
+        model_output = torch.log(torch.expm1(expected_alphas)).reshape(2, 1, 3, 1)
+
+        (alphas,) = likelihood._params_from_output(model_output)
+        alphas = alphas[:, 0]
+        torch.testing.assert_close(alphas, expected_alphas)
+
+        means = alphas / alphas.sum(dim=-1, keepdim=True)
+        torch.testing.assert_close(means[0], means[1])
+
+        distribution = likelihood._distr_from_params((alphas,))
+        assert torch.all(distribution.variance[1] < distribution.variance[0])
+
+        extreme_output = torch.tensor([-50.0, 0.0, 50.0], dtype=torch.float64).reshape(
+            1, 1, 3, 1
+        )
+        (extreme_alphas,) = likelihood._params_from_output(extreme_output)
+        assert torch.all(extreme_alphas > 0)
+        assert torch.isfinite(extreme_alphas).all()
+
 
 class TestTorchLikelihoodInputValidation:
     def test_gaussian_negative_prior_mu(self):
