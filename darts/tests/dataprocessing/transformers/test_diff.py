@@ -356,23 +356,19 @@ class TestDiff:
         assert result_full.n_samples == n_samples
         assert result_forecast.n_samples == n_samples
         for sample_idx in range(n_samples):
-            sample_tf = series_tf.with_values(
-                stochastic_vals[:, :, sample_idx : sample_idx + 1]
-            )
+            sample_tf = series_tf.with_values(stochastic_vals[:, :, sample_idx])
             expected_full = diff.inverse_transform(sample_tf)
             expected_forecast = diff.inverse_transform(
                 sample_tf[-n_forecast:], insample=insample_tf
             )
             np.testing.assert_allclose(
-                result_full.all_values(copy=False)[:, :, sample_idx : sample_idx + 1],
-                expected_full.all_values(copy=False),
+                result_full.all_values(copy=False)[:, :, sample_idx],
+                expected_full.values(copy=False),
                 equal_nan=True,
             )
             np.testing.assert_allclose(
-                result_forecast.all_values(copy=False)[
-                    :, :, sample_idx : sample_idx + 1
-                ],
-                expected_forecast.all_values(copy=False),
+                result_forecast.all_values(copy=False)[:, :, sample_idx],
+                expected_forecast.values(copy=False),
                 equal_nan=True,
             )
 
