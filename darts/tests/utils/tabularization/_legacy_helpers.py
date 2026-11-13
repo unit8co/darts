@@ -185,7 +185,6 @@ def _get_feature_times_legacy(
     output_chunk_shift: int = 0,
     is_training: bool = True,
     return_min_and_max_lags: bool = False,
-    check_inputs: bool = True,
     show_warnings: bool = True,
 ):
     if is_training and target_series is None:
@@ -204,6 +203,5 @@ def _get_feature_times_legacy(
         future_covariates=future_covariates,
         is_training=is_training,
         return_min_and_max_lags=return_min_and_max_lags,
-        check_inputs=check_inputs,
         show_warnings=show_warnings,
     )

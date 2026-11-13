@@ -874,8 +874,8 @@ class TestGetFeatureTimes:
             == str(err.value)
         )
 
-    def test_feature_times_series_too_short_no_lags_or_no_check_inputs(self):
-        """Tests that `_get_feature_times` checks series length when `lags=None` or `check_inputs=False`."""
+    def test_feature_times_series_too_short_no_target_lags(self):
+        """Tests that `_get_feature_times` checks the `target_series` length when `lags=None`."""
         series = linear_timeseries(start=1, length=2, freq=1)
         with pytest.raises(ValueError) as err:
             _get_feature_times(
@@ -888,20 +888,6 @@ class TestGetFeatureTimes:
         assert (
             "`target_series` must have at least "
             "`output_chunk_shift + output_chunk_length` = 5 "
-            "time steps; instead, it only has 2."
-        ) == str(err.value)
-
-        with pytest.raises(ValueError) as err:
-            _get_feature_times(
-                target_series=series,
-                lags=[-20, -10],
-                output_chunk_length=5,
-                is_training=True,
-                check_inputs=False,
-            )
-        assert (
-            "`target_series` must have at least "
-            "`-min(lags) + output_chunk_shift + output_chunk_length` = 25 "
             "time steps; instead, it only has 2."
         ) == str(err.value)
 

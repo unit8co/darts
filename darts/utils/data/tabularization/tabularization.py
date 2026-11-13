@@ -1156,7 +1156,6 @@ def _create_lagged_data_by_moving_window(
         future_covariates=future_covariates,
         is_training=is_training,
         return_min_and_max_lags=True,
-        check_inputs=check_inputs,
         show_warnings=show_warnings,
     )
     if check_inputs:
@@ -1374,7 +1373,6 @@ def _create_lagged_data_by_intersecting_times(
         future_covariates=future_covariates,
         is_training=is_training,
         return_min_and_max_lags=True,
-        check_inputs=check_inputs,
         show_warnings=show_warnings,
     )
     if check_inputs:
@@ -1598,7 +1596,6 @@ def _get_feature_times(
     future_covariates: TimeSeries | None = None,
     is_training: bool = True,
     return_min_and_max_lags: bool = False,
-    check_inputs: bool = True,
     show_warnings: bool = True,
 ) -> FeatureTimes | tuple[FeatureTimes, MinLags, MaxLags]:
     """
@@ -1693,10 +1690,6 @@ def _get_feature_times(
     is_training
         Optionally, specifies that training data is to be generated from the specified series. If `True`,
         `target_series`, `output_chunk_length`, and `multi_models` must all be specified.
-    check_inputs
-        Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Should be set
-        to `False` if inputs have already been checked for validity (e.g. inside the `__init__` of a class), otherwise
-        should be set to `True`.
     return_min_and_max_lags
         Optionally, specifies whether the largest magnitude lag value for each series should also be returned along with
         the 'eligible' feature times
