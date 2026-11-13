@@ -4671,6 +4671,51 @@ class TestProbabilisticSKLearnModels:
         assert (pred9 == pred10).all()
         assert (pred11 == pred7).all()
 
+    def test_probabilistic_predict_random_state_ar_sampling(self):
+        """`random_state` must seed `predict()` once and advance the RNG across AR steps."""
+        model = LinearRegressionModel(
+            lags=1,
+            output_chunk_length=1,
+            likelihood="quantile",
+            random_state=41,
+        )
+        series = self.constant_noisy_ts[:50]
+        model.fit(series)
+        horizon = 12
+        num_samples = 100
+        predict_seed = 7
+
+        uniform_leading: list[float] = []
+        original_uniform = np.random.uniform
+
+        def recording_uniform(*args, **kwargs):
+            sample = original_uniform(*args, **kwargs)
+            uniform_leading.append(float(sample.flat[0]))
+            return sample
+
+        with (
+            patch.object(np.random, "uniform", side_effect=recording_uniform),
+            patch.object(
+                np.random, "set_state", wraps=np.random.set_state
+            ) as set_state,
+        ):
+            model.predict(n=horizon, num_samples=num_samples, random_state=predict_seed)
+
+        # `@random_method` on `predict()` must not re-seed on each `_predict()` call.
+        assert set_state.call_count == 1
+        # one `QuantileRegression.sample()` call (one `np.random.uniform`) per AR step
+        assert len(uniform_leading) == horizon
+        # re-seeding would replay the same leading uniform every step
+        assert len(set(uniform_leading)) == horizon
+
+        pred_a = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        pred_b = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        assert (pred_a == pred_b).all()
+
     @pytest.mark.parametrize(
         "config", param_product(models_cls_kwargs_errs, [True, False])
     )
