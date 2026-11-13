@@ -125,6 +125,35 @@ def test_component_specific_and_sequence_outputs():
         config.resolved_per_component("target")
 
 
+@pytest.mark.parametrize(
+    "lags",
+    [
+        {"a": [-2], "b": [-1], "c": [-1]},
+        {"c": [-1], "b": [-1], "a": [-2]},
+        {"default_lags": [-1], "a": [-2]},
+        {"a": [-2], "default_lags": [-1]},
+    ],
+)
+def test_component_lags_are_matched_by_name(lags):
+    # the lags are matched to the components by name, not by their position in the dictionary,
+    # and the `default_lags` apply to every component without explicit lags
+    target = (
+        linear_timeseries(length=10, column_name="a")
+        .stack(linear_timeseries(length=10, start_value=10, column_name="b"))
+        .stack(linear_timeseries(length=10, start_value=20, column_name="c"))
+    )
+
+    X, _ = create_lagged_prediction_data(
+        ForecastConfig(lags=lags), target_series=target, uses_static_covariates=False
+    )
+
+    # one row per time from the 3rd step until one step after the end of the series; the
+    # features are ordered by lag, then by component: a(t-2), b(t-1), c(t-1)
+    values = target.values()
+    expected = np.stack([values[:-1, 0], values[1:, 1], values[1:, 2]], axis=1)
+    np.testing.assert_array_equal(X.to_numpy()[:, :, 0], expected)
+
+
 def _call_public_helper(helper, config, target):
     kwargs = {"target_series": target}
     if helper is not create_lagged_component_names:
