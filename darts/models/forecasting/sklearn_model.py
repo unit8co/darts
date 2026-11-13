@@ -614,7 +614,7 @@ class SKLearnModel(GlobalForecastingModel):
             uses_static_covariates=self.uses_static_covariates,
             last_static_covariates_shape=last_static_covariates_shape,
             max_samples_per_ts=max_samples_per_ts,
-            check_inputs=True,
+            check_inputs=False,
             concatenate=False,
             sample_weight=sample_weight,
             stride=stride,
