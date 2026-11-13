@@ -68,6 +68,7 @@ class TestFFT:
         idx = pd.date_range("2024-01-01", periods=73, freq="D")
         series = TimeSeries.from_times_and_values(idx, np.arange(73.0))
         pred_ts = series.end_time() + series.freq
+        assert series.start_time().day_of_week != pred_ts.day_of_week
 
         cropped = _crop_to_match_seasons(series, required_matches={"day_of_week"})
         assert len(cropped) < len(series)

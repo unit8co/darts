@@ -235,9 +235,9 @@ class FFT(LocalForecastingModel):
             The attributes of pd.Timestamp that will be used to create a training sequence that is cropped at the
             beginning such that the first timestamp of the training sequence and the first prediction point have
             matching phases. If the series has a yearly seasonality, include `month`, if it has a monthly
-            seasonality, include `day`, if it has a weekly seasonality, include `day_of_week`, etc. Only properties
-            are supported (e.g. `day_of_week`, not the method `weekday`). If not set, or explicitly set to None, the
-            model tries to find the pd.Timestamp attributes that are relevant for the seasonality automatically.
+            seasonality, include `day`, if it has a weekly seasonality, include `day_of_week`, etc. If not set, or
+            explicitly set to None, the model tries to find the pd.Timestamp attributes that are relevant for the
+            seasonality automatically.
         trend
             If set, indicates what kind of detrending will be applied before performing DFT.
             Possible values: 'poly', 'exp' or None, for polynomial trend, exponential trend or no trend, respectively.
