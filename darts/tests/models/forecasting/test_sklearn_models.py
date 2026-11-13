@@ -4672,7 +4672,7 @@ class TestProbabilisticSKLearnModels:
         assert (pred11 == pred7).all()
 
     def test_probabilistic_predict_random_state_ar_sampling(self):
-        """Explicit `random_state` must not re-seed inside autoregressive `predict()` loops."""
+        """`random_state` must seed `predict()` once and advance the RNG across AR steps."""
         model = LinearRegressionModel(
             lags=1,
             output_chunk_length=1,
@@ -4683,18 +4683,30 @@ class TestProbabilisticSKLearnModels:
         model.fit(series)
         horizon = 12
         num_samples = 100
+        predict_seed = 7
 
-        pred_none = model.predict(
-            n=horizon, num_samples=num_samples, random_state=None
-        ).all_values()
-        pred_rs = model.predict(
-            n=horizon, num_samples=num_samples, random_state=0
-        ).all_values()
+        uniform_leading: list[float] = []
+        original_uniform = np.random.uniform
 
-        # last horizon step: sample spread with fixed seed must match an unseeded run
-        max_none = pred_none[-1, 0, :].max()
-        max_rs = pred_rs[-1, 0, :].max()
-        assert max_rs < 2 * max_none
+        def recording_uniform(*args, **kwargs):
+            sample = original_uniform(*args, **kwargs)
+            uniform_leading.append(float(sample.flat[0]))
+            return sample
+
+        with (
+            patch.object(np.random, "uniform", side_effect=recording_uniform),
+            patch.object(
+                np.random, "set_state", wraps=np.random.set_state
+            ) as set_state,
+        ):
+            model.predict(n=horizon, num_samples=num_samples, random_state=predict_seed)
+
+        # `@random_method` on `predict()` must not re-seed on each `_predict()` call.
+        assert set_state.call_count == 1
+        # one `QuantileRegression.sample()` call (one `np.random.uniform`) per AR step
+        assert len(uniform_leading) == horizon
+        # re-seeding would replay the same leading uniform every step
+        assert len(set(uniform_leading)) == horizon
 
         pred_a = model.predict(
             n=horizon, num_samples=num_samples, random_state=38
