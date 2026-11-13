@@ -26,11 +26,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - ExponentialSmoothing parameters `trend` and `seasonal`.
   - Theta and FourTheta parameters `season_mode`, `model_mode`, `trend_mode`.
   - `darts.utils.statistics` parameter `model`.
+- Improved ensembling of probabilistic forecasts with `NaiveEnsembleModel`. The ensemble now samples from the mixture of the models rather averaging (which shrank predictive variance and did not preserve the actual value space). Each output sample is a full sample trajectory of a uniformly drawn model. Deterministic predictions and likelihood parameters are still averaged. [#3353](https://github.com/unit8co/darts/pull/3353). By [Mateen Sharief](https://github.com/mateen-789).
 - Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
 
 **Fixed**
 
-- Fixed a bug in `NaiveEnsembleModel`, where the samples of probabilistic predictions (`num_samples > 1`) were averaged across the models. This shrank the predictive variance by `1 / sqrt(n_models)` and did not preserve discrete predictions (e.g. from classification models). The ensemble now samples from the mixture of the models: each output sample is a full sample trajectory of a uniformly drawn model (reproducible with `random_state`). Deterministic predictions and likelihood parameters are still averaged. [#3353](https://github.com/unit8co/darts/pull/3353). By [Mateen Sharief](https://github.com/mateen-789).
 - Fixed `IQRDetector` being unavailable from the top-level `darts.ad` package. [#3362](https://github.com/unit8co/darts/pull/3362) by [Abhay Juloori](https://github.com/AbhayJuloori).
 - Fixed `Diff.inverse_transform()` failing on probabilistic forecasts when the transformer was fitted on deterministic data. [#3357](https://github.com/unit8co/darts/pull/3357) by [Abhay Juloori](https://github.com/AbhayJuloori).
 - Fixed Dynamic Time Warping (DTW) `darts.dataprocessing.dtw` for probabilistic series which computed the alignment only on the first sample drawn from the series. DTW now aligns on median values for probabilistic series and preserves samples in warped output. [#3361](https://github.com/unit8co/darts/pull/3361) by [Abhay Juloori](https://github.com/AbhayJuloori).

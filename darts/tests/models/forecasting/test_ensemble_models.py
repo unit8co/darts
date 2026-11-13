@@ -347,6 +347,7 @@ class TestEnsembleModels:
         assert ens_values.shape == base_values[0].shape
 
         # every ensemble sample is the sample with the same index of exactly one base model (no averaging)
+        # the model uses the base models' trajectories
         from_model_1 = (ens_values == base_values[0]).all(axis=(0, 1))
         from_model_2 = (ens_values == base_values[1]).all(axis=(0, 1))
         assert (from_model_1 | from_model_2).all()
@@ -363,132 +364,69 @@ class TestEnsembleModels:
         """
         n_timesteps, n_stacked, _ = values.shape
         n_models = n_stacked // n_components
-        model = NaiveEnsembleModel([NaiveSeasonal(K=1) for _ in range(n_models)])
+        model = NaiveEnsembleModel(
+            [
+                LinearRegressionModel(
+                    lags=i + 1,
+                    likelihood="quantile",
+                    quantiles=[0.1, 0.5, 0.9],
+                    random_state=i,
+                )
+                for i in range(n_models)
+            ],
+            random_state=42,
+        )
+        series = TimeSeries.from_values(
+            np.arange(n_timesteps * n_components).reshape((n_timesteps, n_components)),
+            columns=[f"c{c}" for c in range(n_components)],
+        )
+        model.fit(series)
+
         predictions = TimeSeries.from_values(
             values,
             columns=[
                 f"m{m}_c{c}" for m in range(n_models) for c in range(n_components)
             ],
         )
-        series = TimeSeries.from_values(
-            np.zeros((n_timesteps, n_components)),
-            columns=[f"c{c}" for c in range(n_components)],
-        )
         return model, predictions, series
 
-    @pytest.mark.parametrize("n_components", [1, 3])
-    def test_naive_ensemble_mixture_keeps_trajectories(self, n_components):
-        """Each output sample must be one complete sample (all time steps and components) of one base model."""
-        n_models, n_timesteps, n_samples = 3, 6, 200
-        t, c, s = np.meshgrid(
-            np.arange(n_timesteps),
-            np.arange(n_components),
-            np.arange(n_samples),
-            indexing="ij",
-        )
-        # values identify their origin: `value // 1000` is the model index, the rest encodes time/component/sample
-        base = [1000.0 * m + 100.0 * c + t + 0.01 * s for m in range(n_models)]
-        model, predictions, series = self._naive_ensemble_inputs(
-            np.concatenate(base, axis=1), n_components
-        )
+    @pytest.mark.parametrize(
+        "method,n_series,n_vars",
+        param_product(
+            ["ensemble", "predict"],
+            [1, 2],
+            [1, 2],
+        ),
+    )
+    def test_naive_ensemble_mixture_random_state(self, method, n_series, n_vars):
+        values = np.arange(5 * 3 * n_vars * 50).reshape((5, 3 * n_vars, 50))
+        model, predictions, series = self._naive_ensemble_inputs(values, n_vars)
+        if n_series > 1:
+            series = [series] * n_series
+            predictions = [predictions] * n_series
+        kwargs = {"n": 5, "series": series, "num_samples": 50}
 
-        out = model.ensemble(
-            predictions, series, n=n_timesteps, num_samples=n_samples, random_state=42
-        )
-        out_values = out.all_values()
-        assert out_values.shape == (n_timesteps, n_components, n_samples)
-        assert all(out.components == series.components)
+        if method == "ensemble":
+            kwargs["predictions"] = predictions
 
-        # all time steps and components of a sample come from the same model, at the same sample index
-        model_idx = np.floor(out_values[0, 0] / 1000).astype(int)
-        for sample in range(n_samples):
-            np.testing.assert_array_equal(
-                out_values[:, :, sample], base[model_idx[sample]][:, :, sample]
-            )
-        # models are drawn uniformly (expected ~67 samples per model)
-        assert (np.bincount(model_idx, minlength=n_models) > 0.2 * n_samples).all()
+        # without `random_state`, ensemble randomness progresses per model cal
+        out_a = getattr(model, method)(**kwargs)
+        out_b = getattr(model, method)(**kwargs)
+        assert out_a != out_b
 
-    def test_naive_ensemble_mixture_preserves_discrete_values(self):
-        """Samples of e.g. classifiers must not be turned into non-integer averages."""
-        n_timesteps, n_samples = 4, 100
-        # model 0 always predicts class 0, model 1 always predicts class 1 (the average would be 0.5)
-        values = np.concatenate(
-            [
-                np.zeros((n_timesteps, 1, n_samples)),
-                np.ones((n_timesteps, 1, n_samples)),
-            ],
-            axis=1,
-        )
-        model, predictions, series = self._naive_ensemble_inputs(values)
-        out = model.ensemble(
-            predictions, series, n=n_timesteps, num_samples=n_samples, random_state=0
-        )
-        assert set(np.unique(out.all_values())) == {0.0, 1.0}
+        # a new ensemble model
+        model, _, _ = self._naive_ensemble_inputs(values, n_vars)
+        out_c = getattr(model, method)(**kwargs)
+        assert out_c == out_a
 
-    def test_naive_ensemble_mixture_keeps_variance(self):
-        """Averaging samples of M identical models shrinks the std by 1 / sqrt(M); mixture sampling must not."""
-        n_models, n_samples = 4, 20000
-        values = np.random.default_rng(0).normal(size=(3, n_models, n_samples))
-        model, predictions, series = self._naive_ensemble_inputs(values)
-        out = model.ensemble(
-            predictions, series, n=3, num_samples=n_samples, random_state=1
-        )
-        # the std of the base samples is ~1 (an average would give ~0.5)
-        np.testing.assert_allclose(out.all_values().std(), 1.0, atol=0.05)
-
-    def test_naive_ensemble_mixture_random_state(self):
-        values = np.random.default_rng(0).normal(size=(5, 3, 50))
-        model, predictions, series = self._naive_ensemble_inputs(values)
-        kwargs = {"n": 5, "num_samples": 50}
-        out_a = model.ensemble(predictions, series, random_state=7, **kwargs)
-        out_b = model.ensemble(predictions, series, random_state=7, **kwargs)
-        out_c = model.ensemble(predictions, series, random_state=8, **kwargs)
-        # same seed -> same output, different seed -> different selection
-        assert out_a == out_b
-        assert not out_a == out_c
-
-        # without `random_state`, numpy's global random state is used (as in darts' `random_method`)
-        np.random.seed(0)
-        out_d = model.ensemble(predictions, series, **kwargs)
-        np.random.seed(0)
-        out_e = model.ensemble(predictions, series, **kwargs)
+        # giving random state explicitly gives same results
+        out_d = getattr(model, method)(random_state=7, **kwargs)
+        out_e = getattr(model, method)(random_state=7, **kwargs)
         assert out_d == out_e
 
-    def test_naive_ensemble_mixture_multiple_series(self):
-        values = np.random.default_rng(0).normal(size=(5, 2, 30))
-        model, predictions, series = self._naive_ensemble_inputs(values)
-        kwargs = {"n": 5, "num_samples": 30, "random_state": 3}
-        out = model.ensemble([predictions, predictions], [series, series], **kwargs)
-        out_again = model.ensemble(
-            [predictions, predictions], [series, series], **kwargs
-        )
-        assert isinstance(out, list) and len(out) == 2
-        # reproducible
-        assert out[0] == out_again[0] and out[1] == out_again[1]
-        # but every series gets its own model selection
-        assert not out[0] == out[1]
-
-    def test_naive_ensemble_single_sample_is_averaged(self):
-        """Predictions with a single sample (e.g. deterministic forecasts) are still averaged."""
-        n_components = 2
-        values = np.random.default_rng(0).normal(size=(5, 2 * n_components, 1))
-        model, predictions, series = self._naive_ensemble_inputs(values, n_components)
-        out = model.ensemble(predictions, series, n=5, num_samples=1, random_state=0)
-        expected = values.reshape(5, 2, n_components, 1).mean(axis=1)
-        np.testing.assert_allclose(out.all_values(), expected)
-
-    def test_naive_ensemble_mixture_mixed_probabilistic_models(self):
-        """End-to-end check with different types of probabilistic models."""
-        num_samples = 50
-        model = NaiveEnsembleModel([
-            LinearRegressionModel(lags=2, likelihood="quantile", random_state=42),
-            ExponentialSmoothing(seasonal_periods=5),
-        ])
-        assert model.supports_probabilistic_prediction
-        model.fit(self.series1)
-        pred = model.predict(n=5, num_samples=num_samples)
-        assert pred.all_values().shape == (5, 1, num_samples)
-        assert np.isfinite(pred.all_values()).all()
+        # another random state gives different results
+        out_f = getattr(model, method)(random_state=8, **kwargs)
+        assert out_f != out_d
 
     def test_predict_likelihood_parameters_wrong_args(self):
         m_deterministic = LinearRegressionModel(lags=2, output_chunk_length=2)

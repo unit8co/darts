@@ -11,32 +11,29 @@ from darts import TimeSeries
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.typing import TimeSeriesLike
-from darts.utils.utils import MAX_NUMPY_SEED_VALUE
+from darts.utils.utils import random_method
 
 
 class NaiveEnsembleModel(EnsembleModel):
+    @random_method
     def __init__(
         self,
         forecasting_models: list[ForecastingModel],
         train_forecasting_models: bool = True,
         show_warnings: bool = True,
+        random_state: int | None = None,
     ):
         """Naive combination model
 
-        Naive implementation of `EnsembleModel`.
+        Depending on how :func:`predict()` is called, there are differences in how the forecasts of all
+        `forecasting_models` (`F`) are combined:
 
-        For deterministic predictions, returns the component-wise average of all predictions of the constituent
-        models.
-
-        For stochastic predictions (when calling `predict()` with `num_samples > 1`), the samples are *not* averaged:
-        averaging i.i.d. samples shrinks the predictive variance by a factor of `1 / n_models` and does not preserve
-        discrete values (e.g. predictions of classification models). Instead, the ensemble samples from the mixture of
-        the constituent models. Each output sample is a complete sample (all forecast time steps and all target
-        components) of one constituent model, drawn uniformly at random for every output sample. Use the
-        `random_state` argument of `predict()` to obtain reproducible results.
-
-        When predicting likelihood parameters (`predict_likelihood_parameters=True`), the parameters of the
-        constituent models are averaged.
+        - Deterministic predictions (`num_samples == 1`): gives the component-wise average of `F`.
+        - Stochastic predictions (`num_samples > 1`): samples from the mixture of stochastic `F`. Each output
+          sample is a complete sample trajectory (all forecast time steps and all target components) of one model,
+          drawn uniformly at random for every output sample.
+        - Likelihood parameter predictions (`predict_likelihood_parameters=True`): gives the
+          component- and parameter-wise average of `F`.
 
         If `future_covariates` or `past_covariates` are provided at training or inference time,
         they will be passed only to the models supporting them.
@@ -51,6 +48,8 @@ class NaiveEnsembleModel(EnsembleModel):
             pretrained `GlobalForecastingModels`). Default: ``True``.
         show_warnings
             Whether to show warnings related to models covariates support.
+        random_state
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -114,6 +113,7 @@ class NaiveEnsembleModel(EnsembleModel):
                 )
         return self
 
+    @random_method
     def ensemble(
         self,
         predictions: TimeSeriesLike,
@@ -124,31 +124,12 @@ class NaiveEnsembleModel(EnsembleModel):
         random_state: int | None = None,
         verbose: bool | None = None,
     ) -> TimeSeriesLike:
-        """Combine the `forecasting_models` predictions, component-wise.
-
-        - Deterministic predictions (`n_samples == 1`): average across the models.
-        - Stochastic predictions (`n_samples > 1`): sample from the mixture of the models.
-        - Likelihood parameters (`predict_likelihood_parameters=True`): average across the models.
-        """
-
-        rng = None
-        if num_samples > 1 and not predict_likelihood_parameters:
-            if random_state is None:
-                # no explicit seed: follow darts' convention (see `darts.utils.utils.random_method`) and draw
-                # from numpy's global random state. Seeded base models leave that state at a position that
-                # depends on their own `random_state`, so the result is reproducible whenever the base models
-                # are seeded (and can be controlled with `np.random.seed()` otherwise).
-                random_state = np.random.randint(0, high=MAX_NUMPY_SEED_VALUE)
-            # a single generator is shared by all series: every series gets different model selections,
-            # and the results are still reproducible for a fixed `random_state`
-            rng = np.random.default_rng(random_state)
-
         # at this point, if `predict_likelihood_parameters=True`, it's guaranteed
         # that all models use the same likelihood
         if isinstance(predictions, Sequence):
             return [
                 (
-                    self._target_average(p, ts, rng)
+                    self._target_average(p, ts)
                     if not predict_likelihood_parameters
                     else self._params_average(p, ts)
                 )
@@ -156,7 +137,7 @@ class NaiveEnsembleModel(EnsembleModel):
             ]
         else:
             return (
-                self._target_average(predictions, series, rng)
+                self._target_average(predictions, series)
                 if not predict_likelihood_parameters
                 else self._params_average(predictions, series)
             )
@@ -165,7 +146,6 @@ class NaiveEnsembleModel(EnsembleModel):
         self,
         prediction: TimeSeries,
         series: TimeSeries,
-        rng: np.random.Generator | None,
     ) -> TimeSeries:
         """Combine across the models, keep n_samples, rename components.
 
@@ -176,39 +156,25 @@ class NaiveEnsembleModel(EnsembleModel):
         """
         n_forecasting_models = len(self.forecasting_models)
         n_components = series.n_components
-        prediction_values = prediction.all_values(copy=False)
+        n_samples = prediction.n_samples
+        prediction_values = prediction.all_values(copy=False).reshape(
+            prediction.n_timesteps, n_forecasting_models, n_components, n_samples
+        )
 
         if prediction.n_samples > 1:
-            n_samples = prediction.n_samples
             # (time, model * component, sample) -> (time, model, component, sample)
-            values_per_model = prediction_values.reshape(
-                prediction.n_timesteps, n_forecasting_models, n_components, n_samples
-            )
             # uniformly draw the model that generates each output sample
-            model_idx = rng.integers(0, n_forecasting_models, size=n_samples)
+            model_idx = np.random.randint(0, n_forecasting_models, size=n_samples)
             # pair model `model_idx[s]` with sample index `s`; the advanced indices are separated by a slice,
             # so numpy puts the sample axis first: (sample, time, component) -> (time, component, sample)
-            target_values = values_per_model[:, model_idx, :, np.arange(n_samples)]
-            target_values = target_values.transpose(1, 2, 0)
+            prediction_values = prediction_values[:, model_idx, :, np.arange(n_samples)]
+            prediction_values = prediction_values.transpose(1, 2, 0)
         else:
-            target_values = np.zeros((
-                prediction.n_timesteps,
-                n_components,
-                prediction.n_samples,
-            ))
-            for idx_target in range(n_components):
-                target_values[:, idx_target] = prediction_values[
-                    :,
-                    range(
-                        idx_target,
-                        n_forecasting_models * n_components,
-                        n_components,
-                    ),
-                ].mean(axis=1)
+            prediction_values = prediction_values.mean(axis=1)
 
         return TimeSeries(
             times=prediction.time_index,
-            values=target_values,
+            values=prediction_values,
             components=series.components,
             copy=False,
             **series._attrs,
