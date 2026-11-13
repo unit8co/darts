@@ -31,6 +31,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed probabilistic `SKLearnModel` sampled predictions producing unrealistically wide values when `random_state` was explicitely set and `n > output_chunk_length` (including optimized historical forecasts); the RNG was reset on each autoregressive `_predict()` call instead of once per forecast. [#3369](https://github.com/unit8co/darts/pull/3369) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed `IQRDetector` being unavailable from the top-level `darts.ad` package. [#3362](https://github.com/unit8co/darts/pull/3362) by [Abhay Juloori](https://github.com/AbhayJuloori).
 - Fixed `Diff.inverse_transform()` failing on probabilistic forecasts when the transformer was fitted on deterministic data. [#3357](https://github.com/unit8co/darts/pull/3357) by [Abhay Juloori](https://github.com/AbhayJuloori).
 - Fixed Dynamic Time Warping (DTW) `darts.dataprocessing.dtw` for probabilistic series which computed the alignment only on the first sample drawn from the series. DTW now aligns on median values for probabilistic series and preserves samples in warped output. [#3361](https://github.com/unit8co/darts/pull/3361) by [Abhay Juloori](https://github.com/AbhayJuloori).

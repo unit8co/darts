@@ -1161,6 +1161,7 @@ class SKLearnModel(GlobalForecastingModel):
             likelihood.fit(self)
         return self
 
+    @random_method
     def predict(
         self,
         n: int,
@@ -1424,7 +1425,6 @@ class SKLearnModel(GlobalForecastingModel):
                 x=X,
                 num_samples=num_samples,
                 predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
                 **kwargs,
             )
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
@@ -1459,13 +1459,11 @@ class SKLearnModel(GlobalForecastingModel):
 
         return predictions[0] if called_with_single_series else predictions
 
-    @random_method
     def _predict(
         self,
         x: np.ndarray,
         num_samples: int,
         predict_likelihood_parameters: bool,
-        random_state: int | None = None,
         verbose: bool | None = None,
         **kwargs,
     ) -> np.ndarray:
@@ -1567,6 +1565,7 @@ class SKLearnModel(GlobalForecastingModel):
         """Historical forecast can be optimized if no re-training is involved"""
         return _check_optimizable_historical_forecasts_global_models(retrain)
 
+    @random_method
     def _optimized_historical_forecasts(
         self,
         series: Sequence[TimeSeries],
