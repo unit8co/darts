@@ -4671,6 +4671,39 @@ class TestProbabilisticSKLearnModels:
         assert (pred9 == pred10).all()
         assert (pred11 == pred7).all()
 
+    def test_probabilistic_predict_random_state_ar_sampling(self):
+        """Explicit `random_state` must not re-seed inside autoregressive `predict()` loops."""
+        model = LinearRegressionModel(
+            lags=1,
+            output_chunk_length=1,
+            likelihood="quantile",
+            random_state=41,
+        )
+        series = self.constant_noisy_ts[:50]
+        model.fit(series)
+        horizon = 12
+        num_samples = 100
+
+        pred_none = model.predict(
+            n=horizon, num_samples=num_samples, random_state=None
+        ).all_values()
+        pred_rs = model.predict(
+            n=horizon, num_samples=num_samples, random_state=0
+        ).all_values()
+
+        # last horizon step: sample spread with fixed seed must match an unseeded run
+        max_none = pred_none[-1, 0, :].max()
+        max_rs = pred_rs[-1, 0, :].max()
+        assert max_rs < 2 * max_none
+
+        pred_a = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        pred_b = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        assert (pred_a == pred_b).all()
+
     @pytest.mark.parametrize(
         "config", param_product(models_cls_kwargs_errs, [True, False])
     )
