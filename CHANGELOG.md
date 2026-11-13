@@ -26,10 +26,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - ExponentialSmoothing parameters `trend` and `seasonal`.
   - Theta and FourTheta parameters `season_mode`, `model_mode`, `trend_mode`.
   - `darts.utils.statistics` parameter `model`.
+- Improved ensembling of probabilistic forecasts with `NaiveEnsembleModel`. The ensemble now samples from the mixture of the models rather averaging (which shrank predictive variance and did not preserve the actual value space). Each output sample is a full sample trajectory of a uniformly drawn model. Deterministic predictions and likelihood parameters are still averaged. [#3353](https://github.com/unit8co/darts/pull/3353). By [Mateen Sharief](https://github.com/mateen-789).
 - Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
 
 **Fixed**
 
+- Fixed probabilistic `SKLearnModel` sampled predictions producing unrealistically wide values when `random_state` was explicitely set and `n > output_chunk_length` (including optimized historical forecasts); the RNG was reset on each autoregressive `_predict()` call instead of once per forecast. [#3369](https://github.com/unit8co/darts/pull/3369) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed `FFT` not aligning the seasonal phase of the training series with the forecast start: the series was cropped one step after the matching timestamp, and the automatically detected weekly seasonality used `"weekday"`, a method of `pd.Timestamp` that never matched. Seasonal series are now forecast with the correct phase, and `required_matches` raises a `ValueError` for values that are not `pd.Timestamp` properties (e.g. `"weekday"`; use `"day_of_week"` instead). [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
 - Fixed `IQRDetector` being unavailable from the top-level `darts.ad` package. [#3362](https://github.com/unit8co/darts/pull/3362) by [Abhay Juloori](https://github.com/AbhayJuloori).
 - Fixed `Diff.inverse_transform()` failing on probabilistic forecasts when the transformer was fitted on deterministic data. [#3357](https://github.com/unit8co/darts/pull/3357) by [Abhay Juloori](https://github.com/AbhayJuloori).
