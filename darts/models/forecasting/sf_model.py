@@ -63,6 +63,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
             `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
 
+            The regression residuals can be zero or negative even when the original target series is strictly positive.
+            StatsForecast models that require positive inputs (for example, multiplicative ETS models) can therefore
+            fail when used with future covariates.
+
         - **Probabilstic forecasting:** Some base models might require setting `prediction_intervals` at `model`
           creation to support probabilistic forecasting. To generate probabilistic forecasts, you can set the following
           parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
