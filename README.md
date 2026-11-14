@@ -12,7 +12,7 @@
 [![Downloads](https://pepy.tech/badge/darts)](https://pepy.tech/project/darts)
 [![Downloads](https://pepy.tech/badge/u8darts)](https://pepy.tech/project/u8darts)
 [![codecov](https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW)](https://codecov.io/gh/unit8co/darts)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Join the chat at https://gitter.im/u8darts/darts](https://badges.gitter.im/u8darts/darts.svg)](https://gitter.im/u8darts/darts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
 
 **Darts** is a Python library for user-friendly forecasting and anomaly detection
 on time series. It contains a variety of models, from classics such as ARIMA to
@@ -305,7 +305,7 @@ Here's a breakdown of the forecasting models currently implemented in Darts. Our
 | [XGBClassifierModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBClassifierModel)                                                                                |         | ✅ ✅                                                        | ✅ ✅ ✅                                                                 | ✅ ✅                                                                    | ✅                                        |
 
 ## Community & Contact
-Anyone is welcome to join our [Gitter room](https://gitter.im/u8darts/darts) to ask questions, make proposals,
+Anyone is welcome to join our Gitter room to ask questions, make proposals,
 discuss use-cases, and more. If you spot a bug or have suggestions, GitHub issues are also welcome.
 
 If what you want to tell us is not suitable for Gitter or Github,
