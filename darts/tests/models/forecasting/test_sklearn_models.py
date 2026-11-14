@@ -1129,27 +1129,25 @@ class TestSKLearnModels:
 
         # inconsistent number of components in series Sequence[TimeSeries]
         training_series = [series.stack(series + 10), series]
+        model_instance = model(lags=4, multi_models=mode)
         with pytest.raises(ValueError) as err:
-            model_instance = model(lags=4, multi_models=mode)
             model_instance.fit(series=training_series)
         assert (
-            str(err.value)
-            == f"Expected {training_series[0].width} components but received {training_series[1].width} "
-            f"components at index 1 of `series`."
+            f"Encountered ({training_series[0].width}, {training_series[1].width}, ...) "
+            f"target_series components." in str(err.value)
         )
 
         # inconsistent number of components in past_covariates Sequence[TimeSeries]
         training_past_covs = [series, series.stack(series * 2)]
+        model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
         with pytest.raises(ValueError) as err:
-            model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
             model_instance.fit(
                 series=[series, series + 10],
                 past_covariates=training_past_covs,
             )
         assert (
-            str(err.value)
-            == f"Expected {training_past_covs[0].width} components but received {training_past_covs[1].width} "
-            f"components at index 1 of `past_covariates`."
+            f"Encountered ({training_past_covs[0].width}, {training_past_covs[1].width}, ...) "
+            f"past_covariates components." in str(err.value)
         )
 
         model_instance = model(lags=12, multi_models=mode)
@@ -1184,6 +1182,30 @@ class TestSKLearnModels:
             future_covariates=sine_multivariate1,
         )
         assert len(model_instance.lags.get("past")) == 3
+
+    def test_fit_rejects_cancelling_component_mismatches(self):
+        series = [self.sine_univariate1[:30], self.sine_univariate1[:30]]
+        past_covariates = [
+            self.sine_univariate1[:30],
+            self.sine_multivariate1[:30],
+        ]
+        future_covariates = [
+            self.sine_multivariate1[:30],
+            self.sine_univariate1[:30],
+        ]
+        model = LinearRegressionModel(
+            lags=2,
+            lags_past_covariates=2,
+            lags_future_covariates=[0, 1],
+        )
+
+        with pytest.raises(ValueError) as err:
+            model.fit(
+                series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+        assert "Encountered (1, 2, ...) past_covariates components" in str(err.value)
 
     def helper_test_models_accuracy(
         self,
@@ -4648,6 +4670,51 @@ class TestProbabilisticSKLearnModels:
         assert (pred8 == pred6).all()
         assert (pred9 == pred10).all()
         assert (pred11 == pred7).all()
+
+    def test_probabilistic_predict_random_state_ar_sampling(self):
+        """`random_state` must seed `predict()` once and advance the RNG across AR steps."""
+        model = LinearRegressionModel(
+            lags=1,
+            output_chunk_length=1,
+            likelihood="quantile",
+            random_state=41,
+        )
+        series = self.constant_noisy_ts[:50]
+        model.fit(series)
+        horizon = 12
+        num_samples = 100
+        predict_seed = 7
+
+        uniform_leading: list[float] = []
+        original_uniform = np.random.uniform
+
+        def recording_uniform(*args, **kwargs):
+            sample = original_uniform(*args, **kwargs)
+            uniform_leading.append(float(sample.flat[0]))
+            return sample
+
+        with (
+            patch.object(np.random, "uniform", side_effect=recording_uniform),
+            patch.object(
+                np.random, "set_state", wraps=np.random.set_state
+            ) as set_state,
+        ):
+            model.predict(n=horizon, num_samples=num_samples, random_state=predict_seed)
+
+        # `@random_method` on `predict()` must not re-seed on each `_predict()` call.
+        assert set_state.call_count == 1
+        # one `QuantileRegression.sample()` call (one `np.random.uniform`) per AR step
+        assert len(uniform_leading) == horizon
+        # re-seeding would replay the same leading uniform every step
+        assert len(set(uniform_leading)) == horizon
+
+        pred_a = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        pred_b = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        assert (pred_a == pred_b).all()
 
     @pytest.mark.parametrize(
         "config", param_product(models_cls_kwargs_errs, [True, False])

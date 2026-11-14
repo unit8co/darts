@@ -736,6 +736,30 @@ class TestTimeSeries:
             else:
                 assert ts_intersection.freq == expected
 
+            ts_intersection_other = ts_other.slice_intersect(ts_freq)
+            assert ts_intersection_other.time_index.equals(ts_intersection.time_index)
+
+    @pytest.mark.parametrize(
+        "index_a,index_b",
+        [
+            (
+                pd.RangeIndex(start=0, stop=8, step=2),
+                pd.RangeIndex(start=1, stop=9, step=2),
+            ),
+            (
+                pd.date_range("2024-01-01", periods=4, freq="2D"),
+                pd.date_range("2024-01-02", periods=4, freq="2D"),
+            ),
+        ],
+    )
+    def test_intersect_phase_shifted_same_frequency(self, index_a, index_b):
+        series_a = TimeSeries.from_times_and_values(index_a, np.arange(4.0))
+        series_b = TimeSeries.from_times_and_values(index_b, np.arange(10.0, 14.0))
+
+        assert len(series_a.slice_intersect(series_b)) == 0
+        assert len(series_a.slice_intersect_values(series_b)) == 0
+        assert len(series_a.slice_intersect_times(series_b)) == 0
+
     def test_shift(self):
         helper_test_shift(self.series1)
 
