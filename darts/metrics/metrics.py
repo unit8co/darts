@@ -3351,13 +3351,14 @@ def crps(
     n = y_pred.shape[SMPL_AX]
     term1 = np.mean(np.abs(y_pred - y_true), axis=SMPL_AX)  # (T, C)
 
-    # term2: `sum of |x_i - x_j| over i,j` has complexity O(N^2);
-    # instead we can compute `2 * sum_k (2k - (n - 1)) * x_{(k)}` for sorted x and 0-based k;
-    # it gives identical result but more efficient with O(N log N) time and O(N) memory per (T, C) slice.
+    # Each gap between sorted samples belongs to k * (n - k) pairs, where k
+    # samples precede the gap. Summing these nonnegative terms avoids cancellation
+    # from large common offsets, with O(N log N) time and O(N) memory per slice.
     y_sorted = np.sort(y_pred, axis=SMPL_AX)
-    k = np.arange(n, dtype=y_pred.dtype)
-    coeff = 2.0 * k - (n - 1.0)
-    term2 = np.sum(coeff * y_sorted, axis=SMPL_AX) / (n**2)  # (T, C)
+    k = np.arange(1, n, dtype=y_pred.dtype)
+    term2 = np.sum(k * (n - k) * np.diff(y_sorted, axis=SMPL_AX), axis=SMPL_AX) / (
+        n**2
+    )  # (T, C)
     return (term1 - term2)[:, :, np.newaxis]  # (T, C, 1)
 
 

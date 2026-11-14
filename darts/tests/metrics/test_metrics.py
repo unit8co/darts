@@ -1783,6 +1783,49 @@ class TestMetrics:
             metric(self.series1, self.series22_stochastic, **kwargs) + 1e-10,
         )
 
+    @pytest.mark.parametrize("metric", [metrics.crps, metrics.mcrps])
+    @pytest.mark.parametrize(
+        "dtype, offset, spread",
+        [(np.float32, 1000000.125, 0.125), (np.float64, 1e12, 0.5)],
+    )
+    @pytest.mark.parametrize("n_samples", [100, 1000])
+    @pytest.mark.parametrize("perfect", [False, True])
+    def test_crps_large_offset(self, metric, dtype, offset, spread, n_samples, perfect):
+        actual = np.tile(np.array([offset, -offset], dtype=dtype), (3, 1))
+        deviations = np.tile(
+            np.array([0.0, 0.0] if perfect else [-spread, spread], dtype=dtype),
+            n_samples // 2,
+        )
+        prediction = actual[:, :, np.newaxis] + deviations
+        score = metric(
+            TimeSeries.from_values(actual),
+            TimeSeries.from_values(prediction),
+            component_reduction=None,
+        )
+        np.testing.assert_allclose(score, 0.0 if perfect else spread / 2, atol=1e-7)
+
+    @pytest.mark.parametrize("metric", [metrics.crps, metrics.mcrps])
+    @pytest.mark.parametrize("dtype", [np.float32, np.float64])
+    @pytest.mark.parametrize("n_samples", [2, 9, 100])
+    def test_crps_pairwise_definition(self, metric, dtype, n_samples):
+        rng = np.random.default_rng(3373)
+        actual = rng.normal(size=(4, 2)).astype(dtype)
+        prediction = rng.normal(size=(4, 2, n_samples)).astype(dtype)
+        prediction[:, :, 1] = prediction[:, :, 0]  # include repeated samples
+        reference = prediction.astype(np.float64)
+        expected = np.abs(reference - actual[:, :, np.newaxis]).mean(axis=2)
+        expected -= 0.5 * np.abs(
+            reference[:, :, :, np.newaxis] - reference[:, :, np.newaxis, :]
+        ).mean(axis=(2, 3))
+        if metric is metrics.mcrps:
+            expected = expected.mean(axis=0)
+        score = metric(
+            TimeSeries.from_values(actual),
+            TimeSeries.from_values(prediction),
+            component_reduction=None,
+        )
+        np.testing.assert_allclose(score, expected, rtol=2e-6, atol=1e-7)
+
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)
         series11 = self.series1.stack(self.series1)
