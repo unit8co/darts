@@ -904,7 +904,7 @@ class TimesFM3Model(FoundationModel):
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
             preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
-            only affects prediction output.
+            only affects the quantiles that are returned at prediction time and used for the ``torch_metrics``.
         accept_license
             Must be set to ``True`` to confirm acceptance of the TimesFM Non-Commercial License v1.0 for the
             pre-trained weights. Default: ``False``.

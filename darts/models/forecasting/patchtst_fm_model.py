@@ -450,7 +450,7 @@ class PatchTSTFMModel(FoundationModel):
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
             preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
-            only affects prediction output.
+            only affects the quantiles that are returned at prediction time and used for the ``torch_metrics``.
         hub_model_name
             The model ID on HuggingFace Hub.
             Default: ``"ibm-granite/granite-timeseries-patchtst-fm-r1"`` (Apache-2.0).

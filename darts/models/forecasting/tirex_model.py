@@ -247,7 +247,7 @@ class TiRexModel(FoundationModel):
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
             preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
-            only affects prediction output.
+            only affects the quantiles that are returned at prediction time and used for the ``torch_metrics``.
         accept_license
             Must be set to ``True`` to confirm acceptance of the NXAI Community License. Default: ``False``.
         hub_model_name
