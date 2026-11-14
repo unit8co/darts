@@ -305,7 +305,7 @@ Here's a breakdown of the forecasting models currently implemented in Darts. Our
 | [XGBClassifierModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBClassifierModel)                                                                                |         | ✅ ✅                                                        | ✅ ✅ ✅                                                                 | ✅ ✅                                                                    | ✅                                        |
 
 ## Community & Contact
-Anyone is welcome to join our [Gitter room](https://gitter.im/u8darts/darts) to ask questions, make proposals,
+Anyone is welcome to join our Gitter room to ask questions, make proposals,
 discuss use-cases, and more. If you spot a bug or have suggestions, GitHub issues are also welcome.
 
 If what you want to tell us is not suitable for Gitter or Github,
