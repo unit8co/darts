@@ -65,7 +65,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
-- Simplified `_VariableSelectionNetwork.input_size_total` used by `TFTModel` (no change in behavior: the conditional had identical branches) and added a test for the input size of its flattened GRN. [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [Ankit Saha](https://github.com/Ankit-matrix).
+- Simplified `_VariableSelectionNetwork.input_size_total` used by `TFTModel` (no change in behavior: the conditional had identical branches) and added a test for the input size of its flattened GRN. [#<NUMBER>](https://github.com/unit8co/darts/pull/<NUMBER>) by [Ankit Saha](https://github.com/Ankit-matrix).
 - Updated the [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) and added [AGENTS.md](https://github.com/unit8co/darts/blob/master/AGENTS.md): external pull requests must link an issue with the maintainer `ok` label (use `Fixes` / `Addresses` in the PR description); AI-assisted work requires human review and disclosure. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
 - Added the **contribution-gate** GitHub Actions check enforcing the approved-issue requirement for pull requests from outside collaborators. [#3314](https://github.com/unit8co/darts/pull/3314) by [Dennis Bader](https://github.com/dennisbader).
 
