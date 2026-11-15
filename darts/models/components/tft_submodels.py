@@ -476,10 +476,9 @@ class _VariableSelectionNetwork(nn.Module):
 
     @property
     def input_size_total(self):
-        return sum(
-            size if name in self.input_embedding_flags else size
-            for name, size in self.input_sizes.items()
-        )
+        # every variable enters the flattened GRN with its `input_size`: embedded (categorical) variables as their
+        # embedding, and all other variables after being prescaled to `input_size`
+        return sum(self.input_sizes.values())
 
     @property
     def num_inputs(self):
