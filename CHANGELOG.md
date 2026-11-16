@@ -30,9 +30,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
 - `FFT` now raises a clear `ValueError` when passing invalid `pandas.Timestamp` attributes to `required_matches` for phase matching. [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
 - 🔴 Metric `qr()` (quantile risk) no longer raises a hard `ValueError` when the denominator is exactly zero (zero-sum target values). It now follows the `zero_division` convention of the other percentage metrics, returning `0.0` for a perfect forecast and `NaN` otherwise under `zero_division="warn"`, and raising under `zero_division="raise"`. [#3378](https://github.com/unit8co/darts/pull/3378) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
+- 🔴 `TimeSeries.slice()` is now inclusive on both ends for integer-indexed (`RangeIndex`) series, matching the same behavior as for datetime-indexed series. Previously, `end_ts` was exclusive for `RangeIndex` series. [#3382](https://github.com/unit8co/darts/pull/3382) by [Abhijeet Kumar](https://github.com/abhi478jeetur-rgb).
 
 **Fixed**
 
+- Fixed `TimeSeries.slice()` returning wrong slices for integer-indexed series with off-grid start or end values. [#3382](https://github.com/unit8co/darts/pull/3382) by [Abhijeet Kumar](https://github.com/abhi478jeetur-rgb).
 - Fixed probabilistic `SKLearnModel` sampled predictions producing unrealistically wide values when `random_state` was explicitely set and `n > output_chunk_length` (including optimized historical forecasts); the RNG was reset on each autoregressive `_predict()` call instead of once per forecast. [#3369](https://github.com/unit8co/darts/pull/3369) by [Dennis Bader](https://github.com/dennisbader).
 - Fixes to `FFT` : [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
  - Seasonal series are now forecast with correct phase alignment of the training series. Before, the training series was cropped one step after the matching timestamp.
