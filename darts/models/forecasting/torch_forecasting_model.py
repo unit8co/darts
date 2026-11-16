@@ -26,7 +26,7 @@ import sys
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from glob import glob
-from typing import Any, Literal, Self
+from typing import Any, BinaryIO, Literal, Self
 
 import numpy as np
 import pytorch_lightning as pl
@@ -2262,13 +2262,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def load(
-        path: str,
+        path: str | os.PathLike | BinaryIO,
         pl_trainer_kwargs: dict | None = None,
         trusted: bool = False,
+        ckpt_path: str | os.PathLike | BinaryIO | None = None,
         **kwargs,
     ) -> "TorchForecastingModel":
         """
-        Loads a model from a given file path.
+        Loads a model from a given file path or file handle.
 
         .. warning::
             Loading uses unpickling under the hood. Never load data from an untrusted source.
@@ -2306,11 +2307,23 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 model_loaded = RNNModel.load(path, map_location="cpu", pl_trainer_kwargs={"accelerator": "gpu"})
             ..
 
+        Example for loading an :class:`RNNModel` from file handles, e.g. files read from a cloud storage:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                with open("my_model.pt", "rb") as f_model, open("my_model.pt.ckpt", "rb") as f_ckpt:
+                    model_loaded = RNNModel.load(f_model, ckpt_path=f_ckpt)
+            ..
+
         Parameters
         ----------
         path
-            Path from which to load the model. If no path was specified when saving the model, the automatically
-            generated path ending with ".pt" has to be provided.
+            Path or binary file handle (e.g. from ``open(..., "rb")`` or ``io.BytesIO``) from which to load the model.
+            If no path was specified when saving the model, the automatically generated path ending with ".pt" has to
+            be provided.
         pl_trainer_kwargs
             Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
             tasks (e.g. prediction).
@@ -2320,6 +2333,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trusted
             If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out). Only use
             for files from trusted sources. Default: ``False``.
+        ckpt_path
+            Optionally, the path or binary file handle of the PyTorch LightningModule checkpoint (the ``.ckpt`` file
+            created by :meth:`save() <TorchForecastingModel.save()>`). If ``None`` and `path` is a file path, the
+            checkpoint is loaded from ``path + ".ckpt"`` if that file exists. If ``None`` and `path` is a file handle,
+            the model is loaded without its weights.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
@@ -2327,6 +2345,25 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
         """
+        path_is_file = isinstance(path, str | os.PathLike)
+        if not path_is_file and not hasattr(path, "read"):
+            raise_log(
+                ValueError(
+                    "Argument `path` has to be either 'str' or 'PathLike' (for a filepath) or a binary file handle "
+                    f"(for an already opened file), but was '{path.__class__}'."
+                ),
+            )
+
+        if ckpt_path is None and path_is_file:
+            # `save()` stores the checkpoint next to the model file
+            default_ckpt_path = os.fspath(path) + ".ckpt"
+            if os.path.exists(default_ckpt_path):
+                ckpt_path = default_ckpt_path
+        elif isinstance(ckpt_path, str | os.PathLike) and not os.path.exists(ckpt_path):
+            raise_log(
+                ValueError(f"The checkpoint file {ckpt_path} doesn't exist."),
+            )
+
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
         model: TorchForecastingModel = load_wrapper_safely(
             path=path,
@@ -2335,18 +2372,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
-        path_ptl_ckpt = path + ".ckpt"
-        if os.path.exists(path_ptl_ckpt):
+        if ckpt_path is not None:
             model.model = model._load_from_checkpoint(
-                path_ptl_ckpt,
+                ckpt_path,
                 trusted=trusted,
                 **kwargs,
             )
         else:
             model._fit_called = False
+            if path_is_file:
+                reason = f"could be found at {os.fspath(path)}.ckpt"
+            else:
+                reason = "was given with `ckpt_path`"
             logger.warning(
-                f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt') could be "
-                f"found at {path_ptl_ckpt}. Please call `fit()` before calling `predict()`."
+                f"Model was loaded without weights since no PyTorch LightningModule checkpoint ('.ckpt') "
+                f"{reason}. Please call `fit()` before calling `predict()`."
             )
 
         if pl_trainer_kwargs is not None:
