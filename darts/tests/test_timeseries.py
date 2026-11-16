@@ -1928,6 +1928,22 @@ class TestTimeSeries:
         np.testing.assert_equal(out.values(copy=False)[:, 0], [1.0, 3.0])
         assert out.time_index.equals(nearest_times)
 
+    @pytest.mark.parametrize("method", [None, "ffill"])
+    def test_reindex_mismatched_index_type(self, method):
+        series_dt = TimeSeries.from_times_and_values(
+            generate_index("2020-01-01", length=3, freq="D"), [1.0, 2.0, 3.0]
+        )
+        series_int = TimeSeries.from_values(np.array([1.0, 2.0, 3.0]))
+        msg = "same type of time index"
+
+        # target index type must match the series' time index type
+        with pytest.raises(ValueError, match=msg):
+            series_int.reindex(series_dt.time_index, method=method)
+        with pytest.raises(ValueError, match=msg):
+            series_dt.reindex(series_int.time_index, method=method)
+        with pytest.raises(ValueError, match=msg):
+            series_dt.reindex(series_int, method=method)
+
     def test_reindex_preserves_samples_and_metadata(self):
         times = pd.date_range("2020-01-01", periods=3, freq="D")
         values = np.arange(12, dtype=float).reshape(3, 2, 2)
@@ -2573,6 +2589,7 @@ class TestTimeSeries:
 
 
 def helper_test_slice(test_series: TimeSeries):
+    """`slice(start, end)` test helper. Note that both start and end are inclusive."""
     # base case
     seriesA = test_series.slice(pd.Timestamp("20130104"), pd.Timestamp("20130107"))
     assert seriesA.start_time() == pd.Timestamp("20130104")
@@ -2590,33 +2607,42 @@ def helper_test_slice(test_series: TimeSeries):
     assert seriesC.start_time() == pd.Timestamp("20130108")
     assert seriesC.end_time() == pd.Timestamp("20130110")
 
+    with pytest.raises(ValueError, match="provided as integers"):
+        _ = seriesA.slice(0, 1)
+
+    with pytest.raises(ValueError, match="have to be of the same type"):
+        _ = seriesA.slice(pd.Timestamp("20130104"), 2)
+
     # integer-indexed series, starting at 0
     values = np.random.rand(30)
     idx = pd.RangeIndex(start=0, stop=30, step=1)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(10, 20).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[10:20])
+    np.testing.assert_equal(slice_vals, values[10:21])
 
     # integer-indexed series, not starting at 0
     values = np.random.rand(30)
     idx = pd.RangeIndex(start=5, stop=35, step=1)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(10, 20).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[5:15])
+    np.testing.assert_equal(slice_vals, values[5:16])
 
     # integer-indexed series, starting at 0, with step > 1
     values = np.random.rand(30)
     idx = pd.RangeIndex(start=0, stop=60, step=2)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(10, 20).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[5:10])
+    np.testing.assert_equal(slice_vals, values[5:11])
 
     # integer-indexed series, not starting at 0, with step > 1
     values = np.random.rand(30)
     idx = pd.RangeIndex(start=5, stop=65, step=2)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(11, 21).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[3:8])
+    np.testing.assert_equal(slice_vals, values[3:9])
+
+    with pytest.raises(ValueError, match="Timestamps have been provided"):
+        _ = ts.slice(pd.Timestamp("20130105"), pd.Timestamp("20130107"))
 
     # test cases where start and/or stop are not in the series
 
@@ -2657,18 +2683,54 @@ def helper_test_slice(test_series: TimeSeries):
     slice_vals = ts.slice(10, 32).values(copy=False).flatten()
     np.testing.assert_equal(slice_vals, values[10:])
 
-    # end timestamp within the series make it exclusive:
+    # end timestamp within the series makes it inclusive:
     slice_vals = ts.slice(10, 29).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[10:29])
+    np.testing.assert_equal(slice_vals, values[10:30])
 
     # integer indexed series, step > 1, timestamps not in series
     idx = pd.RangeIndex(start=0, stop=60, step=2)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(11, 31).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[6:15])
+    np.testing.assert_equal(slice_vals, values[6:16])
 
     slice_ts = ts.slice(40, 60)
     assert ts.end_time() == slice_ts.end_time()
+
+    # integer-indexed series, step > 1: `end_ts` not on the index grid must not drop
+    # in-range points, and the slice is inclusive on both ends (see #3379)
+    values = np.arange(1.0, 21.0)
+    idx = pd.RangeIndex(start=1, stop=41, step=2)
+    ts = TimeSeries(idx, values)
+    np.testing.assert_equal(
+        ts.slice(3, 7).values(copy=False).flatten(), values[1:4]
+    )  # times 3, 5, 7
+    np.testing.assert_equal(
+        ts.slice(2, 9).values(copy=False).flatten(), values[1:5]
+    )  # times 3, 5, 7, 9
+    np.testing.assert_equal(
+        ts.slice(2, 8).values(copy=False).flatten(), values[1:4]
+    )  # times 3, 5, 7
+    np.testing.assert_equal(
+        ts.slice(2, 6).values(copy=False).flatten(), values[1:3]
+    )  # times 3, 5
+    np.testing.assert_equal(
+        ts.slice(4, 6).values(copy=False).flatten(), values[2:3]
+    )  # times 5
+    np.testing.assert_equal(
+        ts.slice(0, 1).values(copy=False).flatten(), values[0:1]
+    )  # time 1
+    # start == end on the grid: single point; off the grid: empty series
+    np.testing.assert_equal(ts.slice(3, 3).values(copy=False).flatten(), values[1:2])
+    assert len(ts.slice(0, 0)) == 0
+
+    # bounds outside the series
+    np.testing.assert_equal(ts.slice(-5, 3).values(copy=False).flatten(), values[0:2])
+    np.testing.assert_equal(
+        ts.slice(37, 100).values(copy=False).flatten(), values[18:20]
+    )
+    assert len(ts.slice(-10, -1)) == 0
+    assert len(ts.slice(41, 50)) == 0
+    assert len(ts.slice(10, 5)) == 0
 
 
 def helper_test_split(test_series: TimeSeries):

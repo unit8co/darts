@@ -1482,20 +1482,26 @@ class TestMetrics:
         caplog.clear()
 
     @pytest.mark.parametrize(
-        "metric,make_zero_value,best_score",
+        "metric,make_zero_value,best_score,deterministic",
         [
-            (metrics.ape, 0.0, 0.0),
-            (metrics.mape, 0.0, 0.0),
-            (metrics.wmape, 0.0, 0.0),
-            (metrics.ope, 0.0, 0.0),
-            (metrics.arre, 0.0, 0.0),
-            (metrics.marre, 0.0, 0.0),
-            (metrics.coefficient_of_variation, 0.0, 0.0),
-            (metrics.r2_score, 5.0, 1.0),
+            (metrics.ape, 0.0, 0.0, True),
+            (metrics.mape, 0.0, 0.0, True),
+            (metrics.wmape, 0.0, 0.0, True),
+            (metrics.ope, 0.0, 0.0, True),
+            (metrics.arre, 0.0, 0.0, True),
+            (metrics.marre, 0.0, 0.0, True),
+            (metrics.coefficient_of_variation, 0.0, 0.0, True),
+            (metrics.r2_score, 5.0, 1.0, True),
+            (metrics.qr, 0.0, 0.0, False),
         ],
     )
     def test_pct_metrics_zero_division(
-        self, metric, make_zero_value, best_score, caplog
+        self,
+        metric,
+        make_zero_value,
+        best_score,
+        deterministic,
+        caplog,
     ):
         """Percentage / range-based metrics handle exact zero denominators
         under the default ``zero_division="warn"`` and raise under
@@ -1503,8 +1509,12 @@ class TestMetrics:
 
         A constant all-zero ``actual_series`` triggers every denominator
         these metrics use (sum of absolutes, sum, mean, max-min)."""
+        nonzero_actual = TimeSeries.from_values(np.arange(1, 11).astype("float64"))
         zero_actual = TimeSeries.from_values(np.full((10, 1), make_zero_value))
-        some_pred = TimeSeries.from_values(np.ones((10, 1)))
+        zero_pred = TimeSeries.from_values(
+            np.full((10, 1, 1 if deterministic else 3), make_zero_value)
+        )
+        some_pred = TimeSeries.from_values(np.ones((10, 1, 1 if deterministic else 3)))
 
         # --- default "warn": NaN + warning ---
         with caplog.at_level(logging.WARNING):
@@ -1515,7 +1525,7 @@ class TestMetrics:
 
         # --- perfect forecast on a zero denominator: 0/0 -> best_score ---
         with caplog.at_level(logging.WARNING):
-            perfect = metric(zero_actual, zero_actual, component_reduction=None)
+            perfect = metric(zero_actual, zero_pred, component_reduction=None)
         assert "denominator" in caplog.text
         assert np.all(np.atleast_1d(perfect) == best_score)
         caplog.clear()
@@ -1531,9 +1541,7 @@ class TestMetrics:
         # --- non-zero denominator: no warning, finite result ---
         caplog.clear()
         with caplog.at_level(logging.WARNING):
-            result_normal = metric(
-                self.series1 + 1.0, self.series2, component_reduction=None
-            )
+            result_normal = metric(nonzero_actual, some_pred, component_reduction=None)
         assert "denominator" not in caplog.text
         assert not np.any(np.isnan(np.atleast_1d(result_normal)))
         caplog.clear()
