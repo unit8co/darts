@@ -1928,6 +1928,22 @@ class TestTimeSeries:
         np.testing.assert_equal(out.values(copy=False)[:, 0], [1.0, 3.0])
         assert out.time_index.equals(nearest_times)
 
+    @pytest.mark.parametrize("method", [None, "ffill"])
+    def test_reindex_mismatched_index_type(self, method):
+        series_dt = TimeSeries.from_times_and_values(
+            generate_index("2020-01-01", length=3, freq="D"), [1.0, 2.0, 3.0]
+        )
+        series_int = TimeSeries.from_values(np.array([1.0, 2.0, 3.0]))
+        msg = "same type of time index"
+
+        # target index type must match the series' time index type
+        with pytest.raises(ValueError, match=msg):
+            series_int.reindex(series_dt.time_index, method=method)
+        with pytest.raises(ValueError, match=msg):
+            series_dt.reindex(series_int.time_index, method=method)
+        with pytest.raises(ValueError, match=msg):
+            series_dt.reindex(series_int, method=method)
+
     def test_reindex_preserves_samples_and_metadata(self):
         times = pd.date_range("2020-01-01", periods=3, freq="D")
         values = np.arange(12, dtype=float).reshape(3, 2, 2)

@@ -3847,6 +3847,14 @@ class TimeSeries:
         if isinstance(times, TimeSeries):
             times = times.time_index
 
+        if isinstance(times, pd.DatetimeIndex) != self.has_datetime_index:
+            raise_log(
+                ValueError(
+                    "The target `times` must have the same type of time index as the series "
+                    "(either DatetimeIndex or RangeIndex)."
+                ),
+            )
+
         new_xa = self.data_array(copy=False).reindex(
             indexers={self._time_dim: times},
             method=method,
