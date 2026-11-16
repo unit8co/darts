@@ -32,6 +32,8 @@ class AutoETS(StatsForecastModel):
           :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
           StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
           `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
+          The regression residuals can be zero or negative even when the original target series is strictly positive.
+          Multiplicative ETS models can therefore fail when used with future covariates.
 
         - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
           parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:

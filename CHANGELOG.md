@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added `TimeSeries.reindex()` which returns a new series conformed onto a target time index including missing-value-filling. [#3332](https://github.com/unit8co/darts/pull/3332) by [akarsh](https://github.com/akarsh11111111) and [Masashi Iida](https://github.com/iida-masashi).
+- Added `TimeSeries.reindex()` which returns a new series conformed onto a target time index including missing-value-filling. [#3332](https://github.com/unit8co/darts/pull/3332) by [akarsh](https://github.com/akarsh11111111) and [Masashi Iida](https://github.com/iida-masashi) and [#3381](https://github.com/unit8co/darts/pull/3381) by [@Divisht10](https://github.com/Divisht10)..
 - Added parameter `check_stationarity` to `darts.utils.statistics.granger_causality_tests()` to allow skipping stationarity pre-checks on already stationary or detrended series. [#3323](https://github.com/unit8co/darts/pull/3323) by [Mordris](https://github.com/Mordris).
 - Added `darts.utils.statistics.seasonality_and_trend_strength()` to compute the STL-based trend and seasonal strengths of a series, as defined in [Forecasting: Principles and Practice](https://otexts.com/fpp3/stlfeatures.html). [#3321](https://github.com/unit8co/darts/pull/3321) by [fixfon](https://github.com/fixfon).
 - Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#3319](https://github.com/unit8co/darts/pull/3319) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
@@ -29,6 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improved ensembling of probabilistic forecasts with `NaiveEnsembleModel`. The ensemble now samples from the mixture of the models rather averaging (which shrank predictive variance and did not preserve the actual value space). Each output sample is a full sample trajectory of a uniformly drawn model. Deterministic predictions and likelihood parameters are still averaged. [#3353](https://github.com/unit8co/darts/pull/3353). By [Mateen Sharief](https://github.com/mateen-789).
 - Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
 - `FFT` now raises a clear `ValueError` when passing invalid `pandas.Timestamp` attributes to `required_matches` for phase matching. [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
+- 🔴 Metric `qr()` (quantile risk) no longer raises a hard `ValueError` when the denominator is exactly zero (zero-sum target values). It now follows the `zero_division` convention of the other percentage metrics, returning `0.0` for a perfect forecast and `NaN` otherwise under `zero_division="warn"`, and raising under `zero_division="raise"`. [#3378](https://github.com/unit8co/darts/pull/3378) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 
 **Fixed**
 
