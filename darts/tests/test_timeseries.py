@@ -694,8 +694,7 @@ class TestTimeSeries:
             freq_expected = pd.tseries.frequencies.to_offset(expected)
             # apply trick to resample a timestamp to the desired frequency
             start = (
-                pd
-                .Series(index=[pd.Timestamp("2000-01-01")])
+                pd.Series(index=[pd.Timestamp("2000-01-01")])
                 .resample(freq_expected)
                 .mean()
                 .index[0]
@@ -2590,6 +2589,7 @@ class TestTimeSeries:
 
 
 def helper_test_slice(test_series: TimeSeries):
+    """`slice(start, end)` test helper. Note that both start and end are inclusive."""
     # base case
     seriesA = test_series.slice(pd.Timestamp("20130104"), pd.Timestamp("20130107"))
     assert seriesA.start_time() == pd.Timestamp("20130104")
@@ -2689,35 +2689,38 @@ def helper_test_slice(test_series: TimeSeries):
 
     # integer-indexed series, step > 1: `end_ts` not on the index grid must not drop
     # in-range points, and the slice is inclusive on both ends (see #3379)
-    values = np.arange(20.0)
-    idx = pd.RangeIndex(start=0, stop=40, step=2)
+    values = np.arange(1.0, 21.0)
+    idx = pd.RangeIndex(start=1, stop=41, step=2)
     ts = TimeSeries(idx, values)
     np.testing.assert_equal(
-        ts.slice(4, 9).values(copy=False).flatten(), values[2:5]
-    )  # times 4, 6, 8
+        ts.slice(3, 7).values(copy=False).flatten(), values[1:4]
+    )  # times 3, 5, 7
     np.testing.assert_equal(
-        ts.slice(3, 7).values(copy=False).flatten(), values[2:4]
-    )  # times 4, 6
+        ts.slice(2, 9).values(copy=False).flatten(), values[1:5]
+    )  # times 3, 5, 7, 9
+    np.testing.assert_equal(
+        ts.slice(2, 8).values(copy=False).flatten(), values[1:4]
+    )  # times 3, 5, 7
+    np.testing.assert_equal(
+        ts.slice(2, 6).values(copy=False).flatten(), values[1:3]
+    )  # times 3, 5
+    np.testing.assert_equal(
+        ts.slice(4, 6).values(copy=False).flatten(), values[2:3]
+    )  # times 5
     np.testing.assert_equal(
         ts.slice(0, 1).values(copy=False).flatten(), values[0:1]
-    )  # time 0
-    np.testing.assert_equal(
-        ts.slice(4, 11).values(copy=False).flatten(), values[2:6]
-    )  # times 4, 6, 8, 10
-    # end on the grid: last point included
-    np.testing.assert_equal(
-        ts.slice(4, 10).values(copy=False).flatten(), values[2:6]
-    )  # times 4, 6, 8, 10
+    )  # time 1
     # start == end on the grid: single point; off the grid: empty series
-    np.testing.assert_equal(ts.slice(4, 4).values(copy=False).flatten(), values[2:3])
-    assert len(ts.slice(5, 5)) == 0
+    np.testing.assert_equal(ts.slice(3, 3).values(copy=False).flatten(), values[1:2])
+    assert len(ts.slice(0, 0)) == 0
+
     # bounds outside the series
-    np.testing.assert_equal(ts.slice(-5, 2).values(copy=False).flatten(), values[0:2])
+    np.testing.assert_equal(ts.slice(-5, 3).values(copy=False).flatten(), values[0:2])
     np.testing.assert_equal(
-        ts.slice(36, 100).values(copy=False).flatten(), values[18:20]
+        ts.slice(37, 100).values(copy=False).flatten(), values[18:20]
     )
     assert len(ts.slice(-10, -1)) == 0
-    assert len(ts.slice(40, 50)) == 0
+    assert len(ts.slice(41, 50)) == 0
     assert len(ts.slice(10, 5)) == 0
 
 

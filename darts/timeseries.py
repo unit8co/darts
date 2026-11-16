@@ -2542,7 +2542,7 @@ class TimeSeries:
     ):
         """Return a new series where everything after (and in-/excluding) the provided time `split_point` was dropped.
 
-        The timestamp may not be in the series. If it is, the timestamp will be dropped.
+        The timestamp does not have to be in the series. If it is, the timestamp will be dropped based on `keep_point`.
 
         Parameters
         ----------
@@ -2568,7 +2568,7 @@ class TimeSeries:
     ):
         """Return a new series where everything before (and in-/excluding) the provided time `split_point` was dropped.
 
-        The timestamp may not be in the series. If it is, the timestamp will be dropped.
+        The timestamp does not have to be in the series. If it is, the timestamp will be dropped based on `keep_point`.
 
         Parameters
         ----------
@@ -2588,12 +2588,10 @@ class TimeSeries:
         ]
 
     def slice(self, start_ts: TimeStamp, end_ts: TimeStamp):
-        """Return a slice of the series starting at `start_ts` and ending at `end_ts`.
+        """Return a slice of the series between `start_ts` and `end_ts`, both ends inclusive.
 
-        The slice is inclusive on both ends, for series with a DatetimeIndex as well as
-        for series with a RangeIndex.
-
-        `start_ts` and `end_ts` don't have to be in the series.
+        `start_ts` and `end_ts` do not have to appear in the time index; points on the index from the first value
+        ``>= start_ts`` through the last value ``<= end_ts`` are kept.
 
         Parameters
         ----------
@@ -2605,7 +2603,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A new series, with indices greater or equal than `start_ts` and smaller or equal than `end_ts`.
+            A new series, with indices `>=start_ts` and `<=end_ts`.
         """
         if type(start_ts) is not type(end_ts):
             raise_log(
@@ -2630,10 +2628,10 @@ class TimeSeries:
             )
         # positional indices of the first point >= `start_ts` and the last point <= `end_ts`
         n_points = len(self)
-        start_idx = n_steps_between(
-            end=start_ts, start=self.start_time(), freq=self.freq
-        )
-        end_idx = n_steps_between(end=end_ts, start=self.start_time(), freq=self.freq)
+        start_time = self.start_time()
+        start_idx = n_steps_between(end=start_ts, start=start_time, freq=self.freq)
+        end_idx = n_steps_between(end=end_ts, start=start_time, freq=self.freq)
+
         # `n_steps_between()` counts whole steps, so a bound falling between two grid points
         # can be off by one; correct it against the actual time index
         start_idx = min(max(start_idx, 0), n_points)
