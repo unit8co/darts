@@ -154,6 +154,34 @@ def test_component_lags_are_matched_by_name(lags):
     np.testing.assert_array_equal(X.to_numpy()[:, :, 0], expected)
 
 
+@pytest.mark.parametrize("output_chunk_shift", [0, 1, 2])
+def test_future_lags_are_relative_to_the_first_predicted_step(output_chunk_shift):
+    # like in the model, future lag `2` is two steps after the first predicted step, which comes
+    # `output_chunk_shift` steps after the end of the target lags
+    target = linear_timeseries(start_value=0, end_value=29, length=30)
+    future = linear_timeseries(start_value=100, end_value=129, length=30)
+    config = ForecastConfig(
+        lags=[-1],
+        lags_future_covariates=[2],
+        output_chunk_length=1,
+        output_chunk_shift=output_chunk_shift,
+    )
+    kwargs = dict(
+        target_series=target, future_covariates=future, uses_static_covariates=False
+    )
+
+    # the target values are their time index: the label is the first predicted step
+    X, y, _, _, _ = create_lagged_training_data(config, **kwargs)
+    X, y = X.to_numpy()[:, :, 0], y[:, 0, 0]
+    np.testing.assert_array_equal(X[:, 0], y - 1 - output_chunk_shift)
+    np.testing.assert_array_equal(X[:, 1], 100 + y + 2)
+
+    # the first predicted step comes one step after the target lag `-1`, plus the shift
+    X, _ = create_lagged_prediction_data(config, **kwargs)
+    X = X.to_numpy()[:, :, 0]
+    np.testing.assert_array_equal(X[:, 1], 100 + X[:, 0] + 1 + output_chunk_shift + 2)
+
+
 def _call_public_helper(helper, config, target):
     kwargs = {"target_series": target}
     if helper is not create_lagged_component_names:

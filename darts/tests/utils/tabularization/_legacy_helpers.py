@@ -3,6 +3,11 @@
 The public API takes a `ForecastConfig`. These helpers let the existing generated test suites keep passing
 the lags and output chunk arguments directly: they build the `ForecastConfig` (which validates them) and call
 the public functions.
+
+The legacy helpers did not apply `output_chunk_shift` to the future lags (the model shifted them before calling
+the helpers), while `ForecastConfig` applies it, like the model. The wrappers subtract the shift from the future
+lags, so that the suites keep their expectations. `test_public_api.py` covers the shifted future lags of the
+public helpers.
 """
 
 from darts import TimeSeries
@@ -17,10 +22,7 @@ from darts.utils.data.tabularization.tabularization import _get_feature_times
 
 
 def _unshift_future_lags(lags_future_covariates, output_chunk_shift):
-    """Undo the `output_chunk_shift` that `ForecastConfig` applies to the future lags.
-
-    The legacy helpers took future lags that were already relative to the shifted output chunk.
-    """
+    """Undo the `output_chunk_shift` that `ForecastConfig` applies to the future lags."""
     if not output_chunk_shift or lags_future_covariates is None:
         return lags_future_covariates
 
@@ -152,12 +154,6 @@ def _create_lagged_component_names(
     concatenate: bool = True,
     use_static_covariates: bool = False,
 ):
-    for lags_i in (lags, lags_past_covariates, lags_future_covariates):
-        if isinstance(lags_i, dict) and "default_lags" in lags_i:
-            raise ValueError(
-                "All the lags must be explicitly defined, 'default_lags' is not allowed in "
-                "the lags dictionary."
-            )
     config = _config(
         lags=lags,
         lags_past_covariates=lags_past_covariates,
