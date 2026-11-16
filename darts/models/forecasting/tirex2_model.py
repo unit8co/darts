@@ -187,6 +187,16 @@ class _TiRex2Module(PLForecastingModule):
 
         return PLModuleOutput(prediction=prediction)
 
+    def _metrics_prediction(self, output: PLModuleOutput) -> torch.Tensor:
+        prediction = output.prediction
+        if self.training and self._enable_finetuning:
+            # during fine-tuning the output holds all pre-trained quantiles (needed for the loss);
+            # metrics should only see the user-selected ones, like in validation / prediction
+            prediction = prediction.index_select(
+                dim=-1, index=self._user_quantile_indices
+            )
+        return prediction
+
     def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         if self.training:
             # compute loss on pre-trained quantiles
@@ -290,7 +300,7 @@ class TiRex2Model(FoundationModel):
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
             preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
-            only affects prediction output.
+            only affects the quantiles that are returned at prediction time and used for the ``torch_metrics``.
         hub_model_name
             The model ID on Hugging Face Hub, or a local checkpoint directory containing ``model-config.yaml`` and
             ``model.ckpt``. Default: ``"NX-AI/TiRex-2"``.

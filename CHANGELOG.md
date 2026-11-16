@@ -32,6 +32,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed fine-tuning of foundation models `TiRexModel`, `TiRex2Model`, `Chronos2Model`, `TimesFM2p5Model`, `TimesFM3Model` and `PatchTSTFMModel` with `torch_metrics` raising an error because the training metrics were computed on all pre-trained quantiles instead of the user-selected predictions. The training metrics are now computed on the same predictions as the validation metrics (the median if `likelihood=None`, else the likelihood quantiles), while the training loss still uses all pre-trained quantiles. [#3318](https://github.com/unit8co/darts/pull/3318) by [aashoday](https://github.com/aashoday).
 - Fixed probabilistic `SKLearnModel` sampled predictions producing unrealistically wide values when `random_state` was explicitely set and `n > output_chunk_length` (including optimized historical forecasts); the RNG was reset on each autoregressive `_predict()` call instead of once per forecast. [#3369](https://github.com/unit8co/darts/pull/3369) by [Dennis Bader](https://github.com/dennisbader).
 - Fixes to `FFT` : [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
  - Seasonal series are now forecast with correct phase alignment of the training series. Before, the training series was cropped one step after the matching timestamp.

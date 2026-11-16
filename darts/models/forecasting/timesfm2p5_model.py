@@ -323,6 +323,20 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         return PLModuleOutput(prediction=renormed_outputs)
 
+    def _metrics_prediction(self, output: PLModuleOutput) -> torch.Tensor:
+        prediction = output.prediction
+        if self.training and self._finetuning_quantile_indices is not None:
+            # during fine-tuning the output holds all pre-trained quantiles (needed for the loss);
+            # metrics should only see the user-selected ones, like in validation / prediction.
+            # `user_quantile_indices` refer to the raw model output, while the training output is
+            # already sliced by `_finetuning_quantile_indices`, so we map to positions within it
+            positions = [
+                self._finetuning_quantile_indices.index(i)
+                for i in self.user_quantile_indices
+            ]
+            prediction = prediction[..., positions]
+        return prediction
+
     def _compute_loss(self, output: PLModuleOutput, target, criterion, sample_weight):
         if self.training:
             # compute loss on pre-trained quantiles
@@ -421,7 +435,7 @@ class TimesFM2p5Model(FoundationModel):
             Default: ``None``, which will make the model deterministic (median quantile only).
             When fine-tuning is enabled, the training loss is always computed on all pre-trained quantiles to
             preserve the full distribution, regardless of the ``likelihood`` setting. The ``likelihood`` parameter
-            only affects prediction output.
+            only affects the quantiles that are returned at prediction time and used for the ``torch_metrics``.
         hub_model_name
             The model ID on HuggingFace Hub. Default: ``"google/timesfm-2.5-200m-pytorch"``.
         hub_model_revision
