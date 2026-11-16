@@ -1694,6 +1694,79 @@ class TestMetrics:
             == "quantile risk (qr) should only be computed for stochastic predicted TimeSeries."
         )
 
+    def test_qr_zero_division(self, caplog):
+        """Quantile risk handles exact zero denominators under default
+        ``zero_division='warn'`` and raises under ``zero_division='raise'``."""
+        zero_actual = TimeSeries.from_values(np.zeros((10, 1, 1)))
+        zero_stochastic_perfect = TimeSeries.from_values(np.zeros((10, 1, 5)))
+        zero_stochastic_imperfect = TimeSeries.from_values(np.ones((10, 1, 5)))
+
+        # --- default "warn": NaN + warning for non-zero loss on zero denominator ---
+        with caplog.at_level(logging.WARNING):
+            result = metrics.qr(
+                zero_actual, zero_stochastic_imperfect, component_reduction=None
+            )
+        assert "denominator" in caplog.text
+        assert np.all(np.isnan(np.atleast_1d(result)))
+        caplog.clear()
+
+        # --- perfect forecast on a zero denominator: 0/0 -> 0.0 ---
+        with caplog.at_level(logging.WARNING):
+            perfect = metrics.qr(
+                zero_actual, zero_stochastic_perfect, component_reduction=None
+            )
+        assert "denominator" in caplog.text
+        assert np.all(np.atleast_1d(perfect) == 0.0)
+        caplog.clear()
+
+        # --- "raise": ValueError ---
+        with pytest.raises(ValueError, match="denominator"):
+            metrics.qr(zero_actual, zero_stochastic_imperfect, zero_division="raise")
+
+        with pytest.raises(ValueError, match="denominator"):
+            metrics.qr(zero_actual, zero_stochastic_perfect, zero_division="raise")
+
+        # --- invalid value rejected ---
+        with pytest.raises(ValueError, match="`zero_division` must be"):
+            metrics.qr(zero_actual, zero_stochastic_imperfect, zero_division="invalid")
+
+        # --- non-zero denominator: no warning, finite result ---
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            result_normal = metrics.qr(
+                self.series1 + 1.0,
+                self.series11_stochastic + 1.0,
+                component_reduction=None,
+            )
+        assert "denominator" not in caplog.text
+        assert not np.any(np.isnan(np.atleast_1d(result_normal)))
+        caplog.clear()
+
+        # --- multivariate mixed-zero: zero component does not contaminate non-zero ---
+        actual_multi = TimeSeries.from_values(np.array([[5.0, 1.0], [5.0, -1.0]]))
+        pred_multi_vals = np.zeros((2, 2, 5))
+        pred_multi_vals[:, 0, :] = 5.0  # matches comp 0 perfectly
+        pred_multi_vals[:, 1, :] = 2.0  # imperfect on zero-sum comp 1
+        pred_multi = TimeSeries.from_values(pred_multi_vals)
+
+        with caplog.at_level(logging.WARNING):
+            res_multi = metrics.qr(actual_multi, pred_multi, component_reduction=None)
+        assert res_multi[0] == 0.0
+        assert np.isnan(res_multi[1])
+        assert "denominator" in caplog.text
+        caplog.clear()
+
+        # --- multiple quantiles ---
+        res_multi_q = metrics.qr(
+            zero_actual,
+            zero_stochastic_perfect,
+            q=[0.1, 0.5, 0.9],
+            component_reduction=None,
+        )
+        assert np.all(res_multi_q == 0.0)
+        assert len(res_multi_q) == 3
+        caplog.clear()
+
     @pytest.mark.parametrize(
         "config",
         [

@@ -32,6 +32,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed `qr` (quantile risk) returning `NaN` and emitting a runtime warning on zero-sum or constant zero target series; it now follows the `zero_division` convention of the other percentage metrics, returning `0.0` for a perfect forecast and `NaN` otherwise under `zero_division="warn"`, and raising under `zero_division="raise"`. by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 - Fixed probabilistic `SKLearnModel` sampled predictions producing unrealistically wide values when `random_state` was explicitely set and `n > output_chunk_length` (including optimized historical forecasts); the RNG was reset on each autoregressive `_predict()` call instead of once per forecast. [#3369](https://github.com/unit8co/darts/pull/3369) by [Dennis Bader](https://github.com/dennisbader).
 - Fixes to `FFT` : [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
  - Seasonal series are now forecast with correct phase alignment of the training series. Before, the training series was cropped one step after the matching timestamp.
