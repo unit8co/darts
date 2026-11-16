@@ -33,6 +33,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- 🔴 `TimeSeries.slice()` is now inclusive on both ends for integer-indexed (`RangeIndex`) series, matching the already documented behaviour for datetime-indexed series. Previously, `end_ts` was exclusive for `RangeIndex` series and off-grid bounds could silently drop in-range points (e.g. `slice(4, 9)` on a step-2 series returned `[4, 6]` instead of `[4, 6, 8]`). The method was rewritten to compute positional indices with `darts.utils.utils.n_steps_between()`. [#3379](https://github.com/unit8co/darts/issues/3379) by [Abhijeet Kumar](https://github.com/abhi478jeetur-rgb).
 - Fixed probabilistic `SKLearnModel` sampled predictions producing unrealistically wide values when `random_state` was explicitely set and `n > output_chunk_length` (including optimized historical forecasts); the RNG was reset on each autoregressive `_predict()` call instead of once per forecast. [#3369](https://github.com/unit8co/darts/pull/3369) by [Dennis Bader](https://github.com/dennisbader).
 - Fixes to `FFT` : [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
  - Seasonal series are now forecast with correct phase alignment of the training series. Before, the training series was cropped one step after the matching timestamp.

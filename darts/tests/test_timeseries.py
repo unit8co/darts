@@ -694,7 +694,8 @@ class TestTimeSeries:
             freq_expected = pd.tseries.frequencies.to_offset(expected)
             # apply trick to resample a timestamp to the desired frequency
             start = (
-                pd.Series(index=[pd.Timestamp("2000-01-01")])
+                pd
+                .Series(index=[pd.Timestamp("2000-01-01")])
                 .resample(freq_expected)
                 .mean()
                 .index[0]
@@ -2611,28 +2612,28 @@ def helper_test_slice(test_series: TimeSeries):
     idx = pd.RangeIndex(start=0, stop=30, step=1)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(10, 20).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[10:20])
+    np.testing.assert_equal(slice_vals, values[10:21])
 
     # integer-indexed series, not starting at 0
     values = np.random.rand(30)
     idx = pd.RangeIndex(start=5, stop=35, step=1)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(10, 20).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[5:15])
+    np.testing.assert_equal(slice_vals, values[5:16])
 
     # integer-indexed series, starting at 0, with step > 1
     values = np.random.rand(30)
     idx = pd.RangeIndex(start=0, stop=60, step=2)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(10, 20).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[5:10])
+    np.testing.assert_equal(slice_vals, values[5:11])
 
     # integer-indexed series, not starting at 0, with step > 1
     values = np.random.rand(30)
     idx = pd.RangeIndex(start=5, stop=65, step=2)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(11, 21).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[3:8])
+    np.testing.assert_equal(slice_vals, values[3:9])
 
     # test cases where start and/or stop are not in the series
 
@@ -2673,18 +2674,51 @@ def helper_test_slice(test_series: TimeSeries):
     slice_vals = ts.slice(10, 32).values(copy=False).flatten()
     np.testing.assert_equal(slice_vals, values[10:])
 
-    # end timestamp within the series make it exclusive:
+    # end timestamp within the series makes it inclusive:
     slice_vals = ts.slice(10, 29).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[10:29])
+    np.testing.assert_equal(slice_vals, values[10:30])
 
     # integer indexed series, step > 1, timestamps not in series
     idx = pd.RangeIndex(start=0, stop=60, step=2)
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(11, 31).values(copy=False).flatten()
-    np.testing.assert_equal(slice_vals, values[6:15])
+    np.testing.assert_equal(slice_vals, values[6:16])
 
     slice_ts = ts.slice(40, 60)
     assert ts.end_time() == slice_ts.end_time()
+
+    # integer-indexed series, step > 1: `end_ts` not on the index grid must not drop
+    # in-range points, and the slice is inclusive on both ends (see #3379)
+    values = np.arange(20.0)
+    idx = pd.RangeIndex(start=0, stop=40, step=2)
+    ts = TimeSeries(idx, values)
+    np.testing.assert_equal(
+        ts.slice(4, 9).values(copy=False).flatten(), values[2:5]
+    )  # times 4, 6, 8
+    np.testing.assert_equal(
+        ts.slice(3, 7).values(copy=False).flatten(), values[2:4]
+    )  # times 4, 6
+    np.testing.assert_equal(
+        ts.slice(0, 1).values(copy=False).flatten(), values[0:1]
+    )  # time 0
+    np.testing.assert_equal(
+        ts.slice(4, 11).values(copy=False).flatten(), values[2:6]
+    )  # times 4, 6, 8, 10
+    # end on the grid: last point included
+    np.testing.assert_equal(
+        ts.slice(4, 10).values(copy=False).flatten(), values[2:6]
+    )  # times 4, 6, 8, 10
+    # start == end on the grid: single point; off the grid: empty series
+    np.testing.assert_equal(ts.slice(4, 4).values(copy=False).flatten(), values[2:3])
+    assert len(ts.slice(5, 5)) == 0
+    # bounds outside the series
+    np.testing.assert_equal(ts.slice(-5, 2).values(copy=False).flatten(), values[0:2])
+    np.testing.assert_equal(
+        ts.slice(36, 100).values(copy=False).flatten(), values[18:20]
+    )
+    assert len(ts.slice(-10, -1)) == 0
+    assert len(ts.slice(40, 50)) == 0
+    assert len(ts.slice(10, 5)) == 0
 
 
 def helper_test_split(test_series: TimeSeries):
