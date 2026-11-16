@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added `TimeSeries.reindex()` which returns a new series conformed onto a target time index including missing-value-filling. [#3332](https://github.com/unit8co/darts/pull/3332) by [akarsh](https://github.com/akarsh11111111) and [Masashi Iida](https://github.com/iida-masashi).
+- Added `TimeSeries.reindex()` which returns a new series conformed onto a target time index including missing-value-filling. [#3332](https://github.com/unit8co/darts/pull/3332) by [akarsh](https://github.com/akarsh11111111) and [Masashi Iida](https://github.com/iida-masashi) and [#3381](https://github.com/unit8co/darts/pull/3381) by [@Divisht10](https://github.com/Divisht10)..
 - Added parameter `check_stationarity` to `darts.utils.statistics.granger_causality_tests()` to allow skipping stationarity pre-checks on already stationary or detrended series. [#3323](https://github.com/unit8co/darts/pull/3323) by [Mordris](https://github.com/Mordris).
 - Added `darts.utils.statistics.seasonality_and_trend_strength()` to compute the STL-based trend and seasonal strengths of a series, as defined in [Forecasting: Principles and Practice](https://otexts.com/fpp3/stlfeatures.html). [#3321](https://github.com/unit8co/darts/pull/3321) by [fixfon](https://github.com/fixfon).
 - Added parameter `signed` to `darts.metrics.ope()` to return the signed overall percentage error (percentage bias). A positive value means under-forecasting, a negative value over-forecasting. [#3319](https://github.com/unit8co/darts/pull/3319) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
@@ -32,7 +32,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed `TimeSeries.reindex()` silently returning an all-NaN series (or raising an unclear `TypeError` with `method`) when the target `times` had a different index type than the series (e.g. a `DatetimeIndex` for a series with a `RangeIndex`). It now raises a `ValueError`. [#3381](https://github.com/unit8co/darts/pull/3381) by [@Divisht10](https://github.com/Divisht10).
 - Fixed probabilistic `SKLearnModel` sampled predictions producing unrealistically wide values when `random_state` was explicitely set and `n > output_chunk_length` (including optimized historical forecasts); the RNG was reset on each autoregressive `_predict()` call instead of once per forecast. [#3369](https://github.com/unit8co/darts/pull/3369) by [Dennis Bader](https://github.com/dennisbader).
 - Fixes to `FFT` : [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
  - Seasonal series are now forecast with correct phase alignment of the training series. Before, the training series was cropped one step after the matching timestamp.
