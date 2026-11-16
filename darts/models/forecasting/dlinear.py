@@ -3,11 +3,10 @@ D-Linear
 --------
 """
 
-import warnings
-
 import torch
 import torch.nn as nn
 
+from darts.logging import get_logger
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
@@ -18,6 +17,8 @@ from darts.utils.data.torch_datasets.utils import (
     PLModuleOutput,
     TorchTrainingSample,
 )
+
+logger = get_logger(__name__)
 
 
 class _MovingAvg(nn.Module):
@@ -466,13 +467,11 @@ class DLinearModel(MixedCovariatesTorchModel):
             parameters, ...
         """
         if kernel_size > input_chunk_length:
-            warnings.warn(
+            logger.warning(
                 f"`kernel_size` ({kernel_size}) is larger than `input_chunk_length` "
                 f"({input_chunk_length}), causing excessive edge padding in the "
                 "moving average decomposition. Consider setting "
                 "`kernel_size <= input_chunk_length`.",
-                UserWarning,
-                stacklevel=2,
             )
 
         super().__init__(**self._extract_torch_model_params(**self.model_params))
