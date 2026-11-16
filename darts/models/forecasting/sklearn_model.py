@@ -317,32 +317,12 @@ class SKLearnModel(GlobalForecastingModel):
                     ),
                 )
 
-            is_comp_specific = lags_obj.is_component_specific
-            lags = (
-                {
-                    component: list(values)
-                    for component, values in lags_obj.resolved_per_component.items()
-                }
-                if is_comp_specific
-                else list(lags_obj.shared)
-            )
-            series_comps = series_.components.tolist()
-            component_lags = {}
-
-            # create a mapping of lags to components (components are in the same order as in the series)
-            if is_comp_specific:
-                # component-specific lags are specific to each component
-                for comp_name in series_comps:
-                    comp_lags = lags[comp_name]
-                    for lag in comp_lags:
-                        if lag not in component_lags:
-                            component_lags[lag] = [comp_name]
-                        else:
-                            component_lags[lag].append(comp_name)
-            else:
-                # global lags are identical for each component
-                for lag in lags:
-                    component_lags[lag] = series_comps
+            # create a mapping of lags to components; the lags resolved in `fit()` cover every component
+            # (in the same order as in the series), for both shared and component-specific lags
+            component_lags: dict[int, list[str]] = {}
+            for comp_name, comp_lags in lags_obj.resolved_per_component.items():
+                for lag in comp_lags:
+                    component_lags.setdefault(lag, []).append(comp_name)
 
             # create the feature list (in order of increasing lag)
             lags_sorted = sorted(component_lags.keys())

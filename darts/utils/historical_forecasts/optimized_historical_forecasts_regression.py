@@ -17,7 +17,6 @@ from darts.utils.data.tabularization.tabularization import (
     _create_lagged_data_from_config,
 )
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
-from darts.utils.ts_utils import get_single_series
 from darts.utils.utils import generate_index
 
 
@@ -72,12 +71,9 @@ def _optimized_historical_forecasts_regression(
     target_lags_obj = config.lags_for("target")
     extreme_target_lags = config.extreme_lags("target")
     if extreme_target_lags is not None:
-        if target_lags_obj.is_component_specific:
-            target_lags = list(target_lags_obj.resolved_per_component.values())
-        else:
-            target_lags = [target_lags_obj.shared] * get_single_series(
-                series
-            ).n_components
+        # the lags resolved in `fit()` cover every target component, for both shared and
+        # component-specific lags
+        target_lags = list(target_lags_obj.resolved_per_component.values())
 
         # map which target component lag belongs to which position in X
         counter = 0
