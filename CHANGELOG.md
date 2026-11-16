@@ -32,7 +32,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed `TimeSeries.reindex()` silently returning an all-NaN series (or raising an unclear `TypeError` with `method`) when the target `times` had a different index type than the series (e.g. a `DatetimeIndex` for a series with a `RangeIndex`). It now raises a `ValueError`. [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [Your Name](https://github.com/<your-handle>).
+- Fixed `TimeSeries.reindex()` silently returning an all-NaN series (or raising an unclear `TypeError` with `method`) when the target `times` had a different index type than the series (e.g. a `DatetimeIndex` for a series with a `RangeIndex`). It now raises a `ValueError`. [#3381](https://github.com/unit8co/darts/pull/3381) by [@Divisht10](https://github.com/Divisht10).
 - Fixed probabilistic `SKLearnModel` sampled predictions producing unrealistically wide values when `random_state` was explicitely set and `n > output_chunk_length` (including optimized historical forecasts); the RNG was reset on each autoregressive `_predict()` call instead of once per forecast. [#3369](https://github.com/unit8co/darts/pull/3369) by [Dennis Bader](https://github.com/dennisbader).
 - Fixes to `FFT` : [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
  - Seasonal series are now forecast with correct phase alignment of the training series. Before, the training series was cropped one step after the matching timestamp.
