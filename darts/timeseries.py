@@ -3847,10 +3847,7 @@ class TimeSeries:
         if isinstance(times, TimeSeries):
             times = times.time_index
 
-        if (
-            pd.api.types.is_datetime64_any_dtype(pd.Index(times))
-            != self.has_datetime_index
-        ):
+        if isinstance(times, pd.DatetimeIndex) != self.has_datetime_index:
             raise_log(
                 ValueError(
                     "The target `times` must have the same type of time index as the series "
