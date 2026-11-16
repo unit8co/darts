@@ -29,6 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Improved ensembling of probabilistic forecasts with `NaiveEnsembleModel`. The ensemble now samples from the mixture of the models rather averaging (which shrank predictive variance and did not preserve the actual value space). Each output sample is a full sample trajectory of a uniformly drawn model. Deterministic predictions and likelihood parameters are still averaged. [#3353](https://github.com/unit8co/darts/pull/3353). By [Mateen Sharief](https://github.com/mateen-789).
 - Improved error messages for too short trainiing `series` and validation `val_series` for `SKLearnModel` and `TorchForecastingModel`. [#3331](https://github.com/unit8co/darts/pull/3331) by [16niraj](https://github.com/16niraj).
 - `FFT` now raises a clear `ValueError` when passing invalid `pandas.Timestamp` attributes to `required_matches` for phase matching. [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
+- `TorchForecastingModel.load()` now also loads models from binary file handles such as `open(..., "rb")` or `io.BytesIO`, e.g. to load a model from cloud storage without writing it to disk first. Added parameter `ckpt_path` to pass the PyTorch Lightning checkpoint as a file path or file handle. [#3380](https://github.com/unit8co/darts/pull/3380) by [Renu Prasad Sugasi](https://github.com/renuprasads).
 
 **Fixed**
 
