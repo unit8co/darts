@@ -2607,6 +2607,12 @@ def helper_test_slice(test_series: TimeSeries):
     assert seriesC.start_time() == pd.Timestamp("20130108")
     assert seriesC.end_time() == pd.Timestamp("20130110")
 
+    with pytest.raises(ValueError, match="provided as integers"):
+        _ = seriesA.slice(0, 1)
+
+    with pytest.raises(ValueError, match="have to be of the same type"):
+        _ = seriesA.slice(pd.Timestamp("20130104"), 2)
+
     # integer-indexed series, starting at 0
     values = np.random.rand(30)
     idx = pd.RangeIndex(start=0, stop=30, step=1)
@@ -2634,6 +2640,9 @@ def helper_test_slice(test_series: TimeSeries):
     ts = TimeSeries(idx, values)
     slice_vals = ts.slice(11, 21).values(copy=False).flatten()
     np.testing.assert_equal(slice_vals, values[3:9])
+
+    with pytest.raises(ValueError, match="Timestamps have been provided"):
+        _ = ts.slice(pd.Timestamp("20130105"), pd.Timestamp("20130107"))
 
     # test cases where start and/or stop are not in the series
 
