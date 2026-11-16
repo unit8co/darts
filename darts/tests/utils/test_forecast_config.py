@@ -91,8 +91,8 @@ def test_derived_properties(
     )
 
     assert isinstance(config.strategy, expected_strategy)
-    assert config.pred_dim == expected_pred_dim
-    assert config.feature_lag_offset == expected_offset
+    assert config.strategy.pred_dim == expected_pred_dim
+    assert config.strategy.feature_lag_offset == expected_offset
     assert config.multi_models is multi_models
 
 

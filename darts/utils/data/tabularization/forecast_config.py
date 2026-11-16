@@ -225,14 +225,6 @@ class ForecastConfig:
         return self.strategy.output_chunk_length
 
     @property
-    def pred_dim(self) -> int:
-        return self.strategy.pred_dim
-
-    @property
-    def feature_lag_offset(self) -> int:
-        return self.strategy.feature_lag_offset
-
-    @property
     def multi_models(self) -> bool:
         return self.strategy.name == "direct"
 

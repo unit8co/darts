@@ -282,7 +282,7 @@ class SKLearnModel(GlobalForecastingModel):
         )
         self._warn_on_unsupported_lags(lags)
         self.multi_models = self._config.multi_models
-        self.pred_dim = self._config.pred_dim
+        self.pred_dim = self._config.strategy.pred_dim
 
     def _warn_on_unsupported_lags(self, lags: LAGS_TYPE | None) -> None:
         """Hook for subclasses whose target lags cannot preserve categorical values."""

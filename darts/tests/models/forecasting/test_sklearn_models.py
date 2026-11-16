@@ -1645,7 +1645,7 @@ class TestSKLearnModels:
         )
 
         *_, past_lags, future_lags = model._model_encoder_settings
-        offset = model._config.feature_lag_offset
+        offset = model._config.strategy.feature_lag_offset
         assert past_lags == [-12 - offset, -1]
         assert future_lags == [-6 - offset, 3]
 
