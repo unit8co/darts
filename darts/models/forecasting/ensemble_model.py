@@ -36,6 +36,7 @@ logger = get_logger(__name__)
 class EnsembleModel(GlobalForecastingModel):
     """
     Abstract base class for ensemble models.
+
     Ensemble models take in a list of forecasting models and ensemble their predictions
     to make a single one according to the rule defined by their `ensemble()` method.
 
@@ -467,7 +468,7 @@ class EnsembleModel(GlobalForecastingModel):
         verbose: bool | None = None,
     ) -> TimeSeriesLike:
         """
-        Defines how to ensemble the individual models' predictions to produce a single prediction.
+        Ensemble the individual models' predictions to produce a single prediction.
 
         Parameters
         ----------
@@ -492,7 +493,8 @@ class EnsembleModel(GlobalForecastingModel):
         Returns
         -------
         TimeSeries or Sequence[TimeSeries]
-            The predicted ``TimeSeries`` or sequence of ``TimeSeries`` obtained by ensembling the individual predictions
+            The predicted ``TimeSeries`` or sequence of ``TimeSeries`` obtained by ensembling the individual
+            predictions.
         """
         pass
 
@@ -506,7 +508,10 @@ class EnsembleModel(GlobalForecastingModel):
             predictions = [pred.mean(axis=2) for pred in predictions]
         else:
             predictions = [
-                pred.quantile(self.train_samples_reduction) for pred in predictions
+                pred.quantile(self.train_samples_reduction)
+                if pred.is_stochastic
+                else pred
+                for pred in predictions
             ]
         return predictions[0] if is_single_series else predictions
 

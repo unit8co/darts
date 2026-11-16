@@ -996,7 +996,7 @@ class TestBacktesting:
         ocl = 1 if use_autoreg else 3
         if method == "sampled":
             # sampled predictions need more training data to be accurate
-            n_reps = 50
+            n_reps = 100
             if use_autoreg:
                 # auto-regression would need even more data
                 min_score = 0.9

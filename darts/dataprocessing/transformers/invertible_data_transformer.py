@@ -450,5 +450,10 @@ class InvertibleDataTransformer(BaseDataTransformer):
                     f"got {insample.end_time()}."
                 ),
             )
-        series = insample[:expected_end].append(series)
+        insample = insample[:expected_end]
+        if insample.n_samples == 1 and series.n_samples > 1:
+            insample = insample.with_values(
+                np.repeat(insample.all_values(copy=False), series.n_samples, axis=2)
+            )
+        series = insample.append(series)
         return series, n_forecast_output

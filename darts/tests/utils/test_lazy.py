@@ -167,8 +167,13 @@ class TestLazyImportsIntegration:
 
     def test_ad_dir(self):
         import darts.ad
+        from darts.ad import IQRDetector
+        from darts.ad.detectors import IQRDetector as DetectorImplementation
 
         assert "AndAggregator" in dir(darts.ad)
+        assert "IQRDetector" in dir(darts.ad)
+        assert "IQRDetector" in darts.ad.__all__
+        assert IQRDetector is DetectorImplementation
 
     def test_datasets_dir(self):
         import darts.datasets

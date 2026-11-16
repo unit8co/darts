@@ -736,6 +736,30 @@ class TestTimeSeries:
             else:
                 assert ts_intersection.freq == expected
 
+            ts_intersection_other = ts_other.slice_intersect(ts_freq)
+            assert ts_intersection_other.time_index.equals(ts_intersection.time_index)
+
+    @pytest.mark.parametrize(
+        "index_a,index_b",
+        [
+            (
+                pd.RangeIndex(start=0, stop=8, step=2),
+                pd.RangeIndex(start=1, stop=9, step=2),
+            ),
+            (
+                pd.date_range("2024-01-01", periods=4, freq="2D"),
+                pd.date_range("2024-01-02", periods=4, freq="2D"),
+            ),
+        ],
+    )
+    def test_intersect_phase_shifted_same_frequency(self, index_a, index_b):
+        series_a = TimeSeries.from_times_and_values(index_a, np.arange(4.0))
+        series_b = TimeSeries.from_times_and_values(index_b, np.arange(10.0, 14.0))
+
+        assert len(series_a.slice_intersect(series_b)) == 0
+        assert len(series_a.slice_intersect_values(series_b)) == 0
+        assert len(series_a.slice_intersect_times(series_b)) == 0
+
     def test_shift(self):
         helper_test_shift(self.series1)
 
@@ -1903,6 +1927,22 @@ class TestTimeSeries:
         )
         np.testing.assert_equal(out.values(copy=False)[:, 0], [1.0, 3.0])
         assert out.time_index.equals(nearest_times)
+
+    @pytest.mark.parametrize("method", [None, "ffill"])
+    def test_reindex_mismatched_index_type(self, method):
+        series_dt = TimeSeries.from_times_and_values(
+            generate_index("2020-01-01", length=3, freq="D"), [1.0, 2.0, 3.0]
+        )
+        series_int = TimeSeries.from_values(np.array([1.0, 2.0, 3.0]))
+        msg = "same type of time index"
+
+        # target index type must match the series' time index type
+        with pytest.raises(ValueError, match=msg):
+            series_int.reindex(series_dt.time_index, method=method)
+        with pytest.raises(ValueError, match=msg):
+            series_dt.reindex(series_int.time_index, method=method)
+        with pytest.raises(ValueError, match=msg):
+            series_dt.reindex(series_int, method=method)
 
     def test_reindex_preserves_samples_and_metadata(self):
         times = pd.date_range("2020-01-01", periods=3, freq="D")

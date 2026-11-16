@@ -270,6 +270,7 @@ extra_configs = [
                     random_state=42,
                 ),
             ],
+            "random_state": 42,
         },
         0.04,
         0.04,

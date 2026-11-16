@@ -268,7 +268,6 @@ def _optimized_historical_forecasts_regression(
                 x=current_X,
                 num_samples=num_samples,
                 predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
                 **predict_kwargs,
             )
 
