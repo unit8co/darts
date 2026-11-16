@@ -3,6 +3,8 @@ D-Linear
 --------
 """
 
+import warnings
+
 import torch
 import torch.nn as nn
 
@@ -463,6 +465,16 @@ class DLinearModel(MixedCovariatesTorchModel):
             transform the input data, increase the number of epochs, use a validation set, optimize the hyper-
             parameters, ...
         """
+        if kernel_size > input_chunk_length:
+            warnings.warn(
+                f"`kernel_size` ({kernel_size}) is larger than `input_chunk_length` "
+                f"({input_chunk_length}), causing excessive edge padding in the "
+                "moving average decomposition. Consider setting "
+                "`kernel_size <= input_chunk_length`.",
+                UserWarning,
+                stacklevel=2,
+            )
+
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
         # extract pytorch lightning module kwargs

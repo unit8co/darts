@@ -1,3 +1,5 @@
+import warnings
+from contextlib import nullcontext
 from itertools import product
 
 import numpy as np
@@ -25,14 +27,43 @@ class TestDlinearNlinearModels:
     np.random.seed(42)
     torch.manual_seed(42)
 
-    def test_creation(self):
-        with pytest.raises(ValueError):
-            DLinearModel(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                normalize=True,
-                likelihood=GaussianLikelihood(),
+    def test_kernel_size_warning(self):
+        with pytest.warns(
+            UserWarning,
+            match=r"kernel_size` \(6\).*input_chunk_length` \(5\)",
+        ):
+            model = DLinearModel(
+                input_chunk_length=5, output_chunk_length=1, kernel_size=6
             )
+        assert model.kernel_size == 6
+
+        for kernel_size in (4, 5):
+            with warnings.catch_warnings(record=True) as warning_record:
+                warnings.simplefilter("always")
+                DLinearModel(
+                    input_chunk_length=5,
+                    output_chunk_length=1,
+                    kernel_size=kernel_size,
+                )
+            assert len(warning_record) == 0
+
+    def test_default_kernel_size_warning(self):
+        with pytest.warns(
+            UserWarning,
+            match=r"kernel_size` \(25\).*input_chunk_length` \(12\)",
+        ):
+            model = DLinearModel(input_chunk_length=12, output_chunk_length=6)
+        assert model.kernel_size == 25
+
+    def test_creation(self):
+        with pytest.warns(UserWarning, match="excessive edge padding"):
+            with pytest.raises(ValueError):
+                DLinearModel(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    normalize=True,
+                    likelihood=GaussianLikelihood(),
+                )
 
         with pytest.raises(ValueError):
             NLinearModel(
@@ -52,25 +83,35 @@ class TestDlinearNlinearModels:
             (NLinearModel, {"normalize": False}),
         ]:
             # Test basic fit and predict
-            model = model_cls(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                n_epochs=10,
-                random_state=42,
-                **kwargs,
-                **tfm_kwargs,
-            )
+            with (
+                pytest.warns(UserWarning, match="excessive edge padding")
+                if model_cls is DLinearModel
+                else nullcontext()
+            ):
+                model = model_cls(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    n_epochs=10,
+                    random_state=42,
+                    **kwargs,
+                    **tfm_kwargs,
+                )
             model.fit(large_ts[:98])
             pred = model.predict(n=2).values()[0]
 
             # Test whether model trained on one series is better than one trained on another
-            model2 = model_cls(
-                input_chunk_length=1,
-                output_chunk_length=1,
-                n_epochs=10,
-                random_state=42,
-                **tfm_kwargs,
-            )
+            with (
+                pytest.warns(UserWarning, match="excessive edge padding")
+                if model_cls is DLinearModel
+                else nullcontext()
+            ):
+                model2 = model_cls(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    n_epochs=10,
+                    random_state=42,
+                    **tfm_kwargs,
+                )
             model2.fit(small_ts[:98])
             pred2 = model2.predict(n=2).values()[0]
             assert abs(pred2 - 10) < abs(pred - 10)
@@ -79,6 +120,7 @@ class TestDlinearNlinearModels:
             pred3 = model2.predict(n=1)
             assert len(pred3) == 1
 
+    @pytest.mark.filterwarnings("ignore:.*excessive edge padding.*:UserWarning")
     def test_logtensorboard(self, tmpdir_module):
         ts = tg.constant_timeseries(length=50, value=10)
 
@@ -98,6 +140,7 @@ class TestDlinearNlinearModels:
             model.fit(ts)
             model.predict(n=2)
 
+    @pytest.mark.filterwarnings("ignore:.*excessive edge padding.*:UserWarning")
     def test_shared_weights(self):
         ts = tg.constant_timeseries(length=50, value=10).stack(
             tg.gaussian_timeseries(length=50)
@@ -283,9 +326,14 @@ class TestDlinearNlinearModels:
         # can only fit models with past/future covariates when shared_weights=False
         for model in [DLinearModel, NLinearModel]:
             for shared_weights in [True, False]:
-                model_instance = model(
-                    5, 5, shared_weights=shared_weights, **tfm_kwargs
-                )
+                with (
+                    pytest.warns(UserWarning, match="excessive edge padding")
+                    if model is DLinearModel
+                    else nullcontext()
+                ):
+                    model_instance = model(
+                        5, 5, shared_weights=shared_weights, **tfm_kwargs
+                    )
                 assert model_instance.supports_past_covariates == (not shared_weights)
                 assert model_instance.supports_future_covariates == (not shared_weights)
                 if shared_weights:
@@ -349,6 +397,7 @@ class TestDlinearNlinearModels:
         e = eval_model(normalize=True, use_past_covar=False)
         assert 0.6 < e < 0.7
 
+    @pytest.mark.filterwarnings("ignore:.*excessive edge padding.*:UserWarning")
     def test_optional_static_covariates(self):
         series = tg.sine_timeseries(length=20).with_static_covariates(
             pd.DataFrame({"a": [1]})
