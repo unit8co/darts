@@ -197,13 +197,13 @@ class TestTimeSeriesGeneration:
         ts = holidays_timeseries(idx, country_code="CH")
         np.testing.assert_array_almost_equal(ts.values()[:, 0], np.array([0, 0, 1]))
 
-        # time zone CET (+2 hour compared to UTC)
-        ts = holidays_timeseries(idx, country_code="CH", tz="CET")
+        # Europe/Berlin shifts local midnight vs UTC (summer index → +2 h vs UTC)
+        ts = holidays_timeseries(idx, country_code="CH", tz="Europe/Berlin")
         np.testing.assert_array_almost_equal(ts.values()[:, 0], np.array([1, 1, 1]))
 
         # check same from TimeSeries
         series = TimeSeries.from_times_and_values(times=idx, values=np.arange(len(idx)))
-        ts = holidays_timeseries(series, country_code="CH", tz="CET")
+        ts = holidays_timeseries(series, country_code="CH", tz="Europe/Berlin")
         np.testing.assert_array_almost_equal(ts.values()[:, 0], np.array([1, 1, 1]))
 
     def test_generate_index(self):
@@ -398,12 +398,12 @@ class TestTimeSeriesGeneration:
         # tz=timezone.utc is the same as tz=None
         self.helper_routine(idx, "hour", vals_exp=vals, tz=UTC)
 
-        # tz="CET" is +1 hour to UTC
+        # tz="Europe/Berlin" is +1 hour to UTC
         vals = vals[1:] + [0]
-        self.helper_routine(idx, "hour", vals_exp=vals, tz="CET")
+        self.helper_routine(idx, "hour", vals_exp=vals, tz="Europe/Berlin")
 
-        # tz=ZoneInfo("CET") is the same as tz="CET"
-        self.helper_routine(idx, "hour", vals_exp=vals, tz=ZoneInfo("CET"))
+        # tz=ZoneInfo("Europe/Berlin") is the same as tz="Europe/Berlin"
+        self.helper_routine(idx, "hour", vals_exp=vals, tz=ZoneInfo("Europe/Berlin"))
 
         # day, 0-indexed
         vals = [0] * 24 + [1] * 24
@@ -485,9 +485,11 @@ class TestTimeSeriesGeneration:
         self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
         # with time-zone
         if attribute_freq == "hour":
-            # shift to mimic conversion from UTC to CET
+            # shift to mimic conversion from UTC to Europe/Berlin
             vals = np.roll(vals, shift=-1, axis=0)
-        self.helper_routine(idx, attribute_freq, vals_exp=vals, tz="CET", one_hot=True)
+        self.helper_routine(
+            idx, attribute_freq, vals_exp=vals, tz="Europe/Berlin", one_hot=True
+        )
 
         # missing values
         cut_period = period // 3
@@ -542,13 +544,13 @@ class TestTimeSeriesGeneration:
 
         # with time-zone conversion
         if attribute_freq == "hour":
-            # UTC to CET shift by 1 hour
+            # UTC to Europe/Berlin shift by 1 hour
             vals = np.array(vals_dta[1:] + vals_dta[0:1])
         sin_vals = np.sin(freq * vals)[:, None]
         cos_vals = np.cos(freq * vals)[:, None]
         vals_exp = np.concatenate([sin_vals, cos_vals], axis=1)
         self.helper_routine(
-            idx, attribute_freq, vals_exp=vals_exp, tz="CET", cyclic=True
+            idx, attribute_freq, vals_exp=vals_exp, tz="Europe/Berlin", cyclic=True
         )
 
     def test_datetime_attribute_timeseries_leap_years(self):
