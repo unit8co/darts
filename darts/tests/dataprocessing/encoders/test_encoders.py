@@ -499,7 +499,7 @@ class TestEncoder:
                 "future": [extract_month, extract_year],
             },
             "transformer": Scaler(),
-            "tz": "CET",
+            "tz": "Europe/Berlin",
         }
         # given `add_encoders` dict, we expect encoders to generate the following components
         comps_expected_past = pd.Index([
@@ -1476,9 +1476,9 @@ class TestEncoder:
             takes_past_covariates=True,
             takes_future_covariates=True,
         )
-        # convert to Central European Time (CET)
+        # convert to Europe/Berlin
         encs_tz = SequentialEncoder(
-            add_encoders=dict({"tz": "CET"}, **add_encoders),
+            add_encoders=dict({"tz": "Europe/Berlin"}, **add_encoders),
             input_chunk_length=12,
             output_chunk_length=6,
             takes_past_covariates=True,
@@ -1499,7 +1499,7 @@ class TestEncoder:
         for vals, vals_tz in zip(
             [pc1, pc2, fc1, fc2], [pc1_tz, pc2_tz, fc1_tz, fc2_tz]
         ):
-            # CET is +1 hour compared to UTC, so we shift by 1
+            # Europe/Berlin is +1 hour compared to UTC, so we shift by 1
             np.testing.assert_array_almost_equal(
                 np.roll(vals.values(), -1, axis=0)[:-1], vals_tz.values()[:-1]
             )

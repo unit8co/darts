@@ -3702,7 +3702,7 @@ class TestTimeSeriesFromDataFrame:
         # the BUGFIX removes timezone information without conversion
 
         time_range_MS = pd.date_range(
-            start="20180501", end="20200301", freq="MS", tz="CET"
+            start="20180501", end="20200301", freq="MS", tz="Europe/Berlin"
         )
         values = np.random.uniform(low=-10, high=10, size=len(time_range_MS))
         # pd.DataFrame loses the tz information unless it is contained in its index
@@ -3713,16 +3713,16 @@ class TestTimeSeriesFromDataFrame:
             time_col=None if backend == "pandas" else "index",
         )
         assert list(ts.time_index) == list(time_range_MS.tz_localize(None))
-        assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
+        assert list(ts.time_index.tz_localize("Europe/Berlin")) == list(time_range_MS)
         assert ts.time_index.tz is None
 
         ts = TimeSeries(times=time_range_MS, values=values)
         assert list(ts.time_index) == list(time_range_MS.tz_localize(None))
-        assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
+        assert list(ts.time_index.tz_localize("Europe/Berlin")) == list(time_range_MS)
         assert ts.time_index.tz is None
 
         time_range_H = pd.date_range(
-            start="20200518", end="20200521", freq="h", tz="CET"
+            start="20200518", end="20200521", freq="h", tz="Europe/Berlin"
         )
         values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
 
@@ -3732,33 +3732,33 @@ class TestTimeSeriesFromDataFrame:
             time_col=None if backend == "pandas" else "index",
         )
         assert list(ts.time_index) == list(time_range_H.tz_localize(None))
-        assert list(ts.time_index.tz_localize("CET")) == list(time_range_H)
+        assert list(ts.time_index.tz_localize("Europe/Berlin")) == list(time_range_H)
         assert ts.time_index.tz is None
 
         ts = TimeSeries(times=time_range_H, values=values)
         assert list(ts.time_index) == list(time_range_H.tz_localize(None))
-        assert list(ts.time_index.tz_localize("CET")) == list(time_range_H)
+        assert list(ts.time_index.tz_localize("Europe/Berlin")) == list(time_range_H)
         assert ts.time_index.tz is None
 
     def test_time_col_with_tz_series(self):
         time_range_MS = pd.date_range(
-            start="20180501", end="20200301", freq="MS", tz="CET"
+            start="20180501", end="20200301", freq="MS", tz="Europe/Berlin"
         )
         values = np.random.uniform(low=-10, high=10, size=len(time_range_MS))
         serie = pd.Series(data=values, index=time_range_MS)
         ts = TimeSeries.from_series(pd_series=serie)
         assert list(ts.time_index) == list(time_range_MS.tz_localize(None))
-        assert list(ts.time_index.tz_localize("CET")) == list(time_range_MS)
+        assert list(ts.time_index.tz_localize("Europe/Berlin")) == list(time_range_MS)
         assert ts.time_index.tz is None
 
         time_range_H = pd.date_range(
-            start="20200518", end="20200521", freq="h", tz="CET"
+            start="20200518", end="20200521", freq="h", tz="Europe/Berlin"
         )
         values = np.random.uniform(low=-10, high=10, size=len(time_range_H))
         series = pd.Series(data=values, index=time_range_H)
         ts = TimeSeries.from_series(pd_series=series)
         assert list(ts.time_index) == list(time_range_H.tz_localize(None))
-        assert list(ts.time_index.tz_localize("CET")) == list(time_range_H)
+        assert list(ts.time_index.tz_localize("Europe/Berlin")) == list(time_range_H)
         assert ts.time_index.tz is None
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)

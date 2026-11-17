@@ -115,7 +115,7 @@ class RandomForestModel(SKLearnModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -282,7 +282,7 @@ class RandomForest(RandomForestModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
         n_estimators : int
