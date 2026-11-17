@@ -16,7 +16,7 @@ from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_prediction_data
-from darts.utils.multioutput import MultiOutputMixin, MultiQuantileRegressor
+from darts.utils.multioutput import MultiOutputMixin
 
 logger = get_logger(__name__)
 
@@ -74,13 +74,11 @@ class SKLearnShapAdapter(ShapAdapter):
         **kwargs,
     ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
         likelihood = model.likelihood
-        has_quantile_regressor = isinstance(model.model, MultiQuantileRegressor)
-
-        if has_quantile_regressor:
-            first_q_model = next(iter(model.model.estimators_.values()))
-            uses_multi_output = isinstance(first_q_model, MultiOutputMixin)
-        else:
-            uses_multi_output = isinstance(model.model, MultiOutputMixin)
+        has_quantile_regressor = (
+            isinstance(model.model, MultiOutputMixin)
+            and model.model.is_quantile_wrapped
+        )
+        uses_multi_output = isinstance(model.model, MultiOutputMixin)
 
         if not uses_multi_output and not has_quantile_regressor:
             # native multioutput, no per-quantile models -> single explainer
@@ -214,9 +212,13 @@ class SKLearnShapAdapter(ShapAdapter):
         }
 
     def _get_default_shap_method(self, model: SKLearnModel) -> SHAPMethod:
-        if isinstance(model.model, MultiQuantileRegressor):
-            q = model.likelihood.quantiles[model.likelihood._median_idx]
-            actual_model = model.model.estimators_[q]
+        if (
+            isinstance(model.model, MultiOutputMixin)
+            and model.model.is_quantile_wrapped
+        ):
+            q_idx = model.likelihood._median_idx
+            n_per_q = model.model.n_targets_per_quantile_
+            actual_model = model.model.estimators_[q_idx * n_per_q]
         else:
             actual_model = model.model
 

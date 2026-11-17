@@ -376,14 +376,17 @@ class QuantileRegression(SKLearnLikelihood):
     ) -> np.ndarray:
         # `x` is of shape (n_series * n_samples, n_regression_features)
         k = x.shape[0]
-        model_outputs = []
-        for quantile, fitted in model.model.estimators_.items():
-            # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-            model_output = fitted.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
-            model_outputs.append(model_output)
-        model_outputs = np.stack(model_outputs, axis=-1)
+        n_q = len(self.quantiles)
+        flat = model.model.predict(x, **kwargs)
+        n_reg = flat.shape[1] // n_q
+        # column layout: quantile-major blocks of `n_reg` regression outputs
+        per_quantile = flat.reshape(k, n_q, n_reg)
+        n_components = n_reg // self._n_outputs
         # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        return model_outputs
+        return np.transpose(
+            per_quantile.reshape(k, n_q, self._n_outputs, n_components),
+            (0, 2, 3, 1),
+        )
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)

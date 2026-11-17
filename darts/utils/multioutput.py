@@ -4,7 +4,7 @@ Multi-Output Models for SKLearnModel
 """
 
 import inspect
-from collections import OrderedDict
+from collections.abc import Sequence
 
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
@@ -34,6 +34,9 @@ class MultiOutputMixin:
         eval_set_name: str | tuple[str, str] | None = None,
         eval_weight_name: str | None = None,
         output_chunk_length: int | None = None,
+        quantiles: Sequence[float] | None = None,
+        column_estimators: Sequence | None = None,
+        n_targets_per_quantile: int | None = None,
         **kwargs,
     ):
         super().__init__(estimator=estimator, **kwargs)
@@ -46,6 +49,18 @@ class MultiOutputMixin:
         if isinstance(self.eval_set_name, tuple):
             self.eval_samples_name, self.eval_labels_name = self.eval_set_name
         self.output_chunk_length = output_chunk_length
+        self.quantiles = list(quantiles) if quantiles is not None else None
+        self.column_estimators = (
+            list(column_estimators) if column_estimators is not None else None
+        )
+        self.n_targets_per_quantile = n_targets_per_quantile
+        self.quantiles_: list[float] | None = None
+        self.n_targets_per_quantile_: int | None = None
+
+    @property
+    def is_quantile_wrapped(self) -> bool:
+        """Whether estimators were fitted in per-quantile mode."""
+        return self.quantiles is not None
 
     def fit(self, X, y, sample_weight=None, **fit_params):
         """Fit the model to data, separately for each output variable.
@@ -75,23 +90,63 @@ class MultiOutputMixin:
             Returns a fitted instance.
         """
 
-        if not hasattr(self.estimator, "fit"):
-            raise_log(
-                ValueError("The base estimator should implement a fit method"),
-            )
-        y = validate_data(self.estimator, X="no_validation", y=y, multi_output=True)
+        quantile_mode = self.is_quantile_wrapped
+        if quantile_mode:
+            if self.column_estimators is None:
+                raise_log(
+                    ValueError(
+                        "`column_estimators` must be provided when `quantiles` is set."
+                    ),
+                )
+            fit_estimator = self.column_estimators[0]
+        else:
+            if not hasattr(self.estimator, "fit"):
+                raise_log(
+                    ValueError("The base estimator should implement a fit method"),
+                )
+            fit_estimator = self.estimator
+
+        y = validate_data(fit_estimator, X="no_validation", y=y, multi_output=True)
 
         if is_classifier(self):
             check_classification_targets(y)
 
         if y.ndim == 1:
-            raise_log(
-                ValueError(
-                    "`y` must have at least two dimensions for multi-output but has only one."
-                ),
-            )
+            if quantile_mode and (self.n_targets_per_quantile or 1) == 1:
+                y = y.reshape(-1, 1)
+            else:
+                raise_log(
+                    ValueError(
+                        "`y` must have at least two dimensions for multi-output but has only one."
+                    ),
+                )
+
+        n_targets = y.shape[1]
+        if quantile_mode:
+            n_targets_per_q = self.n_targets_per_quantile or n_targets
+            if self.n_targets_per_quantile is not None and n_targets != n_targets_per_q:
+                raise_log(
+                    ValueError(
+                        f"`y` must have {n_targets_per_q} columns for quantile regression "
+                        f"but has {n_targets}."
+                    ),
+                )
+            n_cols = len(self.column_estimators)
+            expected_cols = len(self.quantiles) * n_targets_per_q
+            if n_cols != expected_cols:
+                raise_log(
+                    ValueError(
+                        f"`column_estimators` length must be "
+                        f"`len(quantiles) * n_targets_per_quantile` ({expected_cols}), "
+                        f"got {n_cols}."
+                    ),
+                )
+        else:
+            n_targets_per_q = n_targets
+            n_cols = n_targets
+
         if sample_weight is not None and (
-            sample_weight.ndim == 1 or sample_weight.shape[1] != y.shape[1]
+            sample_weight.ndim == 1 or sample_weight.shape[1] != n_targets
         ):
             raise_log(
                 ValueError("`sample_weight` must have the same dimensions as `y`."),
@@ -104,7 +159,7 @@ class MultiOutputMixin:
 
         if (
             fit_params.get("verbose") is not None
-            and "verbose" not in inspect.signature(self.estimator.fit).parameters
+            and "verbose" not in inspect.signature(fit_estimator.fit).parameters
         ):
             fit_params.pop("verbose")
 
@@ -117,32 +172,50 @@ class MultiOutputMixin:
             eval_set = fit_params_validated.pop(self.eval_set_name, None)
         eval_weight = fit_params_validated.pop(self.eval_weight_name, None)
 
+        def _col_target_index(i: int) -> int:
+            if quantile_mode:
+                return i % n_targets_per_q
+            return i
+
+        def _estimator_for_col(i: int):
+            if quantile_mode:
+                return self.column_estimators[i]
+            return self.estimator
+
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
             delayed(_fit_estimator)(
-                self.estimator,
+                _estimator_for_col(i),
                 X,
-                y[:, i],
-                sample_weight=sample_weight[:, i]
+                y[:, _col_target_index(i)],
+                sample_weight=sample_weight[:, _col_target_index(i)]
                 if sample_weight is not None
                 else None,
-                **({self.eval_set_name: [eval_set[i]]} if eval_set is not None else {}),
+                **(
+                    {self.eval_set_name: [eval_set[_col_target_index(i)]]}
+                    if eval_set is not None
+                    else {}
+                ),
                 **(
                     {
-                        self.eval_samples_name: eval_samples[i],
-                        self.eval_labels_name: eval_labels[i],
+                        self.eval_samples_name: eval_samples[_col_target_index(i)],
+                        self.eval_labels_name: eval_labels[_col_target_index(i)],
                     }
                     if eval_samples is not None and eval_labels is not None
                     else {}
                 ),
                 **(
-                    {self.eval_weight_name: [eval_weight[i]]}
+                    {self.eval_weight_name: [eval_weight[_col_target_index(i)]]}
                     if eval_weight is not None
                     else {}
                 ),
                 **fit_params_validated,
             )
-            for i in range(y.shape[1])
+            for i in range(n_cols)
         )
+
+        if quantile_mode:
+            self.quantiles_ = list(self.quantiles)
+            self.n_targets_per_quantile_ = n_targets_per_q
 
         if hasattr(self.estimators_[0], "n_features_in_"):
             self.n_features_in_ = self.estimators_[0].n_features_in_
@@ -156,6 +229,8 @@ class MultiOutputMixin:
         """
         Whether model supports sample weight for training.
         """
+        if self.column_estimators is not None:
+            return has_fit_parameter(self.column_estimators[0], "sample_weight")
         return has_fit_parameter(self.estimator, "sample_weight")
 
 
@@ -176,100 +251,6 @@ class MultiOutputClassifier(MultiOutputMixin, sk_MultiOutputClassifier):
         super().fit(X=X, y=y, sample_weight=sample_weight, **fit_params)
         self.classes_ = [estimator.classes_ for estimator in self.estimators_]
         return self
-
-
-def _fit_quantile_estimator(estimator, X, y, fit_params):
-    """Fit a single quantile estimator. Module-level function for joblib pickling."""
-    # Strip verbose if the estimator (or its base estimator inside MultiOutputMixin)
-    # does not support it — mirroring MultiOutputMixin behaviour.
-    if fit_params.get("verbose") is not None:
-        base = (
-            estimator.estimator
-            if isinstance(estimator, MultiOutputMixin)
-            else estimator
-        )
-        if "verbose" not in inspect.signature(base.fit).parameters:
-            fit_params = {k: v for k, v in fit_params.items() if k != "verbose"}
-    estimator.fit(X, y, **fit_params)
-    return estimator
-
-
-class MultiQuantileRegressor:
-    """Meta-estimator that fits one estimator per quantile level.
-
-    Each sub-estimator may itself be a :class:`MultiOutputRegressor` when the
-    task requires multi-output support (multivariate or ``multi_models``).
-    Quantile fits can run in parallel via ``n_jobs``.
-
-    Parameters
-    ----------
-    quantile_estimators : OrderedDict[float, estimator]
-        Mapping from quantile level to an (unfitted) sklearn-compatible estimator.
-        Each estimator should already be wrapped in ``MultiOutputRegressor`` if
-        multi-output handling is needed.
-    n_jobs : int or None, default=None
-        Number of parallel jobs for fitting across quantiles. ``None`` or ``1``
-        means sequential fitting. When set > 1, inner ``MultiOutputRegressor``
-        instances should use ``n_jobs=1`` to avoid CPU oversubscription.
-    """
-
-    def __init__(
-        self,
-        quantile_estimators: OrderedDict,
-        n_jobs: int | None = None,
-    ):
-        self.quantile_estimators = quantile_estimators
-        self.n_jobs = n_jobs
-        self.estimators_: OrderedDict = quantile_estimators
-
-    def fit(self, X, y, **fit_params):
-        """Fit every quantile estimator on the same training data.
-
-        Parameters
-        ----------
-        X : array-like of shape (n_samples, n_features)
-        y : array-like of shape (n_samples,) or (n_samples, n_outputs)
-        **fit_params
-            Forwarded to each sub-estimator's ``fit()`` (e.g. ``sample_weight``,
-            ``verbose``, validation-set kwargs).
-
-        Returns
-        -------
-        self
-        """
-        results = Parallel(n_jobs=self.n_jobs)(
-            delayed(_fit_quantile_estimator)(est, X, y, fit_params)
-            for est in self.estimators_.values()
-        )
-        self.estimators_ = OrderedDict(zip(self.quantile_estimators.keys(), results))
-        return self
-
-    def predict(self, X, **kwargs):
-        """Predict using the median quantile estimator (convenience only)."""
-        median_est = next(iter(self.estimators_.values()))
-        return median_est.predict(X, **kwargs)
-
-    @property
-    def uses_multioutput(self) -> bool:
-        """Whether the sub-estimators are wrapped in ``MultiOutputMixin``."""
-        first = next(iter(self.estimators_.values()))
-        return isinstance(first, MultiOutputMixin)
-
-    @property
-    def supports_sample_weight(self) -> bool:
-        """Whether the underlying estimators support sample weights."""
-        first = next(iter(self.estimators_.values()))
-        if isinstance(first, MultiOutputMixin):
-            return first.supports_sample_weight
-        return has_fit_parameter(first, "sample_weight")
-
-    def __str__(self):
-        n_q = len(self.estimators_)
-        first = next(iter(self.estimators_.values()))
-        return f"MultiQuantileRegressor(n_quantiles={n_q}, estimator={first})"
-
-    def __repr__(self):
-        return self.__str__()
 
 
 def get_multioutput_estimator_cls(model_type: ModelType) -> type[MultiOutputMixin]:

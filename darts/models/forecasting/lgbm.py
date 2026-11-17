@@ -360,7 +360,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             stride=stride,
         )
         # LightGBMRegressor.fit() requires single array eval_X and eval_y;
-        # MultiOutputMixin / MultiQuantileRegressor handles this internally
+        # MultiOutputMixin handles this internally
         if self._model_uses_multioutput:
             return kwargs
 
