@@ -233,3 +233,20 @@ class TestRNNModel:
 
         out_step = module(x_pred.replace(state=out_pred.state))
         assert out_step.prediction.shape == (2, 1, 1, 1)
+    def test_batch_norm(self):
+        module_no_bn = _RNNModule(name="RNN", input_size=1, hidden_dim=4, num_layers=1, target_size=1, nr_params=1, dropout=0, use_batch_norm=False)
+        assert module_no_bn.batch_norm is None
+        module = _RNNModule(name="RNN", input_size=1, hidden_dim=4, num_layers=1, target_size=1, nr_params=1, dropout=0, use_batch_norm=True)
+        assert isinstance(module.batch_norm, nn.BatchNorm1d)
+        x_train = PLModuleInput(past_target=torch.randn(2, 6, 1), stage=ModuleStage.TRAIN)
+        out_train = module(x_train)
+        assert out_train.prediction.shape == (2, 6, 1, 1)
+        module.eval()
+        x_pred = PLModuleInput(past_target=torch.randn(2, 4, 1), stage=ModuleStage.PREDICT)
+        out_pred = module(x_pred)
+        assert out_pred.prediction.shape == (2, 1, 1, 1)
+        series = TimeSeries.from_values(np.arange(20, dtype=np.float32))
+        model = RNNModel(input_chunk_length=4, hidden_dim=4, n_rnn_layers=1, batch_size=2, n_epochs=1, use_batch_norm=True, **tfm_kwargs)
+        model.fit(series)
+        pred = model.predict(n=2)
+        assert len(pred) == 2
