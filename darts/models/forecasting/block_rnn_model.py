@@ -40,6 +40,7 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         nr_params: int,
         num_layers_out_fc: list | None = None,
         dropout: float = 0.0,
+        use_batch_norm: bool = False,
         activation: str = "ReLU",
         **kwargs,
     ):
@@ -76,6 +77,8 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
             This network connects the last hidden layer of the PyTorch RNN module to the output.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
+        use_batch_norm
+            Whether to use batch normalization.
         activation
             The name of the activation function to be applied between the layers of the fully connected network.
         **kwargs
@@ -93,6 +96,7 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         self.nr_params = nr_params
         self.num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.dropout = dropout
+        self.use_batch_norm = use_batch_norm
         self.activation = activation
 
     @io_processor
@@ -115,7 +119,6 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         """
 
 
-# TODO add batch norm
 class _BlockRNNModule(CustomBlockRNNModule):
     def __init__(
         self,
@@ -198,6 +201,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
                 activation_function = getattr(nn, activation)()
                 feats.append(activation_function)
             last = feature
+        self.batch_norm = nn.BatchNorm1d(self.hidden_dim) if self.use_batch_norm else None
         self.fc = nn.Sequential(*feats)
 
     @io_processor
@@ -246,6 +250,8 @@ class _BlockRNNModule(CustomBlockRNNModule):
             # otherwise, take `T` last predictions
             # -> (B, T, H_D)
             out = out[:, -self.output_chunk_length :, :]
+        if self.batch_norm is not None:
+            out = self.batch_norm(out.transpose(1, 2)).transpose(1, 2)
 
         # concatenate future covariates if given
         if x_future is not None:
@@ -275,6 +281,7 @@ class BlockRNNModel(MixedCovariatesTorchModel):
         dropout: float = 0.0,
         activation: str = "ReLU",
         use_static_covariates: bool = True,
+        use_batch_norm: bool = False,
         **kwargs,
     ):
         """Block Recurrent Neural Network Model (RNNs).
@@ -330,6 +337,8 @@ class BlockRNNModel(MixedCovariatesTorchModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        use_batch_norm
+            Whether to apply batch normalization to the RNN output. Default: ``False``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -534,6 +543,7 @@ class BlockRNNModel(MixedCovariatesTorchModel):
         self.n_rnn_layers = n_rnn_layers
         self.dropout = dropout
         self.activation = activation
+        self.use_batch_norm = use_batch_norm
 
         self._considers_static_covariates = use_static_covariates
 
@@ -574,6 +584,7 @@ class BlockRNNModel(MixedCovariatesTorchModel):
             num_layers_out_fc=hidden_fc_sizes,
             dropout=self.dropout,
             activation=self.activation,
+            use_batch_norm=self.use_batch_norm,
             **self.pl_module_params,
             **kwargs,
         )
