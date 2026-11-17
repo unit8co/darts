@@ -286,3 +286,14 @@ class TestBlockRNNModel:
         )
         model.fit(ts_time_index, verbose=False, epochs=1)
         _ = model.predict(n=1)
+    def test_batch_norm(self):
+        module_no_bn = _BlockRNNModule(name="RNN", input_size=1, hidden_dim=4, num_layers=1, target_size=1, nr_params=1, input_chunk_length=4, output_chunk_length=2, num_layers_out_fc=[], dropout=0, use_batch_norm=False)
+        assert module_no_bn.batch_norm is None
+        module = _BlockRNNModule(name="RNN", input_size=1, hidden_dim=4, num_layers=1, target_size=1, nr_params=1, input_chunk_length=4, output_chunk_length=2, num_layers_out_fc=[], dropout=0, use_batch_norm=True)
+        assert isinstance(module.batch_norm, nn.BatchNorm1d)
+        series = TimeSeries.from_values(np.arange(20, dtype=np.float32))
+        model = BlockRNNModel(input_chunk_length=4, output_chunk_length=2, hidden_dim=4, n_rnn_layers=1, batch_size=2, n_epochs=1, use_batch_norm=True, **tfm_kwargs)
+        model.fit(series)
+        pred = model.predict(n=2)
+        assert len(pred) == 2
+        
