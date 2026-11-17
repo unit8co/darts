@@ -16,7 +16,7 @@ from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization import create_lagged_prediction_data
-from darts.utils.multioutput import MultiOutputMixin
+from darts.utils.multioutput import MultiOutputMixin, MultiQuantileRegressor
 
 logger = get_logger(__name__)
 
@@ -74,15 +74,15 @@ class SKLearnShapAdapter(ShapAdapter):
         **kwargs,
     ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
         likelihood = model.likelihood
-        has_quantile_container = model._model_container is not None
+        has_quantile_regressor = isinstance(model.model, MultiQuantileRegressor)
 
-        if has_quantile_container:
-            first_q_model = next(iter(model._model_container.values()))
+        if has_quantile_regressor:
+            first_q_model = next(iter(model.model.estimators_.values()))
             uses_multi_output = isinstance(first_q_model, MultiOutputMixin)
         else:
             uses_multi_output = isinstance(model.model, MultiOutputMixin)
 
-        if not uses_multi_output and not has_quantile_container:
+        if not uses_multi_output and not has_quantile_regressor:
             # native multioutput, no per-quantile models -> single explainer
             return self._build_explainer_sklearn(
                 model_sklearn=model.model,
@@ -97,7 +97,7 @@ class SKLearnShapAdapter(ShapAdapter):
         for i in range(self.n):
             explainers[i] = {}
             for j in range(self.n_targets_likelihood):
-                if has_quantile_container:
+                if has_quantile_regressor:
                     target_dim = j // n_params
                     quantile = likelihood.quantiles[j % n_params]
                 else:
@@ -214,12 +214,10 @@ class SKLearnShapAdapter(ShapAdapter):
         }
 
     def _get_default_shap_method(self, model: SKLearnModel) -> SHAPMethod:
-        if model._model_container is not None:
-            # quantile models
+        if isinstance(model.model, MultiQuantileRegressor):
             q = model.likelihood.quantiles[model.likelihood._median_idx]
-            actual_model = model._model_container[q]
+            actual_model = model.model.estimators_[q]
         else:
-            # regular models
             actual_model = model.model
 
         if isinstance(actual_model, MultiOutputMixin):

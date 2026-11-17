@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Unified quantile regression fitting for `SKLearnModel` children (`LinearRegressionModel`, `LightGBMModel`, `XGBModel`, `CatBoostModel`). Quantile-level estimators are now managed by a single `MultiQuantileRegressor` in the multioutput layer instead of duplicated `_QuantileModelContainer` logic in each child model. Training data is prepared once per `fit()` call (instead of once per quantile), and quantile fits can now run in parallel via the existing `n_jobs_multioutput_wrapper` parameter.
 - Added a warning to `DLinearModel` when `kernel_size` exceeds `input_chunk_length`, alerting users to excessive edge padding. [#3384](https://github.com/unit8co/darts/pull/3384) by [Ayushr24](https://github.com/Ayushr24).
 - Added `TimeSeries.reindex()` which returns a new series conformed onto a target time index including missing-value-filling. [#3332](https://github.com/unit8co/darts/pull/3332) by [akarsh](https://github.com/akarsh11111111) and [Masashi Iida](https://github.com/iida-masashi) and [#3381](https://github.com/unit8co/darts/pull/3381) by [@Divisht10](https://github.com/Divisht10).
 - Added parameter `check_stationarity` to `darts.utils.statistics.granger_causality_tests()` to allow skipping stationarity pre-checks on already stationary or detrended series. [#3323](https://github.com/unit8co/darts/pull/3323) by [Mordris](https://github.com/Mordris).

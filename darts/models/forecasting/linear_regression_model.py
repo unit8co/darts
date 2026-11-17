@@ -14,14 +14,9 @@ from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
     SKLearnModel,
-    _QuantileModelContainer,
 )
-from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import (
-    QuantileRegression,
-    _get_likelihood,
-)
+from darts.utils.likelihood_models.sklearn import _get_likelihood
 
 logger = get_logger(__name__)
 
@@ -187,8 +182,9 @@ class LinearRegressionModel(SKLearnModel):
         if likelihood == LikelihoodType.Poisson.value:
             model = PoissonRegressor(**kwargs)
         elif likelihood == LikelihoodType.Quantile.value:
-            model = QuantileRegressor(**kwargs)
-            self._model_container = _QuantileModelContainer()
+            # probe solver availability once at init time
+            self._resolve_solver()
+            model = QuantileRegressor(**self.kwargs)
         else:  # likelihood is None
             model = LinearRegression(**kwargs)
 
@@ -205,70 +201,18 @@ class LinearRegressionModel(SKLearnModel):
             random_state=random_state,
         )
 
-    def fit(
-        self,
-        series: TimeSeriesLike,
-        past_covariates: TimeSeriesLike | None = None,
-        future_covariates: TimeSeriesLike | None = None,
-        max_samples_per_ts: int | None = None,
-        n_jobs_multioutput_wrapper: int | None = None,
-        sample_weight: TimeSeriesLike | str | None = None,
-        verbose: bool | None = None,
-        **kwargs,
-    ):
-        likelihood = self.likelihood
-        if isinstance(likelihood, QuantileRegression):
-            # set solver for linear program
-            if "solver" not in self.kwargs:
-                # set default fast solver
-                self.kwargs["solver"] = "highs"
-
-            # test solver availability with dummy problem
-            c = [1]
-            try:
-                linprog(c=c, method=self.kwargs["solver"])
-            except ValueError as ve:
-                logger.warning(
-                    f"{ve}. Upgrading scipy enables significantly faster solvers"
-                )
-                # set solver to slow legacy
-                self.kwargs["solver"] = "interior-point"
-
-            # empty model container in case of multiple calls to fit, e.g. when backtesting
-            self._model_container.clear()
-
-            for quantile in likelihood.quantiles:
-                self.kwargs["quantile"] = quantile
-                # assign the Quantile regressor to self.model to leverage existing logic
-                self.model = QuantileRegressor(**self.kwargs)
-                super().fit(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                    max_samples_per_ts=max_samples_per_ts,
-                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-                    sample_weight=sample_weight,
-                    verbose=verbose,
-                    **kwargs,
-                )
-                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
-                self._model_container[quantile] = self.model
-
-            # replace the last trained QuantileRegressor with the dictionary of Regressors.
-            self.model = self._model_container
-
-            return self
-
-        else:
-            super().fit(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                max_samples_per_ts=max_samples_per_ts,
-                n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-                sample_weight=sample_weight,
-                verbose=verbose,
-                **kwargs,
+    def _resolve_solver(self):
+        """Set a fast LP solver for QuantileRegressor, falling back if unavailable."""
+        if "solver" not in self.kwargs:
+            self.kwargs["solver"] = "highs"
+        try:
+            linprog(c=[1], method=self.kwargs["solver"])
+        except ValueError as ve:
+            logger.warning(
+                f"{ve}. Upgrading scipy enables significantly faster solvers"
             )
+            self.kwargs["solver"] = "interior-point"
 
-            return self
+    def _estimator_for_quantile(self, quantile: float):
+        """Return a fresh ``QuantileRegressor`` configured for *quantile*."""
+        return QuantileRegressor(**{**self.kwargs, "quantile": quantile})

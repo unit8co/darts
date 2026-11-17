@@ -27,14 +27,10 @@ from darts.models.forecasting.sklearn_model import (
     LAGS_TYPE,
     SKLearnModel,
     _ClassifierMixin,
-    _QuantileModelContainer,
 )
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import (
-    QuantileRegression,
-    _get_likelihood,
-)
+from darts.utils.likelihood_models.sklearn import _get_likelihood
 
 
 def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
@@ -233,6 +229,10 @@ class XGBModel(SKLearnModel):
     def _create_model(**kwargs):
         return xgb.XGBRegressor(**kwargs)
 
+    def _estimator_for_quantile(self, quantile: float):
+        """Return a fresh ``XGBRegressor`` configured for *quantile*."""
+        return self._create_model(**{**self.kwargs, "quantile_alpha": quantile})
+
     def _set_likelihood(
         self,
         likelihood: str | None,
@@ -259,9 +259,8 @@ class XGBModel(SKLearnModel):
         elif likelihood == LikelihoodType.MultiQuantile.value:
             self.kwargs["objective"] = "reg:quantileerror"
             self.kwargs["quantile_alpha"] = self._likelihood.quantiles
-        else:  # QuantileRegression — per-quantile loop in fit()
+        else:  # QuantileRegression — per-quantile estimators built by SKLearnModel
             self.kwargs["objective"] = "reg:quantileerror"
-            self._model_container = _QuantileModelContainer()
 
     def fit(
         self,
@@ -327,32 +326,6 @@ class XGBModel(SKLearnModel):
         **kwargs
             Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
-        likelihood = self.likelihood
-        if type(likelihood) is QuantileRegression:
-            # empty model container in case of multiple calls to fit, e.g. when backtesting
-            self._model_container.clear()
-            for quantile in likelihood.quantiles:
-                self.kwargs["quantile_alpha"] = quantile
-                self.model = self._create_model(**self.kwargs)
-                super().fit(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                    val_series=val_series,
-                    val_past_covariates=val_past_covariates,
-                    val_future_covariates=val_future_covariates,
-                    max_samples_per_ts=max_samples_per_ts,
-                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-                    sample_weight=sample_weight,
-                    val_sample_weight=val_sample_weight,
-                    stride=stride,
-                    verbose=verbose,
-                    **kwargs,
-                )
-                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
-                self._model_container[quantile] = self.model
-            return self
-
         super().fit(
             series=series,
             past_covariates=past_covariates,

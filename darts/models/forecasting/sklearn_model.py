@@ -57,7 +57,6 @@ For detailed examples and tutorials, see:
 
 import inspect
 from abc import ABC, abstractmethod
-from collections import OrderedDict
 from collections.abc import Callable, Sequence
 from typing import Any, Literal
 
@@ -87,7 +86,11 @@ from darts.utils.likelihood_models.sklearn import (
     SKLearnLikelihood,
     _get_likelihood,
 )
-from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
+from darts.utils.multioutput import (
+    MultiOutputMixin,
+    MultiQuantileRegressor,
+    get_multioutput_estimator_cls,
+)
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 from darts.utils.utils import ModelType, random_method
 
@@ -253,10 +256,6 @@ class SKLearnModel(GlobalForecastingModel):
 
         # optionally, the model can be wrapped in a likelihood model
         self._likelihood: SKLearnLikelihood | None = getattr(self, "_likelihood", None)
-        # for quantile likelihood models, the model container is a dict of quantile -> model
-        self._model_container: _QuantileModelContainer | None = getattr(
-            self, "_model_container", None
-        )
 
         # check and set output_chunk_length
         if not (isinstance(output_chunk_length, int) and output_chunk_length > 0):
@@ -680,17 +679,18 @@ class SKLearnModel(GlobalForecastingModel):
 
         if type(likelihood) is QuantileRegression:
             # check for type `QuantileRegression` to ignore subclass `MultiQuantileRegression`.
-            # the estimators are grouped by quantiles
+            # the estimators are grouped by quantiles inside MultiQuantileRegressor
+            mqr: MultiQuantileRegressor = self.model
             if quantile is None:
                 quantile = likelihood.quantiles[likelihood._median_idx]
-            elif quantile not in self._model_container:
+            elif quantile not in mqr.estimators_:
                 raise_log(
                     ValueError(
                         f"Invalid `quantile={quantile}`. Must be one of the fitted quantiles "
-                        f"`{list(self._model_container.keys())}`."
+                        f"`{list(mqr.estimators_.keys())}`."
                     ),
                 )
-            model = self._model_container[quantile]
+            model = mqr.estimators_[quantile]
         else:
             model = self.model
 
@@ -745,8 +745,8 @@ class SKLearnModel(GlobalForecastingModel):
             raise_log(
                 ValueError(f"Invalid validation set: {err}"),
             )
-        # create validation sets for MultiOutputMixin
-        if val_labels.ndim == 2 and isinstance(self.model, MultiOutputMixin):
+        # create validation sets for MultiOutputMixin / MultiQuantileRegressor
+        if val_labels.ndim == 2 and self._model_uses_multioutput:
             val_sets, val_weights = [], []
             for i in range(val_labels.shape[1]):
                 val_sets.append((val_samples, val_labels[:, i]))
@@ -902,9 +902,9 @@ class SKLearnModel(GlobalForecastingModel):
                 )
 
         # only pass `verbose` if provided and the underlying model supports it;
-        # we always pass it to MultiOutputMixin as it will handle it there
+        # we always pass it to MultiOutputMixin / MultiQuantileRegressor as they will handle it
         if verbose is not None and (
-            isinstance(self.model, MultiOutputMixin)
+            isinstance(self.model, (MultiOutputMixin | MultiQuantileRegressor))
             or "verbose" in inspect.signature(self.model.fit).parameters
         ):
             kwargs["verbose"] = verbose
@@ -1058,8 +1058,49 @@ class SKLearnModel(GlobalForecastingModel):
             self.output_chunk_length > 1 and self.multi_models
         )
 
-        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputMixin
-        if (
+        likelihood = self.likelihood
+        if type(likelihood) is QuantileRegression:
+            # Centralized quantile regression: build one estimator per quantile,
+            # optionally wrapped for multi-output, then group into a single
+            # MultiQuantileRegressor so that data preparation happens only once.
+            from collections import OrderedDict
+
+            # Temporarily set a probe estimator so subclass overrides of
+            # _supports_native_multioutput (e.g. XGBModel) see the right model.
+            saved_model = self.model
+            first_est = self._estimator_for_quantile(likelihood.quantiles[0])
+            self.model = first_est
+            needs_wrap = requires_multioutput and (
+                not self._supports_native_multioutput or sample_weight is not None
+            )
+            self.model = saved_model
+
+            val_set_name, val_weight_name = self.val_set_params
+            mor_kwargs = {
+                "eval_set_name": val_set_name,
+                "eval_weight_name": val_weight_name,
+                "n_jobs": 1,  # inner multioutput sequential; outer quantile axis parallel
+                "output_chunk_length": self.output_chunk_length,
+            }
+
+            quantile_estimators = OrderedDict()
+            for q in likelihood.quantiles:
+                est = (
+                    first_est
+                    if q == likelihood.quantiles[0]
+                    else self._estimator_for_quantile(q)
+                )
+                if needs_wrap:
+                    est = get_multioutput_estimator_cls(self._model_type)(
+                        estimator=est, **mor_kwargs
+                    )
+                quantile_estimators[q] = est
+
+            self.model = MultiQuantileRegressor(
+                quantile_estimators=quantile_estimators,
+                n_jobs=n_jobs_multioutput_wrapper,
+            )
+        elif (
             requires_multioutput
             and not isinstance(self.model, MultiOutputMixin)
             and (
@@ -1068,6 +1109,7 @@ class SKLearnModel(GlobalForecastingModel):
                 is not None  # we have 2D sample (and time) weights, only supported in Darts
             )
         ):
+            # Non-quantile multi-output wrapping (unchanged)
             val_set_name, val_weight_name = self.val_set_params
             mor_kwargs = {
                 "eval_set_name": val_set_name,
@@ -1081,7 +1123,7 @@ class SKLearnModel(GlobalForecastingModel):
             )
 
         if (
-            not isinstance(self.model, MultiOutputMixin)
+            not isinstance(self.model, (MultiOutputMixin | MultiQuantileRegressor))
             and n_jobs_multioutput_wrapper is not None
         ):
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
@@ -1540,12 +1582,10 @@ class SKLearnModel(GlobalForecastingModel):
 
     @property
     def supports_sample_weight(self) -> bool:
-        """Whether the model supports a validation set during training."""
-        return (
-            self.model.supports_sample_weight
-            if isinstance(self.model, MultiOutputMixin)
-            else has_fit_parameter(self.model, "sample_weight")
-        )
+        """Whether the model supports sample weights during training."""
+        if isinstance(self.model, (MultiOutputMixin | MultiQuantileRegressor)):
+            return self.model.supports_sample_weight
+        return has_fit_parameter(self.model, "sample_weight")
 
     @property
     def val_set_params(self) -> tuple[str | None | tuple[str, str], str | None]:
@@ -1617,25 +1657,44 @@ class SKLearnModel(GlobalForecastingModel):
         return hfc
 
     @property
+    def _model_uses_multioutput(self) -> bool:
+        """Whether the current ``self.model`` uses ``MultiOutputMixin`` wrapping."""
+        if isinstance(self.model, MultiOutputMixin):
+            return True
+        if isinstance(self.model, MultiQuantileRegressor):
+            return self.model.uses_multioutput
+        return False
+
+    @property
     def _supports_native_multioutput(self) -> bool:
         """
         Returns True if the model supports multi-output regression natively.
         """
-        model = (
-            self.model.estimator
-            if isinstance(self.model, MultiOutputMixin)
-            else self.model
-        )
+        model = self.model
+        if isinstance(model, MultiQuantileRegressor):
+            first = next(iter(model.estimators_.values()))
+            model = first.estimator if isinstance(first, MultiOutputMixin) else first
+        elif isinstance(model, MultiOutputMixin):
+            model = model.estimator
         return model.__sklearn_tags__().target_tags.multi_output
+
+    def _estimator_for_quantile(self, quantile: float):
+        """Build an unfitted estimator configured for the given quantile level.
+
+        Subclasses that support ``likelihood="quantile"`` must override this
+        to return a fresh, unfitted sklearn-compatible estimator whose loss /
+        objective is set for *quantile*.
+        """
+        raise_log(
+            NotImplementedError(
+                f"{type(self).__name__} does not implement `_estimator_for_quantile`. "
+                "Override this method to support `likelihood='quantile'`."
+            ),
+        )
 
     @property
     def _model_type(self) -> ModelType:
         return ModelType.FORECASTING_REGRESSOR
-
-
-class _QuantileModelContainer(OrderedDict):
-    def __init__(self):
-        super().__init__()
 
 
 class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):

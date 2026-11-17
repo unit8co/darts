@@ -4,6 +4,7 @@ Multi-Output Models for SKLearnModel
 """
 
 import inspect
+from collections import OrderedDict
 
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
@@ -175,6 +176,100 @@ class MultiOutputClassifier(MultiOutputMixin, sk_MultiOutputClassifier):
         super().fit(X=X, y=y, sample_weight=sample_weight, **fit_params)
         self.classes_ = [estimator.classes_ for estimator in self.estimators_]
         return self
+
+
+def _fit_quantile_estimator(estimator, X, y, fit_params):
+    """Fit a single quantile estimator. Module-level function for joblib pickling."""
+    # Strip verbose if the estimator (or its base estimator inside MultiOutputMixin)
+    # does not support it — mirroring MultiOutputMixin behaviour.
+    if fit_params.get("verbose") is not None:
+        base = (
+            estimator.estimator
+            if isinstance(estimator, MultiOutputMixin)
+            else estimator
+        )
+        if "verbose" not in inspect.signature(base.fit).parameters:
+            fit_params = {k: v for k, v in fit_params.items() if k != "verbose"}
+    estimator.fit(X, y, **fit_params)
+    return estimator
+
+
+class MultiQuantileRegressor:
+    """Meta-estimator that fits one estimator per quantile level.
+
+    Each sub-estimator may itself be a :class:`MultiOutputRegressor` when the
+    task requires multi-output support (multivariate or ``multi_models``).
+    Quantile fits can run in parallel via ``n_jobs``.
+
+    Parameters
+    ----------
+    quantile_estimators : OrderedDict[float, estimator]
+        Mapping from quantile level to an (unfitted) sklearn-compatible estimator.
+        Each estimator should already be wrapped in ``MultiOutputRegressor`` if
+        multi-output handling is needed.
+    n_jobs : int or None, default=None
+        Number of parallel jobs for fitting across quantiles. ``None`` or ``1``
+        means sequential fitting. When set > 1, inner ``MultiOutputRegressor``
+        instances should use ``n_jobs=1`` to avoid CPU oversubscription.
+    """
+
+    def __init__(
+        self,
+        quantile_estimators: OrderedDict,
+        n_jobs: int | None = None,
+    ):
+        self.quantile_estimators = quantile_estimators
+        self.n_jobs = n_jobs
+        self.estimators_: OrderedDict = quantile_estimators
+
+    def fit(self, X, y, **fit_params):
+        """Fit every quantile estimator on the same training data.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+        y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        **fit_params
+            Forwarded to each sub-estimator's ``fit()`` (e.g. ``sample_weight``,
+            ``verbose``, validation-set kwargs).
+
+        Returns
+        -------
+        self
+        """
+        results = Parallel(n_jobs=self.n_jobs)(
+            delayed(_fit_quantile_estimator)(est, X, y, fit_params)
+            for est in self.estimators_.values()
+        )
+        self.estimators_ = OrderedDict(zip(self.quantile_estimators.keys(), results))
+        return self
+
+    def predict(self, X, **kwargs):
+        """Predict using the median quantile estimator (convenience only)."""
+        median_est = next(iter(self.estimators_.values()))
+        return median_est.predict(X, **kwargs)
+
+    @property
+    def uses_multioutput(self) -> bool:
+        """Whether the sub-estimators are wrapped in ``MultiOutputMixin``."""
+        first = next(iter(self.estimators_.values()))
+        return isinstance(first, MultiOutputMixin)
+
+    @property
+    def supports_sample_weight(self) -> bool:
+        """Whether the underlying estimators support sample weights."""
+        first = next(iter(self.estimators_.values()))
+        if isinstance(first, MultiOutputMixin):
+            return first.supports_sample_weight
+        return has_fit_parameter(first, "sample_weight")
+
+    def __str__(self):
+        n_q = len(self.estimators_)
+        first = next(iter(self.estimators_.values()))
+        return f"MultiQuantileRegressor(n_quantiles={n_q}, estimator={first})"
+
+    def __repr__(self):
+        return self.__str__()
 
 
 def get_multioutput_estimator_cls(model_type: ModelType) -> type[MultiOutputMixin]:

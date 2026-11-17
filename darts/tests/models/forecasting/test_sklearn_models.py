@@ -43,7 +43,7 @@ from darts.utils.likelihood_models.sklearn import (
     MultiQuantileRegression,
     _get_likelihood,
 )
-from darts.utils.multioutput import MultiOutputRegressor
+from darts.utils.multioutput import MultiOutputRegressor, MultiQuantileRegressor
 from darts.utils.utils import generate_index
 
 
@@ -1669,7 +1669,7 @@ class TestSKLearnModels:
                 **xgb_test_params,
             )
             model_2.fit(series=self.sine_univariate1)
-            assert isinstance(model_2.model, MultiOutputRegressor)
+            assert isinstance(model_2.model, MultiQuantileRegressor)
             models_repr.append(model_2)
 
         for model in models_repr:
@@ -1693,7 +1693,11 @@ class TestSKLearnModels:
             )
             m.fit(ts)
 
-            assert len(m.model.estimators_) == ocl * ts.width
+            # m.model is a MultiQuantileRegressor; the single-quantile sub-model
+            # is a MultiOutputRegressor with per-output estimators
+            assert isinstance(m.model, MultiQuantileRegressor)
+            median_model = m.model.estimators_[0.5]
+            assert len(median_model.estimators_) == ocl * ts.width
 
             dummy_feats = np.array([[0, 0, 0] * ts.width])
             estimator_counter = 0
@@ -1829,10 +1833,10 @@ class TestSKLearnModels:
         )
         m.fit(ts)
 
-        assert m._model_container is not None
-        assert len(m._model_container) == len(quantiles)
-        assert sorted(list(m._model_container.keys())) == sorted(quantiles)
-        for quantile_container in m._model_container.values():
+        assert isinstance(m.model, MultiQuantileRegressor)
+        assert len(m.model.estimators_) == len(quantiles)
+        assert sorted(list(m.model.estimators_.keys())) == sorted(quantiles)
+        for quantile_container in m.model.estimators_.values():
             if multi_models:
                 # one sub-model per quantile, per component, per horizon
                 assert len(quantile_container.estimators_) == ocl * ts.width
@@ -1910,8 +1914,8 @@ class TestSKLearnModels:
         )
         model.fit(ts)
 
-        # model container only used with `QuantileRegression` (not multi-quantile)
-        assert model._model_container is None
+        # MultiQuantileRegressor only used with `QuantileRegression` (not multi-quantile)
+        assert not isinstance(model.model, MultiQuantileRegressor)
         if multi_models:
             # one sub-model per component, per horizon
             assert len(model.model.estimators_) == ocl * ts.width

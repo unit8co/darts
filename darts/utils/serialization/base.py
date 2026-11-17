@@ -354,12 +354,12 @@ def _darts_core_allowed_bases() -> type | tuple[type, ...] | None:
         )
         from darts.models.filtering.filtering_model import FilteringModel
         from darts.models.forecasting.forecasting_model import ForecastingModel
-        from darts.models.forecasting.sklearn_model import _QuantileModelContainer
         from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
+        from darts.utils.multioutput import MultiQuantileRegressor
     except Exception:  # pragma: no cover
         return None
     return (
-        _QuantileModelContainer,
+        MultiQuantileRegressor,
         TimeSeries,
         CovariatesIndexGenerator,
         Encoder,
@@ -387,6 +387,19 @@ def _darts_torch_allowed_bases() -> type | tuple[type, ...] | None:
     return TorchSample, TorchLikelihood, TFMProgressBar, PyTorchLightningPruningCallback
 
 
+def _merge_bases(*bases):
+    """Merge multiple allowed-base results into a single tuple for ``issubclass``."""
+    merged = []
+    for b in bases:
+        if b is None:
+            continue
+        if isinstance(b, tuple):
+            merged.extend(b)
+        else:
+            merged.append(b)
+    return tuple(merged) if merged else None
+
+
 def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
     """Allow in-package (sub)classes that share an audited base.
 
@@ -403,7 +416,9 @@ def _is_fenced_allowed_subclass(qualname: str, obj: type) -> bool:
     )):
         base = _darts_torch_allowed_bases()
     elif qualname.startswith("darts.utils.multioutput."):
-        base = _sklearn_allowed_bases()
+        # MultiOutputMixin subclasses are sklearn BaseEstimator;
+        # MultiQuantileRegressor is a Darts-only wrapper registered in core bases.
+        base = _merge_bases(_sklearn_allowed_bases(), _darts_core_allowed_bases())
     elif qualname.startswith("darts."):
         base = _darts_core_allowed_bases()
     elif qualname.startswith("pandas."):
