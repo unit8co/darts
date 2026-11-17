@@ -1690,10 +1690,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         The three modes of operation evaluate every possible combination of hyper-parameter values
         provided in the `parameters` dictionary by instantiating the `ForecastingModel` with each combination, and
         returning the best-performing model with regard to the `metric` function. The `metric` function is expected to
-        return an error value, thus the model resulting in the smallest `metric` output will be chosen. Combinations
-        with a NaN score are excluded from the selection. Combinations that raise an error (e.g. because the
-        underlying model cannot be fit with these hyperparameters) are also excluded from the selection, and a warning
-        is logged. If all combinations raise an error, the error of the first combination is raised.
+        return an error value, thus the model resulting in the smallest `metric` output will be chosen.
+
+        - Combinations with a NaN score are excluded from the selection.
+        - Combinations that raise an error (e.g. because the underlying model cannot be fit with these hyperparameters)
+          are also excluded from the selection, and a warning is logged. If all combinations raise an error, the error
+          of the first combination is raised.
 
         The relationship of the training data and test data depends on the mode of operation.
 
@@ -2053,19 +2055,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             for param_combination, (_, err) in zip(params_cross_product, results)
             if err is not None
         ]
-        if len(failures) == len(results):
-            # no combination could be evaluated; raise the original error to help with debugging
-            raise_log(failures[0][1])
-        elif failures and show_warnings:
-            failure_msgs = "\n".join(
+        if len(failures) > 0:
+            failure_msgs = "The first (up to) 5 combinations raised:\n" + "\n".join(
                 f"- {dict(zip(parameters.keys(), param_combination))}: "
                 f"{type(err).__name__}: {err}"
-                for param_combination, err in failures
+                for param_combination, err in failures[:5]
             )
-            logger.warning(
-                f"{len(failures)} of {len(results)} hyperparameter combinations raised an error and were "
-                f"excluded from the selection:\n{failure_msgs}"
-            )
+            if len(failure_msgs) < len(failures):
+                failure_msgs += "\n- ..."
+
+            if len(failures) == len(results):
+                raise_log(
+                    ValueError(
+                        f"All combinations failed with exceptions. {failure_msgs}"
+                    )
+                )
+            elif show_warnings:
+                logger.warning(
+                    f"{len(failures)} of {len(results)} hyperparameter combinations raised an error and were "
+                    f"excluded from the selection:{failure_msgs}"
+                )
 
         errors_arr = np.asarray([error for error, _ in results], dtype=series.dtype)
         # NaN scores from failed combinations were already reported above

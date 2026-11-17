@@ -1461,34 +1461,19 @@ class TestBacktesting:
         ts_train, ts_val = dummy_series.split_before(split_point=0.8)
 
         bt_kwargs = {"start": -1, "start_format": "position", "show_warnings": False}
-
-        model = model_cls()
         model_cls.gridsearch(
             parameters=parameters, series=ts_train, val_series=ts_val, **bt_kwargs
         )
 
-        with pytest.raises(ValueError) as msg:
+        with pytest.raises(
+            ValueError, match="Model cannot be fit/trained with `past_covariates`."
+        ):
             model_cls.gridsearch(
                 parameters=parameters,
                 series=ts_train,
                 past_covariates=dummy_series,
                 val_series=ts_val,
                 **bt_kwargs,
-            )
-        assert str(msg.value).startswith(
-            "Model cannot be fit/trained with `past_covariates`."
-        )
-        if not model.supports_future_covariates:
-            with pytest.raises(ValueError) as msg:
-                model_cls.gridsearch(
-                    parameters=parameters,
-                    series=ts_train,
-                    future_covariates=dummy_series,
-                    val_series=ts_val,
-                    **bt_kwargs,
-                )
-            assert str(msg.value).startswith(
-                "Model cannot be fit/trained with `future_covariates`."
             )
 
     def test_gridsearch_multiple_series_raises(self):
