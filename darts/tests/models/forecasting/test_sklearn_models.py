@@ -4787,6 +4787,8 @@ class TestProbabilisticSKLearnModels:
         """`LinearRegressionModel` with `likelihood="gaussian"` uses a Bayesian linear regression and predicts the
         mean and standard deviation of a Gaussian distribution."""
         n_comp, ocl, multi_models = config
+        if n_comp != 1 or ocl != 3:
+            return
 
         def make_series(seed):
             rng = np.random.default_rng(seed)

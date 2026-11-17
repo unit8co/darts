@@ -5,6 +5,7 @@ Multi-Output Models for SKLearnModel
 
 import inspect
 
+import numpy as np
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
@@ -13,6 +14,7 @@ from sklearn.utils.multiclass import check_classification_targets
 from sklearn.utils.parallel import Parallel, delayed
 from sklearn.utils.validation import (
     _check_method_params,
+    check_is_fitted,
     has_fit_parameter,
     validate_data,
 )
@@ -149,6 +151,34 @@ class MultiOutputMixin:
             self.feature_names_in_ = self.estimators_[0].feature_names_in_
 
         return self
+
+    def predict(self, X, **kwargs):
+        """Predict multi-output variable using model for each target variable.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+            The input data.
+        kwargs : dict of string -> object
+            Parameters passed to the ``estimator.predict`` method of each step.
+
+        Returns
+        -------
+        y : {array-like, sparse matrix} of shape (n_samples, n_outputs)
+            Multi-output targets predicted across multiple predictors.
+            Note: Separate models are generated for each predictor.
+        """
+        if not kwargs:
+            return super().predict(X)
+
+        check_is_fitted(self)
+        if not hasattr(self.estimators_[0], "predict"):
+            raise ValueError("The base estimator should implement a predict method")
+
+        y = Parallel(n_jobs=self.n_jobs)(
+            delayed(e.predict)(X, **kwargs) for e in self.estimators_
+        )
+        return np.asarray(y).T
 
     @property
     def supports_sample_weight(self) -> bool:
