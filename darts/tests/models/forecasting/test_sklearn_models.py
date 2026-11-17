@@ -47,6 +47,13 @@ from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.utils import generate_index
 
 
+def legacy_lags(model, kind):
+    lags = model._config.lags_for(kind)
+    if lags is None:
+        return None
+    return lags.extreme_lags if lags.is_component_specific else lags.shared
+
+
 def train_test_split(series, split_ts):
     """
     Splits all provided TimeSeries instances into train and test sets according to the provided timestamp.
@@ -486,46 +493,63 @@ class TestSKLearnModels:
         # TESTING SINGLE INT
         # testing lags
         model_instance = model(lags=5, multi_models=mode)
-        assert model_instance.lags.get("target") == [-5, -4, -3, -2, -1]
+        assert model_instance._config.extreme_lags("target") == (-5, -1)
+        assert model_instance._config.lags_for("target").shared == (
+            -5,
+            -4,
+            -3,
+            -2,
+            -1,
+        )
         # testing lags_past_covariates
         model_instance = model(lags=None, lags_past_covariates=3, multi_models=mode)
-        assert model_instance.lags.get("past") == [-3, -2, -1]
+        assert model_instance._config.extreme_lags("past") == (-3, -1)
         # lags_future covariates does not support SINGLE INT
 
         # TESTING TUPLE of int, only supported by lags_future_covariates
         model_instance = model(
             lags=None, lags_future_covariates=(3, 5), multi_models=mode
         )
-        assert model_instance.lags.get("future") == [-3, -2, -1, 0, 1, 2, 3, 4]
+        assert model_instance._config.extreme_lags("future") == (-3, 4)
+        assert model_instance._config.lags_for("future").shared == tuple(range(-3, 5))
 
         # TESTING LIST of int
         # lags
         values = [-5, -3, -1]
         model_instance = model(lags=values, multi_models=mode)
-        assert model_instance.lags.get("target") == values
+        assert model_instance._config.lags_for("target").shared == tuple(values)
         # testing lags_past_covariates
         model_instance = model(lags_past_covariates=values, multi_models=mode)
-        assert model_instance.lags.get("past") == values
+        assert model_instance._config.lags_for("past").shared == tuple(values)
         # testing lags_future_covariates
         values = [-5, -1, 5]
         model_instance = model(lags_future_covariates=values, multi_models=mode)
-        assert model_instance.lags.get("future") == values
+        assert model_instance._config.lags_for("future").shared == tuple(values)
 
         # TESTING DICT, lags are specified component-wise
-        # model.lags contains the extreme across the components
+        # the extreme view contains the extreme across the components
         values = {"comp0": [-4, -2], "comp1": [-5, -3]}
         model_instance = model(lags=values, multi_models=mode)
-        assert model_instance.lags.get("target") == [-5, -2]
-        assert model_instance.component_lags.get("target") == values
+        assert model_instance._config.extreme_lags("target") == (-5, -2)
+        assert model_instance._config.lags_for("target").component_lags == {
+            "comp0": (-4, -2),
+            "comp1": (-5, -3),
+        }
         # testing lags_past_covariates
         model_instance = model(lags_past_covariates=values, multi_models=mode)
-        assert model_instance.lags.get("past") == [-5, -2]
-        assert model_instance.component_lags.get("past") == values
+        assert model_instance._config.extreme_lags("past") == (-5, -2)
+        assert model_instance._config.lags_for("past").component_lags == {
+            "comp0": (-4, -2),
+            "comp1": (-5, -3),
+        }
         # testing lags_future_covariates
         values = {"comp0": [-4, 2], "comp1": [-5, 3]}
         model_instance = model(lags_future_covariates=values, multi_models=mode)
-        assert model_instance.lags.get("future") == [-5, 3]
-        assert model_instance.component_lags.get("future") == values
+        assert model_instance._config.extreme_lags("future") == (-5, 3)
+        assert model_instance._config.lags_for("future").component_lags == {
+            "comp0": (-4, 2),
+            "comp1": (-5, 3),
+        }
 
         with pytest.raises(ValueError):
             model(multi_models=mode)
@@ -559,6 +583,15 @@ class TestSKLearnModels:
             model(lags=5, lags_future_covariates={}, multi_models=mode)
         with pytest.raises(ValueError):
             model(lags=None, lags_future_covariates={}, multi_models=mode)
+
+    def test_lag_views_are_not_public(self):
+        model = LinearRegressionModel(lags=2)
+        assert not hasattr(model, "lags")
+        assert not hasattr(model, "component_lags")
+
+        model.fit(self.sine_univariate1)
+        assert not hasattr(model, "lags")
+        assert not hasattr(model, "component_lags")
 
     @pytest.mark.parametrize("config", param_product([True, False], [1, 2]))
     def test_training_data_creation(self, config):
@@ -622,12 +655,17 @@ class TestSKLearnModels:
         assert list(training_labels[0]) == [82, 182, 282]
 
         # lags defined using dictionaries
-        # cannot use 'default_lags' because it's converted in `fit()`, before calling `_created_lagged_data`
         model_instance = SKLearnModel(
             lags={"0-trgt-0": [-4, -3], "0-trgt-1": [-3, -2], "0-trgt-2": [-2, -1]},
             lags_past_covariates={"0-pcov-0": [-10], "0-pcov-1": [-7]},
             lags_future_covariates={"0-fcov-0": (2, 2)},
             multi_models=mode,
+        )
+        # `fit()` resolves the component-specific lags before calling `_create_lagged_data`
+        model_instance._config.resolve(
+            target_components=self.target_series[0].components,
+            past_components=self.past_covariates[0].components,
+            future_components=self.future_covariates[0].components,
         )
 
         max_samples_per_ts = 3
@@ -1152,23 +1190,23 @@ class TestSKLearnModels:
 
         model_instance = model(lags=12, multi_models=mode)
         model_instance.fit(series=series)
-        assert model_instance.lags.get("past") is None
+        assert model_instance._config.extreme_lags("past") is None
 
         model_instance = model(lags=12, lags_past_covariates=12, multi_models=mode)
         model_instance.fit(series=series, past_covariates=sine_multivariate1)
-        assert len(model_instance.lags.get("past")) == 12
+        assert len(model_instance._config.lags_for("past").shared) == 12
 
         model_instance = model(
             lags=12, lags_future_covariates=(0, 1), multi_models=mode
         )
         model_instance.fit(series=series, future_covariates=sine_multivariate1)
-        assert len(model_instance.lags.get("future")) == 1
+        assert len(model_instance._config.lags_for("future").shared) == 1
 
         model_instance = model(
             lags=12, lags_past_covariates=[-1, -4, -6], multi_models=mode
         )
         model_instance.fit(series=series, past_covariates=sine_multivariate1)
-        assert len(model_instance.lags.get("past")) == 3
+        assert len(model_instance._config.lags_for("past").shared) == 3
 
         model_instance = model(
             lags=12,
@@ -1181,7 +1219,7 @@ class TestSKLearnModels:
             past_covariates=sine_multivariate1,
             future_covariates=sine_multivariate1,
         )
-        assert len(model_instance.lags.get("past")) == 3
+        assert len(model_instance._config.lags_for("past").shared) == 3
 
     def test_fit_rejects_cancelling_component_mismatches(self):
         series = [self.sine_univariate1[:30], self.sine_univariate1[:30]]
@@ -1595,6 +1633,43 @@ class TestSKLearnModels:
         # mutli-series with mutli variate should be wrapped in MultiOutputRegressor only if not natively supported
         model.fit(series=self.sine_multivariate_multiseries)
         check_only_non_native_are_wrapped(model, supports_multioutput_natively)
+
+    def test_multioutput_wrapper_estimator_mapping(self):
+        model = SKLearnModel(
+            model=HistGradientBoostingRegressor(),
+            lags=2,
+            output_chunk_length=3,
+        )
+        model.fit(self.sine_univariate1)
+
+        assert isinstance(model.model, MultiOutputRegressor)
+
+        # the wrapper and the model agree on the estimator mapping
+        n_components = model.input_dim["target"]
+        for horizon in range(model.output_chunk_length):
+            for component in range(n_components):
+                index = model._config.strategy.estimator_index(
+                    horizon, component, n_components
+                )
+                assert (
+                    model.get_estimator(horizon, component)
+                    is (model.model.estimators_[index])
+                )
+
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_encoder_settings_use_strategy(self, multi_models):
+        model = SKLearnModel(
+            lags=4,
+            lags_past_covariates=12,
+            lags_future_covariates=(6, 4),
+            output_chunk_length=3,
+            multi_models=multi_models,
+        )
+
+        *_, past_lags, future_lags = model._model_encoder_settings
+        offset = model._config.strategy.feature_lag_offset
+        assert past_lags == [-12 - offset, -1]
+        assert future_lags == [-6 - offset, 3]
 
     model_configs_multioutput = [
         (
@@ -2056,7 +2131,7 @@ class TestSKLearnModels:
 
         for model in models:
             model.fit(series=self.sine_univariate1)
-            assert len(model.lags.get("target")) == lags
+            assert len(model._config.lags_for("target").shared) == lags
             model.predict(n=10)
 
     @pytest.mark.parametrize("mode", [True, False])
@@ -2787,19 +2862,19 @@ class TestSKLearnModels:
         )
 
         if "lags_future_covariates" in list_lags:
-            assert model.lags["future"] == [
+            assert model._config.lags_for("future").shared == tuple(
                 lag_ + output_chunk_shift
                 for lag_ in list_lags["lags_future_covariates"]
-            ]
+            )
 
+            future_lags = model2._config.resolved_per_component("future")
             if "default_lags" in dict_lags["lags_future_covariates"]:
                 # check that default lags
                 default_components = (
-                    model2.component_lags["future"].keys()
-                    - dict_lags["lags_future_covariates"].keys()
+                    future_lags.keys() - dict_lags["lags_future_covariates"].keys()
                 )
             else:
-                default_components = dict()
+                default_components = set()
 
             lags_specific = {
                 comp_: (
@@ -2807,10 +2882,10 @@ class TestSKLearnModels:
                     if comp_ in default_components
                     else dict_lags["lags_future_covariates"][comp_]
                 )
-                for comp_ in model2.component_lags["future"]
+                for comp_ in future_lags
             }
-            assert model2.component_lags["future"] == {
-                comp_: [lag_ + output_chunk_shift for lag_ in lags_]
+            assert future_lags == {
+                comp_: tuple(lag_ + output_chunk_shift for lag_ in lags_)
                 for comp_, lags_ in lags_specific.items()
             }
 
@@ -4182,15 +4257,21 @@ class TestSKLearnModels:
         if multivar_target:
             series = series.stack(tg.sine_timeseries(length=n_s, column_name="sine"))
 
+        lags = {
+            kind: list(legacy_lags(model, kind))
+            for kind in ("target", "past", "future")
+            if model._config.has_lags(kind)
+        }
         if model.supports_future_covariates:
+            future_lags = lags["future"]
             # prepend values if not target lags are used
-            if "target" not in model.lags and min(model.lags["future"]) < 0:
-                prep = abs(min(model.lags["future"]))
+            if "target" not in lags and min(future_lags) < 0:
+                prep = abs(min(future_lags))
             else:
                 prep = 0
 
             # minimum future covariates length
-            n_fc = n_s + max(model.lags["future"]) + 1 + autoreg_add_steps
+            n_fc = n_s + max(future_lags) + 1 + autoreg_add_steps
             future_cov = tg.gaussian_timeseries(
                 start=series.start_time() - prep * series.freq,
                 length=n_fc + prep,
@@ -4205,8 +4286,8 @@ class TestSKLearnModels:
 
         if model.supports_past_covariates:
             # prepend values if not target lags are used
-            if "target" not in model.lags:
-                prep = abs(min(model.lags["past"]))
+            if "target" not in lags:
+                prep = abs(min(lags["past"]))
             else:
                 prep = 0
 
@@ -4858,6 +4939,28 @@ class TestSKLearnModelInputValidation:
         )
         with pytest.raises(ValueError):
             model.fit(ts)
+
+    def test_unused_default_lags_count_in_the_extreme_lags(self):
+        # the extreme lags include the `default_lags` even when every component has
+        # explicit lags, and `fit()` does not change them
+        series = tg.linear_timeseries(length=40, column_name="a").stack(
+            tg.sine_timeseries(length=40, column_name="b")
+        )
+        model = LinearRegressionModel(
+            lags={"a": [-2], "b": [-1], "default_lags": [-6]}, output_chunk_length=2
+        )
+        expected = (-6, 1, None, None, None, None, 0)
+        assert model.extreme_lags == expected
+
+        model.fit(series)
+        assert model.extreme_lags == expected
+        assert model.min_train_series_length == 9
+
+        # the first forecastable point also accounts for the unused default
+        hfc = model.historical_forecasts(
+            series, forecast_horizon=2, retrain=False, last_points_only=True
+        )
+        assert hfc.start_time() == series.time_index[7]
 
     @pytest.mark.skipif(not XGB_AVAILABLE, reason="xgboost required")
     def test_xgb_quantile_loss_invalid_quantile(self):

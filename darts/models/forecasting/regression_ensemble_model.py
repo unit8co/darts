@@ -213,17 +213,27 @@ class RegressionEnsembleModel(EnsembleModel):
             )
 
         # check lags of the regression model
-        if list(regression_model.lags.keys()) != ["future"]:
+        config = regression_model._config
+        if (
+            config.has_lags("target")
+            or config.has_lags("past")
+            or not config.has_lags("future")
+        ):
             raise_log(
                 ValueError(
                     "`lags` and `lags_past_covariates` of `regression_model` must be `None`."
                 ),
             )
         min_lag, max_lag = 0, regression_model.output_chunk_length - 1
+        future_lags = config.lags_for("future")
+        # component-specific lags are checked (and reported) by their extreme values
+        model_lags = (
+            future_lags.extreme_lags
+            if future_lags.is_component_specific
+            else future_lags.shared
+        )
         # adjust model lags by `output_chunk_shift` to get original lags
-        lags_observed = [
-            lag - output_chunk_shift for lag in regression_model.lags["future"]
-        ]
+        lags_observed = [lag - output_chunk_shift for lag in model_lags]
         if any([not (min_lag <= lag <= max_lag) for lag in lags_observed]):
             raise_log(
                 ValueError(

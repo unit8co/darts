@@ -13,9 +13,10 @@ from numpy.lib.stride_tricks import sliding_window_view
 from darts import TimeSeries
 from darts.typing import TimeSeriesLike, TimeStamp
 from darts.utils import _build_tqdm_iterator
-from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_data_from_config,
+)
 from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
-from darts.utils.ts_utils import get_single_series
 from darts.utils.utils import generate_index
 
 
@@ -64,20 +65,20 @@ def _optimized_historical_forecasts_regression(
     multi_models = model.multi_models
     output_chunk_length = model.output_chunk_length
     output_chunk_shift = model.output_chunk_shift
+    config = model._config
 
     # get target lags and X positions for auto-regression
-    if model._get_lags("target") is not None:
-        if "target" in model.component_lags:
-            target_lags = model.component_lags["target"].values()
-        else:
-            target_lags = [model.lags["target"]] * get_single_series(
-                series
-            ).n_components
+    target_lags_obj = config.lags_for("target")
+    extreme_target_lags = config.extreme_lags("target")
+    if extreme_target_lags is not None:
+        # the lags resolved in `fit()` cover every target component, for both shared and
+        # component-specific lags
+        target_lags = list(target_lags_obj.resolved_per_component.values())
 
         # map which target component lag belongs to which position in X
         counter = 0
         target_lag_positions = [[] for _ in range(len(target_lags))]
-        for lag in range(min(model.lags["target"]), max(model.lags["target"]) + 1):
+        for lag in range(min(extreme_target_lags), max(extreme_target_lags) + 1):
             for comp_idx, comp_lags in enumerate(target_lags):
                 if lag in comp_lags:
                     target_lag_positions[comp_idx].append(counter)
@@ -163,7 +164,8 @@ def _optimized_historical_forecasts_regression(
 
         # extract lagged features;
         # X shape: (n_forecasts, n_lagged_features, n_samples = 1)
-        X, _ = create_lagged_prediction_data(
+        data = _create_lagged_data_from_config(
+            config,
             target_series=series_adjusted,
             past_covariates=(
                 None
@@ -175,20 +177,18 @@ def _optimized_historical_forecasts_regression(
                 if future_covariates_ is None
                 else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
             ),
-            lags=model._get_lags("target"),
-            lags_past_covariates=model._get_lags("past"),
-            lags_future_covariates=model._get_lags("future"),
             uses_static_covariates=model.uses_static_covariates,
             last_static_covariates_shape=model._static_covariates_shape,
             max_samples_per_ts=None,
             check_inputs=True,
+            is_training=False,
             use_moving_windows=True,
             concatenate=False,
             show_warnings=False,
         )
 
         # -> (n_forecasts, n_lags)
-        X = X[0][:, :, 0]
+        X = data.X[0][:, :, 0]
 
         # get forecast iterations and their forecast end times
         if not is_auto_regression:

@@ -12,12 +12,17 @@ from darts import TimeSeries
 from darts import concatenate as darts_concatenate
 from darts.logging import raise_log
 from darts.tests.parametrize_helpers import param_product
-from darts.utils.data.tabularization import (
-    create_lagged_component_names,
-    create_lagged_training_data,
+from darts.tests.utils.tabularization._legacy_helpers import (
+    _create_lagged_component_names,
+    _create_lagged_training_data,
 )
+from darts.utils.data.tabularization.features import LaggedFeatures
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import generate_index, n_steps_between
+
+
+def _to_numpy(features):
+    return features.to_numpy() if isinstance(features, LaggedFeatures) else features
 
 
 def helper_create_multivariate_linear_timeseries(
@@ -41,9 +46,9 @@ def helper_create_multivariate_linear_timeseries(
 
 class TestCreateLaggedTrainingData:
     """
-    Tests the `create_lagged_training_data` function defined in `darts.utils.data.tabularization`. There are broadly
+    Tests the `_create_lagged_training_data` function defined in `darts.utils.data.tabularization`. There are broadly
     two 'groups' of tests defined in this module:
-        1. 'Generated Test Cases': these test that `create_lagged_training_data` produces the same outputs
+        1. 'Generated Test Cases': these test that `_create_lagged_training_data` produces the same outputs
         as a simplified implementation of the 'time intersection' feature generation method (see
         `darts.utils.data.tabularization` for further details). For these tests, the 'correct answer' is not
         directly specified; instead, it is generated from a set of input parameters using the set of simplified
@@ -51,8 +56,8 @@ class TestCreateLaggedTrainingData:
         values to be effortlessly tested. The drawback of this, however, is that the correctness of these tests
         assumes that the simplified functions have been implemented correctly - if this isn't the case, then these
         tests are not to be trusted. In saying this, these simplified functions are significantly easier to
-        understand and debug than the `create_lagged_training_data` function they're helping to test.
-        2. 'Specified Test Cases': these test that `create_lagged_training_data` returns an exactly specified
+        understand and debug than the `_create_lagged_training_data` function they're helping to test.
+        2. 'Specified Test Cases': these test that `_create_lagged_training_data` returns an exactly specified
         output; these specified outputs are *not* 'generated' by another function. Although these 'specified'
         test cases tend to be simpler and less extensive than the 'generated' test cases, their correctness does
         not assume the correct implementation of any other function.
@@ -287,6 +292,8 @@ class TestCreateLaggedTrainingData:
         actual value in `series` will occur at an index of `2` instead of `0`. To 'undo' this, we must subtract off
         the number of prepended value from the lag-offseted indices before retrieving values from `series`.
         """
+        if lags is not None:
+            lags = sorted(lags)
         if lags is None:
             X_block = None
         else:
@@ -506,7 +513,7 @@ class TestCreateLaggedTrainingData:
         stride: int,
         **kwargs,
     ):
-        """Helper function to call the `create_lagged_training_data()` method with lags argument either in the list
+        """Helper function to call the `_create_lagged_training_data()` method with lags argument either in the list
         format or the dictionary format (automatically convert them when they are identical across components).
 
         Assertions are different depending on the value of `concatenate` to account for the output shape.
@@ -540,7 +547,7 @@ class TestCreateLaggedTrainingData:
             else [expected_times_y]
         )
 
-        X, y, times, _, _ = create_lagged_training_data(
+        X, y, times, _, _ = _create_lagged_training_data(
             target_series=target,
             output_chunk_length=output_chunk_length,
             past_covariates=past_cov if lags_past_ else None,
@@ -569,12 +576,13 @@ class TestCreateLaggedTrainingData:
             exp_length_x = sum(len(exp_time) for exp_time in expected_times_x)
             exp_length_y = sum(len(exp_time) for exp_time in expected_times_y)
             assert exp_length_x == exp_length_y
-            assert X.shape[0] == exp_length_x == data_length
+            X_array = _to_numpy(X)
+            assert X_array.shape[0] == exp_length_x == data_length
             assert y.shape[0] == exp_length_y == data_length
 
             # Check that outputs match:
-            assert X.shape == expected_X.shape
-            assert np.allclose(expected_X, X)
+            assert X_array.shape == expected_X.shape
+            assert np.allclose(expected_X, X_array)
             assert y.shape == expected_y.shape
             assert np.allclose(expected_y, y)
         else:
@@ -584,11 +592,6 @@ class TestCreateLaggedTrainingData:
             ):
                 assert x_.shape[0] == len(time) == len(exp_time_x)
                 assert y_.shape[0] == len(time) == len(exp_time_y)
-
-            # Check that outputs match:
-            for x_, y_ in zip(X, y):
-                assert np.allclose(X, x_)
-                assert np.allclose(y, y_)
 
     #
     #   Generated Test Cases
@@ -665,7 +668,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_equal_freq(self, params):
         """
-        Tests that `create_lagged_training_data` produces `X`, `y`, and `times`
+        Tests that `_create_lagged_training_data` produces `X`, `y`, and `times`
         outputs that are consistent with those generated by using the helper
         functions `get_feature_times`, `construct_X_block`, and `construct_labels`.
         Consistency is checked over all combinations of parameter values
@@ -803,7 +806,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_unequal_freq(self, params):
         """
-        Tests that `create_lagged_training_data` produces `X`, `y`, and `times`
+        Tests that `_create_lagged_training_data` produces `X`, `y`, and `times`
         outputs that are consistent with those generated by using the helper
         functions `get_feature_times`, `construct_X_block`, and `construct_labels`.
         Consistency is checked over all combinations of parameter values
@@ -930,7 +933,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_method_consistency(self, params):
         """
-        Tests that `create_lagged_training_data` produces the same result
+        Tests that `_create_lagged_training_data` produces the same result
         when `use_moving_windows = False` and when `use_moving_windows = True`
         for all parameter combinations used in the 'generated' test cases.
 
@@ -1003,7 +1006,7 @@ class TestCreateLaggedTrainingData:
             if all(lags_is_none):
                 continue
             # Using moving window method:
-            X_mw, y_mw, times_mw, _, _ = create_lagged_training_data(
+            X_mw, y_mw, times_mw, _, _ = _create_lagged_training_data(
                 target_series=target,
                 output_chunk_length=output_chunk_length,
                 past_covariates=past if lags_past else None,
@@ -1019,7 +1022,7 @@ class TestCreateLaggedTrainingData:
                 stride=stride,
             )
             # Using time intersection method:
-            X_ti, y_ti, times_ti, _, _ = create_lagged_training_data(
+            X_ti, y_ti, times_ti, _, _ = _create_lagged_training_data(
                 target_series=target,
                 output_chunk_length=output_chunk_length,
                 past_covariates=past if lags_past else None,
@@ -1034,7 +1037,7 @@ class TestCreateLaggedTrainingData:
                 output_chunk_shift=output_chunk_shift,
                 stride=stride,
             )
-            assert np.allclose(X_mw, X_ti)
+            assert np.allclose(_to_numpy(X_mw), _to_numpy(X_ti))
             assert np.allclose(y_mw, y_ti)
             assert times_mw[0].equals(times_ti[0])
 
@@ -1048,7 +1051,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_single_lag_single_component_same_series(self, config):
         """
-        Tests that `create_lagged_training_data` correctly produces `X`, `y` and `times`
+        Tests that `_create_lagged_training_data` correctly produces `X`, `y` and `times`
         when all the `series` inputs are identical, all the `lags` inputs consist
         of a single value, and `output_chunk_length` is `1`. In this situation, the
         expected `X` values can be found by concatenating three different slices of the
@@ -1141,7 +1144,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_extend_past_and_future_covariates(self, config):
         """
-        Tests that `create_lagged_training_data` correctly handles case where features
+        Tests that `_create_lagged_training_data` correctly handles case where features
         and labels can be created for a time that is *not* contained in `past_covariates`
         and/or `future_covariates`.
 
@@ -1248,7 +1251,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_single_point(self, config):
         """
-        Tests that `create_lagged_training_data` correctly handles case
+        Tests that `_create_lagged_training_data` correctly handles case
         where only one possible training point can be generated.
         """
         output_chunk_shift, use_moving_windows, series_type, multi_models, stride = (
@@ -1324,7 +1327,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_zero_lags(self, config):
         """
-        Tests that `create_lagged_training_data` correctly handles case when
+        Tests that `_create_lagged_training_data` correctly handles case when
         `0` is included in `lags_future_covariates` (i.e. when we're using the values
         `future_covariates` at time `t` to predict the value of `target_series` at
         that same time point).
@@ -1423,7 +1426,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_no_target_lags_future_covariates(self, config):
         """
-        Tests that `create_lagged_training_data` correctly handles case without target lags and different
+        Tests that `_create_lagged_training_data` correctly handles case without target lags and different
         future covariates lags.
         This test should always result in one training sample.
         Additionally, we test that:
@@ -1531,7 +1534,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_no_target_lags_past_covariates(self, config):
         """
-        Tests that `create_lagged_training_data` correctly handles case without target lags and different
+        Tests that `_create_lagged_training_data` correctly handles case without target lags and different
         past covariates lags.
         This test should always result in one training sample.
         Additionally, we test that:
@@ -1632,7 +1635,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_positive_lags(self, config):
         """
-        Tests that `create_lagged_training_data` correctly handles case when
+        Tests that `_create_lagged_training_data` correctly handles case when
         `0` is included in `lags_future_covariates` (i.e. when we're using the values
         `future_covariates` at time `t` to predict the value of `target_series` at
         that same time point). This particular test checks this behaviour by using
@@ -1725,7 +1728,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_comp_wise_lags(self, config):
         """
-        Tests that `create_lagged_training_data` generate the expected values when the
+        Tests that `_create_lagged_training_data` generate the expected values when the
         lags are component-specific over multivariate series.
 
         Note that this is supported only when use_moving_window=True.
@@ -1775,7 +1778,7 @@ class TestCreateLaggedTrainingData:
             + 200
         )
 
-        # extremes lags are manually computed, similarly to the model.lags attribute
+        # extreme lags are manually computed from the model's lag config
         feats_times = self.get_feature_times(
             target,
             past,
@@ -1867,7 +1870,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_sequence_inputs(self, stride):
         """
-        Tests that `create_lagged_training_data` correctly handles being
+        Tests that `_create_lagged_training_data` correctly handles being
         passed a sequence of `TimeSeries` inputs, as opposed to individual
         `TimeSeries`.
         """
@@ -1937,7 +1940,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_lagged_training_data_stochastic_series(self, stride):
         """
-        Tests that `create_lagged_training_data` is correctly vectorised
+        Tests that `_create_lagged_training_data` is correctly vectorised
         over the sample axes of the input `TimeSeries`.
         """
         # Define two simple tabularization problems:
@@ -1984,7 +1987,7 @@ class TestCreateLaggedTrainingData:
 
     def test_lagged_training_data_no_shared_times_error(self):
         """
-        Tests that `create_lagged_training_data` throws correct error
+        Tests that `_create_lagged_training_data` throws correct error
         when the specified series do not share any times in common
         for creating features and labels.
         """
@@ -1995,7 +1998,7 @@ class TestCreateLaggedTrainingData:
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=series_1,
                     output_chunk_length=1,
                     lags=lags,
@@ -2012,7 +2015,7 @@ class TestCreateLaggedTrainingData:
 
     def test_lagged_training_data_no_specified_series_lags_pairs_error(self):
         """
-        Tests that `create_lagged_training_data` throws correct error
+        Tests that `_create_lagged_training_data` throws correct error
         when no lags-series pairs are specified.
         """
         # Define some arbitrary inputs:
@@ -2026,7 +2029,7 @@ class TestCreateLaggedTrainingData:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 with pytest.raises(ValueError) as err:
-                    create_lagged_training_data(
+                    _create_lagged_training_data(
                         target_series=series_1,
                         output_chunk_length=1,
                         lags_past_covariates=lags,
@@ -2034,7 +2037,10 @@ class TestCreateLaggedTrainingData:
                         use_moving_windows=use_moving_windows,
                         output_chunk_shift=0,
                     )
-            assert "Must specify at least one series-lags pair." == str(err.value)
+            assert str(err.value) == (
+                "`lags_past_covariates` lags are defined, but no past "
+                "components were provided."
+            )
             # Warnings will be thrown indicating that `past_covariates`
             # is specified without `lags_past_covariates`, and that
             # `lags_future_covariates` specified without
@@ -2042,7 +2048,7 @@ class TestCreateLaggedTrainingData:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 with pytest.raises(ValueError) as err:
-                    create_lagged_training_data(
+                    _create_lagged_training_data(
                         target_series=series_1,
                         output_chunk_length=1,
                         lags_future_covariates=lags,
@@ -2051,11 +2057,14 @@ class TestCreateLaggedTrainingData:
                         use_moving_windows=use_moving_windows,
                         output_chunk_shift=0,
                     )
-            assert "Must specify at least one series-lags pair." == str(err.value)
+            assert str(err.value) == (
+                "`lags_future_covariates` lags are defined, but no future "
+                "components were provided."
+            )
 
     def test_lagged_training_data_invalid_output_chunk_length_error(self):
         """
-        Tests that `create_lagged_training_data` throws correct error
+        Tests that `_create_lagged_training_data` throws correct error
         when `output_chunk_length` is set to a non-`int` value (e.g. a
         `float`) or a non-positive value (e.g. `0`).
         """
@@ -2064,7 +2073,7 @@ class TestCreateLaggedTrainingData:
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=target,
                     output_chunk_length=0,
                     lags=lags,
@@ -2072,9 +2081,12 @@ class TestCreateLaggedTrainingData:
                     use_moving_windows=use_moving_windows,
                     output_chunk_shift=0,
                 )
-            assert "`output_chunk_length` must be a positive `int`." == str(err.value)
+            assert (
+                "`output_chunk_length` must be a positive integer greater than 0. Given: 0."
+                == str(err.value)
+            )
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=target,
                     output_chunk_length=1.1,
                     lags=lags,
@@ -2082,11 +2094,14 @@ class TestCreateLaggedTrainingData:
                     use_moving_windows=use_moving_windows,
                     output_chunk_shift=0,
                 )
-            assert "`output_chunk_length` must be a positive `int`." == str(err.value)
+            assert (
+                "`output_chunk_length` must be a positive integer greater than 0. Given: 1.1."
+                == str(err.value)
+            )
 
     def test_lagged_training_data_invalid_stride_error(self):
         """
-        Tests that `create_lagged_training_data` throws correct error
+        Tests that `_create_lagged_training_data` throws correct error
         when `stride` is set to a non-`int` value (e.g. a
         `float`) or a non-positive value (e.g. `0`).
         """
@@ -2096,7 +2111,7 @@ class TestCreateLaggedTrainingData:
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=target,
                     output_chunk_length=ocl,
                     lags=lags,
@@ -2109,7 +2124,7 @@ class TestCreateLaggedTrainingData:
                 err.value
             )
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=target,
                     output_chunk_length=ocl,
                     lags=lags,
@@ -2124,14 +2139,14 @@ class TestCreateLaggedTrainingData:
 
     def test_lagged_training_data_no_lags_specified_error(self):
         """
-        Tests that `create_lagged_training_data` throws correct error
+        Tests that `_create_lagged_training_data` throws correct error
         when no lags are specified.
         """
         target = linear_timeseries(start=1, length=20, freq=1)
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=target,
                     output_chunk_length=1,
                     uses_static_covariates=False,
@@ -2139,13 +2154,13 @@ class TestCreateLaggedTrainingData:
                     output_chunk_shift=0,
                 )
             assert (
-                "Must specify at least one of: `lags`, `lags_past_covariates`, `lags_future_covariates`."
+                "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None."
                 == str(err.value)
             )
 
     def test_lagged_training_data_series_too_short_error(self):
         """
-        Tests that `create_lagged_training_data` throws correct error
+        Tests that `_create_lagged_training_data` throws correct error
         when supplied `target_series` is too short to generate any
         features/labels from using the specified `lags` and
         `output_chunk_length` values, and when supplied
@@ -2158,7 +2173,7 @@ class TestCreateLaggedTrainingData:
         # Check error thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=5,
                     lags=[-20, -10],
@@ -2173,7 +2188,7 @@ class TestCreateLaggedTrainingData:
             ) == str(err.value)
             # `lags_past_covariates` too large test:
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,
                     past_covariates=series,
@@ -2190,7 +2205,7 @@ class TestCreateLaggedTrainingData:
 
     def test_lagged_training_data_invalid_lag_values_error(self):
         """
-        Tests that `create_lagged_training_data` throws correct
+        Tests that `_create_lagged_training_data` throws correct
         error when invalid lag values are specified. More specifically:
             1. If `lags` contains any value greater than `-1`, an error
             should be thrown (since times > `-1` are used for labels).
@@ -2204,7 +2219,7 @@ class TestCreateLaggedTrainingData:
         for use_moving_windows in (False, True):
             # Test invalid `lags` values:
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,
                     lags=[0],
@@ -2213,11 +2228,11 @@ class TestCreateLaggedTrainingData:
                     output_chunk_shift=0,
                 )
             assert (
-                "`lags` must be a `Sequence` or `Dict` containing only `int` values less than 0."
+                "`lags` - `default_lags`: list must contain only strictly negative integers. Given: [0]."
             ) == str(err.value)
             # Test invalid `lags_past_covariates` values:
             with pytest.raises(ValueError) as err:
-                create_lagged_training_data(
+                _create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,
                     past_covariates=series,
@@ -2227,10 +2242,11 @@ class TestCreateLaggedTrainingData:
                     output_chunk_shift=0,
                 )
             assert (
-                "`lags_past_covariates` must be a `Sequence` or `Dict` containing only `int` values less than 0."
+                "`lags_past_covariates` - `default_lags`: list must contain only strictly negative "
+                "integers. Given: [0]."
             ) == str(err.value)
             # Test invalid `lags_future_covariates` values:
-            create_lagged_training_data(
+            _create_lagged_training_data(
                 target_series=series,
                 output_chunk_length=1,
                 future_covariates=series,
@@ -2242,7 +2258,7 @@ class TestCreateLaggedTrainingData:
 
     def test_lagged_training_data_dict_lags_no_moving_window_error(self):
         """
-        Tests that `create_lagged_training_data` throws correct error
+        Tests that `_create_lagged_training_data` throws correct error
         when `use_moving_window` is set to `False` and lags are provided
         as a dict for a multivariate series.
         """
@@ -2251,7 +2267,7 @@ class TestCreateLaggedTrainingData:
         lags_dict = {"lin1": [-1]}
         # one series, one set of lags are dict
         with pytest.raises(ValueError) as err:
-            create_lagged_training_data(
+            _create_lagged_training_data(
                 target_series=ts,
                 output_chunk_length=1,
                 lags=lags_dict,
@@ -2264,7 +2280,7 @@ class TestCreateLaggedTrainingData:
         )
         # all the series are provided, only one passed as dict
         with pytest.raises(ValueError) as err:
-            create_lagged_training_data(
+            _create_lagged_training_data(
                 target_series=ts,
                 past_covariates=ts,
                 future_covariates=ts,
@@ -2282,22 +2298,15 @@ class TestCreateLaggedTrainingData:
 
     def test_lagged_training_data_unspecified_lag_or_series_warning(self):
         """
-        Tests that `create_lagged_training_data` throws correct
-        user warnings when a series is specified without any
-        corresponding lags, or vice versa. The only exception
-        to this is that a warning shouldn't be thrown if
-        `target_series` is specified without any `lags`, since
-        the `target_series` is still used to construct labels,
-        even if its not used to create features (i.e. `target_series`
-        is not ignored if `lags` is not specified).
+        Series specified without lags are warned and ignored; lags specified without the
+        matching series are rejected while resolving the config.
         """
         series = linear_timeseries(start=1, length=20, freq=1)
         lags = [-1]
-        # Check warnings thrown by 'moving windows' method and by 'time intersection' method:
         for use_moving_windows in (False, True):
-            # Specify `future_covariates`, but not `lags_future_covariates`:
+            # `future_covariates` without `lags_future_covariates` warns and is ignored.
             with warnings.catch_warnings(record=True) as w:
-                _ = create_lagged_training_data(
+                _ = _create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,
                     lags=lags,
@@ -2312,9 +2321,10 @@ class TestCreateLaggedTrainingData:
                     "`future_covariates` was specified without accompanying "
                     "`lags_future_covariates` and, thus, will be ignored."
                 )
-            # Specify `lags_future_covariates`, but not `future_covariates`:
-            with warnings.catch_warnings(record=True) as w:
-                _ = create_lagged_training_data(
+
+            # Lags without their series cannot be resolved.
+            with pytest.raises(ValueError) as err:
+                _create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,
                     lags=lags,
@@ -2323,40 +2333,15 @@ class TestCreateLaggedTrainingData:
                     use_moving_windows=use_moving_windows,
                     output_chunk_shift=0,
                 )
-                assert len(w) == 1
-                assert issubclass(w[0].category, UserWarning)
-                assert str(w[0].message) == (
-                    "`lags_future_covariates` was specified without accompanying "
-                    "`future_covariates` and, thus, will be ignored."
-                )
-            # Specify `lags_future_covariates` but not `future_covariates`, and
-            # `past_covariates` but not `lags_past_covariates`:
+            assert str(err.value) == (
+                "`lags_future_covariates` lags are defined, but no future "
+                "components were provided."
+            )
+
+            # `target_series` without `lags` is not a warning for training data: the
+            # target is still used to construct the labels.
             with warnings.catch_warnings(record=True) as w:
-                _ = create_lagged_training_data(
-                    target_series=series,
-                    lags=lags,
-                    output_chunk_length=1,
-                    past_covariates=series,
-                    lags_future_covariates=lags,
-                    uses_static_covariates=False,
-                    use_moving_windows=use_moving_windows,
-                    output_chunk_shift=0,
-                )
-                assert len(w) == 2
-                assert issubclass(w[0].category, UserWarning)
-                assert issubclass(w[1].category, UserWarning)
-                assert str(w[0].message) == (
-                    "`past_covariates` was specified without accompanying "
-                    "`lags_past_covariates` and, thus, will be ignored."
-                )
-                assert str(w[1].message) == (
-                    "`lags_future_covariates` was specified without accompanying "
-                    "`future_covariates` and, thus, will be ignored."
-                )
-            # Specify `target_series`, but not `lags` - unlike previous tests,
-            # this should *not* throw a warning:
-            with warnings.catch_warnings(record=True) as w:
-                _ = create_lagged_training_data(
+                _ = _create_lagged_training_data(
                     target_series=series,
                     output_chunk_length=1,
                     past_covariates=series,
@@ -2625,7 +2610,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_create_lagged_component_names(self, config):
         """
-        Tests that `create_lagged_component_names` produces the expected features name depending
+        Tests that `_create_lagged_component_names` produces the expected features name depending
         on the lags, output_chunk_length and covariates.
 
         When lags are component-specific, they are identical across all the components.
@@ -2643,7 +2628,7 @@ class TestCreateLaggedTrainingData:
             expected_lagged_labels,
         ) = config
         # lags as list
-        created_lagged_features, created_lagged_labels = create_lagged_component_names(
+        created_lagged_features, created_lagged_labels = _create_lagged_component_names(
             target_series=ts_tg,
             past_covariates=ts_pc,
             future_covariates=ts_fc,
@@ -2666,7 +2651,7 @@ class TestCreateLaggedTrainingData:
         )
 
         created_lagged_features_dict_lags, created_lagged_labels_dict_lags = (
-            create_lagged_component_names(
+            _create_lagged_component_names(
                 target_series=ts_tg,
                 past_covariates=ts_pc,
                 future_covariates=ts_fc,
@@ -2766,7 +2751,7 @@ class TestCreateLaggedTrainingData:
     )
     def test_create_lagged_component_names_different_lags(self, config):
         """
-        Tests that `create_lagged_component_names` when lags are different across components.
+        Tests that `_create_lagged_component_names` when lags are different across components.
 
         The lagged features should be sorted by lags, then by components.
         """
@@ -2781,7 +2766,7 @@ class TestCreateLaggedTrainingData:
             expected_lagged_features,
         ) = config
 
-        created_lagged_features, _ = create_lagged_component_names(
+        created_lagged_features, _ = _create_lagged_component_names(
             target_series=ts_tg,
             past_covariates=ts_pc,
             future_covariates=ts_fc,
@@ -2821,7 +2806,7 @@ class TestCreateLaggedTrainingData:
 
         train_y = linear_timeseries(start=start, length=training_size, freq=freq)
 
-        _, y, _, _, weights = create_lagged_training_data(
+        _, y, _, _, weights = _create_lagged_training_data(
             lags=[-4, -1],
             target_series=train_y if single_series else [train_y] * 2,
             output_chunk_length=1,
@@ -2906,7 +2891,7 @@ class TestCreateLaggedTrainingData:
         if not univar_series:
             ts_weights.stack(ts_weights + 1.0)
 
-        _, y, _, _, weights = create_lagged_training_data(
+        _, y, _, _, weights = _create_lagged_training_data(
             lags=lags,
             target_series=train_y if single_series else [train_y] * 2,
             output_chunk_length=ocl,
@@ -2961,7 +2946,7 @@ class TestCreateLaggedTrainingData:
         train_y = linear_timeseries(length=training_size)
         weights_too_short = train_y[:-2]
         with pytest.raises(ValueError) as err:
-            _ = create_lagged_training_data(
+            _ = _create_lagged_training_data(
                 lags=[-4, -1],
                 target_series=train_y,
                 output_chunk_length=1,
@@ -2976,7 +2961,7 @@ class TestCreateLaggedTrainingData:
         )
 
         with pytest.raises(ValueError) as err:
-            _ = create_lagged_training_data(
+            _ = _create_lagged_training_data(
                 lags=[-4, -1],
                 target_series=[train_y] * 2,
                 output_chunk_length=1,
@@ -2992,7 +2977,7 @@ class TestCreateLaggedTrainingData:
         )
 
         with pytest.raises(ValueError) as err:
-            _ = create_lagged_training_data(
+            _ = _create_lagged_training_data(
                 lags=[-4, -1],
                 target_series=[train_y] * 2,
                 output_chunk_length=1,
@@ -3004,7 +2989,7 @@ class TestCreateLaggedTrainingData:
         assert str(err.value).startswith("Invalid `sample_weight` value: `'invalid'`. ")
 
         with pytest.raises(ValueError) as err:
-            _ = create_lagged_training_data(
+            _ = _create_lagged_training_data(
                 lags=[-4, -1],
                 target_series=train_y,
                 output_chunk_length=1,

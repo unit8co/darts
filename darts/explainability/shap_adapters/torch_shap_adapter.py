@@ -22,7 +22,10 @@ from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.typing import TimeSeriesLike
 from darts.utils.data import TorchInferenceBatch
-from darts.utils.data.tabularization import create_lagged_component_names
+from darts.utils.data.tabularization import (
+    ForecastConfig,
+    create_lagged_component_names,
+)
 from darts.utils.data.torch_datasets.utils import TorchInferenceSample
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
     _create_dataset_bounds,
@@ -126,14 +129,21 @@ class TorchShapAdapter(ShapAdapter):
     def _build_feature_names(self) -> list[str]:
         lags_past = [i for i in range(-self.model.input_chunk_length, 0)]
         lags_future = lags_past + [i for i in range(self.model.output_chunk_length)]
+        config = ForecastConfig(
+            lags=lags_past if self.background_series is not None else None,
+            lags_past_covariates=(
+                lags_past if self.background_past_covariates is not None else None
+            ),
+            lags_future_covariates=(
+                lags_future if self.background_future_covariates is not None else None
+            ),
+            output_chunk_length=self.model.output_chunk_length,
+        )
         feature_names, _ = create_lagged_component_names(
+            config,
             target_series=self.background_series,
             past_covariates=self.background_past_covariates,
             future_covariates=self.background_future_covariates,
-            lags=lags_past,
-            lags_past_covariates=lags_past,
-            lags_future_covariates=lags_future,
-            output_chunk_length=self.model.output_chunk_length,
             concatenate=False,
             use_static_covariates=self.model.uses_static_covariates,
         )

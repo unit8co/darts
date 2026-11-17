@@ -1357,7 +1357,7 @@ class TestRegressionEnsembleModels:
 
         assert ensemble.ensemble_model.output_chunk_shift == shift
         # lags are `[i + shift for i in range(ocl)]`
-        assert ensemble.ensemble_model.lags == {"future": [1, 2]}
+        assert ensemble.ensemble_model._config.lags_for("future").shared == (1, 2)
 
         ensemble.fit(self.sine_series)
 
@@ -1537,9 +1537,9 @@ class TestRegressionEnsembleModels:
                 output_chunk_shift=ocs,
             ),
         )
-        assert ensemble.ensemble_model.lags == {
-            "future": [lag + ocs for lag in lags_valid]
-        }
+        assert ensemble.ensemble_model._config.lags_for("future").shared == tuple(
+            lag + ocs for lag in lags_valid
+        )
 
         ensemble.fit(self.sine_series)
         pred = ensemble.predict(n=1, series=self.sine_series)
