@@ -4781,14 +4781,16 @@ class TestProbabilisticSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        param_product([1, 2], [1, 3], [True, False]),
+        param_product(
+            [1, 2],
+            [1, 3],
+            [True, False],
+        ),
     )
     def test_linear_regression_gaussian_likelihood(self, config):
         """`LinearRegressionModel` with `likelihood="gaussian"` uses a Bayesian linear regression and predicts the
         mean and standard deviation of a Gaussian distribution."""
         n_comp, ocl, multi_models = config
-        if n_comp != 1 or ocl != 3:
-            return
 
         def make_series(seed):
             rng = np.random.default_rng(seed)
@@ -4806,10 +4808,9 @@ class TestProbabilisticSKLearnModels:
             "lags": 4,
             "output_chunk_length": ocl,
             "multi_models": multi_models,
+            "random_state": 42,
         }
-        model = LinearRegressionModel(
-            likelihood="gaussian", random_state=42, **model_kwargs
-        )
+        model = LinearRegressionModel(likelihood="gaussian", **model_kwargs)
         model.fit(series)
         assert model.supports_probabilistic_prediction
         assert isinstance(model.get_estimator(horizon=0, target_dim=0), BayesianRidge)

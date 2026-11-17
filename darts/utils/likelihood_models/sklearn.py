@@ -205,7 +205,11 @@ class GaussianLikelihood(SKLearnLikelihood):
         # extract mu (mean) per component
         component_medians = slice(0, None, self.num_parameters)
         # shape (n_series * n_samples, output_chunk_length, n_components)
-        return model_output[:, :, component_medians].reshape(k, self._n_outputs, -1)
+        return (
+            model_output[:, :, component_medians]
+            .transpose(1, 0, 2)
+            .reshape(k, self._n_outputs, -1)
+        )
 
 
 class _ReturnStdGaussianLikelihood(GaussianLikelihood):

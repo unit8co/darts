@@ -25,8 +25,11 @@ from darts.utils.utils import ModelType
 
 class MultiOutputMixin:
     """
-    Mixin for :class:`sklearn.utils.multioutput._MultiOutputEstimator` with a modified ``fit()`` method that also slices
-    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
+    Mixin for :class:`sklearn.utils.multioutput._MultiOutputEstimator` with:
+
+    - a modified ``fit()`` method that also slices validation data correctly. The validation data has to be passed as
+      parameter ``eval_set`` in ``**fit_params``.
+    - a modified ``predict()`` method which also accepts ``**kwargs`` that are passed along.
     """
 
     def __init__(
