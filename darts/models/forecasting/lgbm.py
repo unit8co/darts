@@ -127,7 +127,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -495,7 +495,7 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 

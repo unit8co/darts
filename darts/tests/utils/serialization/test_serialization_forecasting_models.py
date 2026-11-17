@@ -310,7 +310,7 @@ def _model_config_specs(series: _SeriesBundle) -> list[dict[str, Any]]:
                 "lags_future_covariates": [0],
                 "add_encoders": {
                     "position": {"future": ["relative"]},
-                    "tz": "CET",
+                    "tz": "Europe/Berlin",
                     "transformer": Scaler(),
                 },
             },
