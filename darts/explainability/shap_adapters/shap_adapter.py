@@ -225,19 +225,45 @@ class ShapAdapter(ABC):
         explanations = {}
         if isinstance(self.explainer, dict):
             for h in horizons:
+                # number of likelihood parameters output by each estimator: 1 if there is
+                # one estimator per likelihood component, `num_parameters` if each
+                # estimator natively outputs all parameters of a target component
+                n_params = self.n_targets_likelihood // len(self.explainer[h - 1])
+                # explain each estimator only once, even if several of its parameters
+                # are requested
+                estimator_explanations = {}
                 tmp_n = {}
                 for t_idx, t in enumerate(self.target_components_likelihood):
                     if t not in target_components:
                         continue
-                    explanation = self.explainer[h - 1][t_idx](foreground_arr, **kwargs)
-                    explanation = DartsShapExplanation(
-                        values=explanation.values,
+                    est_idx, param_idx = divmod(t_idx, n_params)
+                    if est_idx not in estimator_explanations:
+                        estimator_explanations[est_idx] = self.explainer[h - 1][
+                            est_idx
+                        ](foreground_arr, **kwargs)
+                    explanation = estimator_explanations[est_idx]
+                    values = explanation.values
+                    base_values = explanation.base_values
+                    if n_params > 1:
+                        # values: (E, F, n_params); base_values: (E, n_params)
+                        if values.ndim != 3 or values.shape[-1] != n_params:
+                            raise_log(
+                                ValueError(
+                                    f"The SHAP explainer did not return one set of values per likelihood "
+                                    f"parameter: expected {n_params} parameters per target component, "
+                                    f"but got values of shape {values.shape}. Use "
+                                    f"`shap_method='permutation'` to explain all likelihood parameters."
+                                )
+                            )
+                        values = values[:, :, param_idx]
+                        base_values = base_values[:, param_idx]
+                    tmp_n[t] = DartsShapExplanation(
+                        values=values,
                         data=explanation.data,
-                        base_values=explanation.base_values.ravel(),
+                        base_values=base_values.ravel(),
                         feature_names=self.feature_names,
                         time_index=foreground_times,
                     )
-                    tmp_n[t] = explanation
                 explanations[h] = tmp_n
             return explanations
 
