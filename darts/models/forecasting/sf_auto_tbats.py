@@ -78,7 +78,7 @@ class AutoTBATS(StatsForecastModel):
                     'position': {'future': ['relative']},
                     'custom': {'future': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
         quantiles

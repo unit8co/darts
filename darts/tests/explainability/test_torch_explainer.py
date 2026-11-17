@@ -65,7 +65,7 @@ ADD_ENCODERS = {
     "cyclic": {"future": ["month"]},
     "custom": {"past": [encode_year]},
     "transformer": Scaler(),
-    "tz": "CET",
+    "tz": "Europe/Berlin",
 }
 
 ALL_MODELS = [

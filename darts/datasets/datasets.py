@@ -866,7 +866,7 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
 
     Both dataset sources are updated continuously, but this dataset only retrains values between 2015-01-01 and
     2022-08-31.
-    The time index was converted from CET time zone to UTC.
+    The time index was converted from Europe/Berlin time zone to UTC.
 
     Components Descriptions:
 
@@ -915,7 +915,7 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
         # pivot the df to get all measurements as columns
         df_weather["param_name"] = df_weather["Parameter"] + " [" + df_weather["Einheit"] + "]"
         df_weather = df_weather.pivot(index="Datum", columns="param_name", values="Wert")
-        # convert time index to from CET to UTC and extract the required time range
+        # convert time index to from Europe/Berlin to UTC and extract the required time range
         df_weather.index = pd.DatetimeIndex(pd.to_datetime(df_weather.index, utc=True)).tz_localize(
             None
         )
