@@ -1690,8 +1690,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         The three modes of operation evaluate every possible combination of hyper-parameter values
         provided in the `parameters` dictionary by instantiating the `ForecastingModel` with each combination, and
         returning the best-performing model with regard to the `metric` function. The `metric` function is expected to
-        return an error value, thus the model resulting in the smallest `metric` output will be chosen. Combinations
-        with a NaN score are excluded from the selection.
+        return an error value, thus the model resulting in the smallest `metric` output will be chosen.
+
+        - Combinations with a NaN score are excluded from the selection.
+        - Combinations that raise an error (e.g. because the underlying model cannot be fit with these hyperparameters)
+          are also excluded from the selection, and a warning is logged. If all combinations raise an error, the error
+          of the first combination is raised.
 
         The relationship of the training data and test data depends on the mode of operation.
 
@@ -1915,7 +1919,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             desc="gridsearch",
         )
 
-        def _evaluate_combination(param_combination) -> float:
+        def _compute_error(param_combination) -> float:
             param_combination_dict = dict(
                 list(zip(parameters.keys(), param_combination))
             )
@@ -2030,18 +2034,56 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             return float(error)
 
-        errors: list[float] = _parallel_apply(
+        def _evaluate_combination(
+            param_combination,
+        ) -> tuple[float, Exception | None]:
+            # a failing combination (e.g. invalid hyperparameters for the underlying model) must not abort the
+            # entire search; it is excluded from the selection instead
+            try:
+                return _compute_error(param_combination), None
+            except Exception as err:
+                return np.nan, err
+
+        results: list[tuple[float, Exception | None]] = _parallel_apply(
             iterator, _evaluate_combination, n_jobs, {}, {}
         )
-
-        errors_arr = np.asarray(errors, dtype=series.dtype)
-        if errors_arr.size == 0:
+        if not results:
             raise_log(ValueError("No hyperparameter combinations to evaluate."))
-        nan_count = np.isnan(errors_arr).sum()
-        if nan_count == errors_arr.size:
+
+        failures = [
+            (param_combination, err)
+            for param_combination, (_, err) in zip(params_cross_product, results)
+            if err is not None
+        ]
+        if len(failures) > 0:
+            failure_msgs = "The first (up to) 5 combinations raised:\n" + "\n".join(
+                f"- {dict(zip(parameters.keys(), param_combination))}: "
+                f"{type(err).__name__}: {err}"
+                for param_combination, err in failures[:5]
+            )
+            if len(failure_msgs) < len(failures):
+                failure_msgs += "\n- ..."
+
+            if len(failures) == len(results):
+                raise_log(
+                    ValueError(
+                        f"All combinations failed with exceptions. {failure_msgs}"
+                    )
+                )
+            elif show_warnings:
+                logger.warning(
+                    f"{len(failures)} of {len(results)} hyperparameter combinations raised an error and were "
+                    f"excluded from the selection:{failure_msgs}"
+                )
+
+        errors_arr = np.asarray([error for error, _ in results], dtype=series.dtype)
+        # NaN scores from failed combinations were already reported above
+        nan_count = np.isnan(errors_arr).sum() - len(failures)
+        if nan_count + len(failures) == errors_arr.size:
             raise_log(
                 ValueError(
-                    "All hyperparameter combinations resulted in a NaN `metric` score."
+                    "All hyperparameter combinations resulted in a NaN `metric` score"
+                    + (" or raised an error." if failures else ".")
                 )
             )
         elif nan_count > 0 and show_warnings:
