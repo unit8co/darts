@@ -41,7 +41,8 @@ class CustomRNNModule(PLForecastingModule, ABC):
         num_layers: int,
         target_size: int,
         nr_params: int,
-        dropout: float = 0.0,
+        use_batch_norm: bool = False,
+       dropout: float = 0.0,
         **kwargs,
     ):
         """This class allows to create custom RNN modules that can later be used with Darts' :class:`RNNModel`.
@@ -68,6 +69,8 @@ class CustomRNNModule(PLForecastingModule, ABC):
             The number of recurrent layers.
         target_size
             The dimensionality of the output time series.
+        use_batch_norm
+            Whether to use batch normalization.
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
         dropout
@@ -85,7 +88,8 @@ class CustomRNNModule(PLForecastingModule, ABC):
         self.num_layers = num_layers
         self.target_size = target_size
         self.nr_params = nr_params
-        self.dropout = dropout
+        self.use_batch_norm = use_batch_norm
+       self.dropout = dropout
 
     @io_processor
     @abstractmethod
@@ -130,7 +134,6 @@ class CustomRNNModule(PLForecastingModule, ABC):
         return bundle
 
 
-# TODO add batch norm
 class _RNNModule(CustomRNNModule):
     def __init__(
         self,
@@ -179,6 +182,7 @@ class _RNNModule(CustomRNNModule):
 
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
         self.V = nn.Linear(self.hidden_dim, self.target_size * self.nr_params)
+        self.batch_norm = nn.BatchNorm1d(self.hidden_dim) if self.use_batch_norm else None
 
     @io_processor
     def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
@@ -223,8 +227,9 @@ class _RNNModule(CustomRNNModule):
         )
 
         # Here, we apply the V matrix to every hidden state to produce the outputs
-        predictions = self.V(out)
-
+        if self.batch_norm is not None:
+            out = self.batch_norm(out.transpose(1, 2)).transpose(1, 2)
+        redictions = self.V(out)
         # predictions shape (batch_size, input_length, target_size)
         predictions = predictions.view(batch_size, -1, self.target_size, self.nr_params)
 
@@ -244,7 +249,8 @@ class RNNModel(DualCovariatesTorchModel):
         n_rnn_layers: int = 1,
         dropout: float = 0.0,
         training_length: int = 24,
-        **kwargs,
+        use_batch_norm: bool = False,
+   **kwargs,
     ):
         """Recurrent Neural Network Model (RNNs).
 
@@ -290,6 +296,8 @@ class RNNModel(DualCovariatesTorchModel):
             many iterations as it will during inference. For training, a
             :class:`~darts.utils.data.torch_datasets.training_dataset.ShiftedTorchTrainingDataset` is used with
             parameters `input_chunk_length=output_chunk_length=training_length` and `shift=1`.
+        use_batch_norm
+            Whether to apply batch normalization to the RNN output. Default: ``False``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -504,7 +512,8 @@ class RNNModel(DualCovariatesTorchModel):
         self.dropout = dropout
         self.hidden_dim = hidden_dim
         self.n_rnn_layers = n_rnn_layers
-        self.training_length = training_length
+        self.use_batch_norm = use_batch_norm
+       self.training_length = training_length
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         past_target = train_sample.past_target
@@ -528,7 +537,8 @@ class RNNModel(DualCovariatesTorchModel):
             hidden_dim=self.hidden_dim,
             dropout=self.dropout,
             num_layers=self.n_rnn_layers,
-            **self.pl_module_params,
+            use_batch_norm=self.use_batch_norm,
+           **self.pl_module_params,
             **kwargs,
         )
 
