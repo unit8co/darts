@@ -6,7 +6,6 @@ A forecasting model using a linear regression of some of the target series' lags
 covariate series lags in order to obtain a forecast.
 """
 
-from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
 
 from darts.logging import get_logger
@@ -182,9 +181,7 @@ class LinearRegressionModel(SKLearnModel):
         if likelihood == LikelihoodType.Poisson.value:
             model = PoissonRegressor(**kwargs)
         elif likelihood == LikelihoodType.Quantile.value:
-            # probe solver availability once at init time
-            self._resolve_solver()
-            model = QuantileRegressor(**self.kwargs)
+            model = QuantileRegressor(**kwargs)
         else:  # likelihood is None
             model = LinearRegression(**kwargs)
 
@@ -200,18 +197,6 @@ class LinearRegressionModel(SKLearnModel):
             use_static_covariates=use_static_covariates,
             random_state=random_state,
         )
-
-    def _resolve_solver(self):
-        """Set a fast LP solver for QuantileRegressor, falling back if unavailable."""
-        if "solver" not in self.kwargs:
-            self.kwargs["solver"] = "highs"
-        try:
-            linprog(c=[1], method=self.kwargs["solver"])
-        except ValueError as ve:
-            logger.warning(
-                f"{ve}. Upgrading scipy enables significantly faster solvers"
-            )
-            self.kwargs["solver"] = "interior-point"
 
     def _estimator_for_quantile(self, quantile: float):
         """Return a fresh ``QuantileRegressor`` configured for *quantile*."""

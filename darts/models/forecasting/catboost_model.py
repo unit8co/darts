@@ -250,10 +250,9 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
 
     def _estimator_for_quantile(self, quantile: float):
         """Return a fresh ``CatBoostRegressor`` configured for *quantile*."""
-        return self._create_model(**{
-            **self.kwargs,
-            "loss_function": f"Quantile:alpha={quantile}",
-        })
+        # we mutate `self.kwargs` as `loss_function` is required by `_supports_native_multioutput()`
+        self.kwargs["loss_function"] = f"Quantile:alpha={quantile}"
+        return self._create_model(**self.kwargs)
 
     def _set_likelihood(
         self,

@@ -32,6 +32,7 @@ from darts.models.forecasting.sklearn_model import (
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import _get_likelihood
+from darts.utils.multioutput import MultiOutputMixin
 
 
 class LightGBMModel(SKLearnModelWithCategoricalFeatures):
@@ -361,7 +362,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         )
         # LightGBMRegressor.fit() requires single array eval_X and eval_y;
         # MultiOutputMixin handles this internally
-        if self._model_uses_multioutput:
+        if isinstance(self.model, MultiOutputMixin):
             return kwargs
 
         # otherwise, we flatten here
