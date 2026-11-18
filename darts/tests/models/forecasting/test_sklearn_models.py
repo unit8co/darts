@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import BayesianRidge, LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 
 from darts import TimeSeries
@@ -4407,6 +4407,16 @@ class TestProbabilisticSKLearnModels:
             },
             0.6,
         ),
+        (
+            LinearRegressionModel,
+            {
+                "lags": 2,
+                "likelihood": "gaussian",
+                "random_state": 42,
+                "multi_models": True,
+            },
+            0.05,
+        ),
     ]
     if XGB_AVAILABLE:
         models_cls_kwargs_errs += [
@@ -4564,7 +4574,7 @@ class TestProbabilisticSKLearnModels:
             _ = LinearRegressionModel(lags=1, likelihood="does_not_exist")
         assert (
             str(exc.value)
-            == "Invalid `likelihood='does_not_exist'`. Must be one of ['quantile', 'poisson']"
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ['quantile', 'poisson', 'gaussian']"
         )
 
         with pytest.raises(ValueError) as exc:
@@ -4770,6 +4780,77 @@ class TestProbabilisticSKLearnModels:
             new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
+
+    @pytest.mark.parametrize(
+        "config",
+        param_product(
+            [1, 2],
+            [1, 3],
+            [True, False],
+        ),
+    )
+    def test_linear_regression_gaussian_likelihood(self, config):
+        """`LinearRegressionModel` with `likelihood="gaussian"` uses a Bayesian linear regression and predicts the
+        mean and standard deviation of a Gaussian distribution."""
+        n_comp, ocl, multi_models = config
+
+        def make_series(seed):
+            rng = np.random.default_rng(seed)
+            values = np.stack(
+                [
+                    np.sin(np.arange(200) / 5 + i) + 0.3 * rng.normal(size=200)
+                    for i in range(n_comp)
+                ],
+                axis=1,
+            )
+            return TimeSeries.from_values(values)
+
+        series = [make_series(seed=1), make_series(seed=2) + 1.0]
+        model_kwargs = {
+            "lags": 4,
+            "output_chunk_length": ocl,
+            "multi_models": multi_models,
+            "random_state": 42,
+        }
+        model = LinearRegressionModel(likelihood="gaussian", **model_kwargs)
+        model.fit(series)
+        assert model.supports_probabilistic_prediction
+        assert isinstance(model.get_estimator(horizon=0, target_dim=0), BayesianRidge)
+
+        preds = model.predict(n=ocl, series=series)
+        preds_params = model.predict(
+            n=ocl, series=series, predict_likelihood_parameters=True
+        )
+        preds_sampled = model.predict(n=ocl, series=series, num_samples=5000)
+
+        # the Bayesian regression mean is close to the ordinary least squares prediction
+        model_det = LinearRegressionModel(**model_kwargs)
+        model_det.fit(series)
+        preds_det = model_det.predict(n=ocl, series=series)
+
+        for pred, pred_params, pred_sampled, pred_det in zip(
+            preds, preds_params, preds_sampled, preds_det
+        ):
+            assert pred_params.components.tolist() == [
+                f"{comp}_{param}"
+                for comp in pred.components
+                for param in ["mu", "sigma"]
+            ]
+            mu = pred_params.values()[:, 0::2]
+            sigma = pred_params.values()[:, 1::2]
+            assert (sigma > 0).all()
+            # the deterministic prediction is the mean of each series
+            np.testing.assert_allclose(pred.values(), mu)
+            np.testing.assert_allclose(pred.values(), pred_det.values(), atol=0.05)
+            # samples are drawn from the predicted distribution
+            np.testing.assert_allclose(pred_sampled.mean().values(), mu, atol=0.05)
+            np.testing.assert_allclose(
+                pred_sampled.all_values().std(axis=2), sigma, rtol=0.1
+            )
+
+        # auto-regression
+        pred = model.predict(n=2 * ocl + 1, series=series[0], num_samples=10)
+        assert pred.all_values().shape == (2 * ocl + 1, n_comp, 10)
 
     @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
