@@ -126,7 +126,8 @@ class MultiOutputMixin:
                 )
 
         n_targets = y.shape[1]
-        n_outputs = len(self.param_estimators) * n_targets
+        n_params = len(self.param_estimators)
+        n_outputs = n_targets * n_params
         if sample_weight is not None and (
             sample_weight.ndim == 1 or sample_weight.shape[1] != n_targets
         ):
@@ -155,10 +156,10 @@ class MultiOutputMixin:
         eval_weight = fit_params_validated.pop(self.eval_weight_name, None)
 
         def _estimator_idx(i: int) -> int:
-            return i // n_targets
+            return i % n_params
 
         def _target_idx(i: int) -> int:
-            return i % n_targets
+            return i // n_params
 
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
             delayed(_fit_estimator)(
@@ -203,20 +204,20 @@ class MultiOutputMixin:
 
         Parameters
         ----------
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        X
+            Array-like, sparse matrix of shape (n_samples, n_features).
             The input data.
-        kwargs : dict of string -> object
+        **kwargs
             Parameters passed to the ``estimator.predict`` method of each step.
 
         Returns
         -------
-        y : {array-like, sparse matrix} of shape (n_samples, n_outputs)
+        y
+            Array-like, sparse matrix of shape (n_samples, n_outputs) or
+            (n_samples, n_outputs, n_params) if `estimator` was a list (of
+            length `n_params`) of estimators at model creation.
             Multi-output targets predicted across multiple predictors.
-            Note: Separate models are generated for each predictor.
         """
-        if not kwargs:
-            return super().predict(X)
-
         check_is_fitted(self)
         if not hasattr(self.estimators_[0], "predict"):
             raise ValueError("The base estimator should implement a predict method")
@@ -224,7 +225,15 @@ class MultiOutputMixin:
         y = Parallel(n_jobs=self.n_jobs)(
             delayed(e.predict)(X, **kwargs) for e in self.estimators_
         )
-        return np.asarray(y).T
+
+        if len(self.param_estimators) == 1:
+            # return shape (n series * n samples, output_chunk_length * n_targets)
+            return np.asarray(y).T
+
+        # return shape (n series * n samples, output_chunk_length * n_targets, n_parameters)
+        n_params = len(self.param_estimators)
+        n_targets = len(self.estimators_) // n_params
+        return np.asarray(y).T.reshape(-1, n_targets, n_params)
 
     @property
     def supports_sample_weight(self) -> bool:

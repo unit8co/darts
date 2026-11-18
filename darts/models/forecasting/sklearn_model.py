@@ -643,9 +643,9 @@ class SKLearnModel(GlobalForecastingModel):
         horizon and all target components jointly.
 
         .. note::
-            Internally, estimators are grouped by ``output_chunk_length`` position, then by component. For
-            probabilistic models fitting quantiles (``likelihood="quantile"``), there will be an additional
-            abstraction layer, grouping the estimators by ``quantile``. Models using a single native multi-quantile
+            Internally, estimators are grouped by ``output_chunk_length`` position, then by target component. For
+            probabilistic models fitting quantiles (``likelihood="quantile"``), each such group contains one
+            estimator per fitted quantile. Models using a single native multi-quantile
             estimator (``likelihood="multiquantile"``) do not use this extra quantile grouping, and ``quantile``
             must be set to ``None`` to obtain the correct estimator.
 
@@ -708,10 +708,11 @@ class SKLearnModel(GlobalForecastingModel):
             return model
 
         # when multi_models=True, one model per horizon and target component (and optional quantile)
-        n_targets = len(model.estimators_) // len(model.param_estimators)
-        idx_estimator = (
+        n_params = len(model.param_estimators)
+        flat_target = (
             self.multi_models * self.input_dim["target"] * horizon + target_dim
-        ) + q_idx * n_targets
+        )
+        idx_estimator = flat_target * n_params + q_idx
         return model.estimators_[idx_estimator]
 
     def _add_val_set_to_kwargs(

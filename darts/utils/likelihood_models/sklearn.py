@@ -414,18 +414,13 @@ class QuantileRegression(SKLearnLikelihood):
         **kwargs,
     ) -> np.ndarray:
         # `x` is of shape (n_series * n_samples, n_regression_features)
-        k = x.shape[0]
-        n_q = len(self.quantiles)
-        flat = model.model.predict(x, **kwargs)
-        n_reg = flat.shape[1] // n_q
-        # column layout: quantile-major blocks of `n_reg` regression outputs
-        per_quantile = flat.reshape(k, n_q, n_reg)
-        n_components = n_reg // self._n_outputs
-        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        return np.transpose(
-            per_quantile.reshape(k, n_q, self._n_outputs, n_components),
-            (0, 2, 3, 1),
-        )
+        k, _ = x.shape
+        n_quantiles = len(self.quantiles)
+        model_output = model.model.predict(x, **kwargs)
+        # bring `model_output` into shape: (n_series * n_samples, output_chunk_length * n_components, n_quantiles)
+        if model_output.ndim < 3:
+            model_output = model_output.reshape(k, -1, n_quantiles)
+        return model_output.reshape(k, self._n_outputs, -1, n_quantiles)
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
