@@ -126,3 +126,53 @@ class TestExponentialSmoothing:
         assert ExponentialSmoothing(min_train_length=2).min_train_series_length == 2
         with pytest.raises(ValueError, match="`min_train_length` must be"):
             ExponentialSmoothing(min_train_length=0)
+
+    def test_future_covariates(self):
+        """Future covariates are used through OLS + Exponential Smoothing on the residuals."""
+        n = 10
+        covs = tg.linear_timeseries(
+            length=100 + n, freq="h", start_value=0, end_value=5
+        )
+        series = (
+            tg.sine_timeseries(length=100, freq="h", value_frequency=0.05)
+            + 3 * covs[:100]
+        )
+        kwargs = {"trend": None, "seasonal": None}
+
+        model = ExponentialSmoothing(**kwargs)
+        assert model.supports_future_covariates
+        model.fit(series, future_covariates=covs)
+        pred = model.predict(n, future_covariates=covs)
+        assert len(pred) == n
+        assert pred.start_time() == series.end_time() + series.freq
+
+        # the regression part is added back to the forecast
+        pred_no_cov = ExponentialSmoothing(**kwargs).fit(series).predict(n)
+        true = 3 * covs[100:]
+        assert (
+            np.abs(pred.values() - true.values()).mean()
+            < np.abs(pred_no_cov.values() - true.values()).mean() + 1.0
+        )
+        assert not np.allclose(pred.values(), pred_no_cov.values())
+
+        # probabilistic forecasts include the regression
+        pred_prob = model.predict(n, future_covariates=covs, num_samples=5)
+        assert pred_prob.n_samples == 5
+        assert pred_prob.all_values().shape[0] == n
+
+        # covariates passed at fit time are re-used when none are passed to predict() (darts convention)
+        np.testing.assert_array_almost_equal(model.predict(n).values(), pred.values())
+
+        # a model trained without covariates rejects covariates at prediction time
+        with pytest.raises(ValueError):
+            ExponentialSmoothing(**kwargs).fit(series).predict(
+                n, future_covariates=covs
+            )
+
+    def test_add_encoders(self):
+        series = tg.sine_timeseries(length=100, freq="h")
+        model = ExponentialSmoothing(
+            trend=None, seasonal=None, add_encoders={"cyclic": {"future": ["hour"]}}
+        )
+        model.fit(series)
+        assert len(model.predict(5)) == 5

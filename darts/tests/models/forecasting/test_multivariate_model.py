@@ -137,7 +137,7 @@ class TestMultivariateModel:
 
     def test_unsupported_future_covariates(self):
         """Test that passing future_covariates to a model that doesn't support them raises."""
-        model = self.helper_setup_model(ExponentialSmoothing, {})
+        model = self.helper_setup_model(NaiveSeasonal, {})
         assert not model.supports_future_covariates
 
         with pytest.raises(

@@ -730,7 +730,7 @@ class TestLocalForecastingModels:
             (
                 ExponentialSmoothing(),
                 "ExponentialSmoothing(trend=additive, damped=False, seasonal=additive, "
-                + "seasonal_periods=None, error=add, random_errors=None, random_state=None, min_train_length=None, "
+                + "seasonal_periods=None, error=add, random_errors=None, random_state=None, min_train_length=None, add_encoders=None, "
                 + "kwargs=None)",
             ),  # no params changed
             (
