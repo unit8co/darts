@@ -10,7 +10,7 @@ import pandas as pd
 from statsmodels.tsa.stattools import acf
 
 from darts import TimeSeries
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
 from darts.utils.missing_values import fill_missing_values
 
@@ -114,7 +114,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
             relevant_attributes.add("day")
         # check for weekly seasonality
         elif _check_approximate_seasonality(series, 7, 0, 0):
-            relevant_attributes.add("weekday")
+            relevant_attributes.add("day_of_week")
     elif type(series.freq) is pd.tseries.offsets.Hour:
         # check for yearly seasonality
         if _check_approximate_seasonality(series, 8760, 100, 100):
@@ -124,7 +124,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
             relevant_attributes.update({"day", "hour"})
         # check for weekly seasonality
         elif _check_approximate_seasonality(series, 168, 3, 10):
-            relevant_attributes.update({"weekday", "hour"})
+            relevant_attributes.update({"day_of_week", "hour"})
         # check for daily seasonality
         elif _check_approximate_seasonality(series, 24, 1, 1):
             relevant_attributes.add("hour")
@@ -201,7 +201,7 @@ def _crop_to_match_seasons(
     while curr_ts < pred_ts - 4 * freq:
         curr_ts += freq
         if _compare_timestamps_on_attributes(pred_ts, curr_ts, required_matches):
-            new_series = series.drop_before(curr_ts)
+            new_series = series.drop_before(curr_ts, keep_point=True)
             return new_series
 
     logger.warning(
@@ -235,8 +235,9 @@ class FFT(LocalForecastingModel):
             The attributes of pd.Timestamp that will be used to create a training sequence that is cropped at the
             beginning such that the first timestamp of the training sequence and the first prediction point have
             matching phases. If the series has a yearly seasonality, include `month`, if it has a monthly
-            seasonality, include `day`, etc. If not set, or explicitly set to None, the model tries to find the
-            pd.Timestamp attributes that are relevant for the seasonality automatically.
+            seasonality, include `day`, if it has a weekly seasonality, include `day_of_week`, etc. If not set, or
+            explicitly set to None, the model tries to find the pd.Timestamp attributes that are relevant for the
+            seasonality automatically.
         trend
             If set, indicates what kind of detrending will be applied before performing DFT.
             Possible values: 'poly', 'exp' or None, for polynomial trend, exponential trend or no trend, respectively.
@@ -285,6 +286,18 @@ class FFT(LocalForecastingModel):
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
         super().__init__(min_train_length=min_train_length)
+        invalid_matches = sorted(
+            attr
+            for attr in required_matches or set()
+            if not hasattr(pd.Timestamp, attr) or callable(getattr(pd.Timestamp, attr))
+        )
+        if invalid_matches:
+            raise_log(
+                ValueError(
+                    f"`required_matches` must only contain properties of `pd.Timestamp` (e.g. 'month', 'day', "
+                    f"'day_of_week'), received invalid values: {invalid_matches}."
+                )
+            )
         self.nr_freqs_to_keep = nr_freqs_to_keep
         self.required_matches = required_matches
         self.trend = trend

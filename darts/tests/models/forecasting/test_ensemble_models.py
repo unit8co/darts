@@ -323,7 +323,7 @@ class TestEnsembleModels:
         pred_proba_1_sample = naive_ensemble_proba.predict(n=5)
         assert pred_proba_1_sample.n_samples == 1
 
-        # possible to obtain probabilistic forecast by averaging samples across the models
+        # possible to obtain probabilistic forecast by sampling from the mixture of the models
         pred_proba_many_sample = naive_ensemble_proba.predict(
             n=5, num_samples=num_samples
         )
@@ -338,15 +338,95 @@ class TestEnsembleModels:
         )
         model_alone_1.fit(self.series1 + self.series2)
         model_alone_2.fit(self.series1 + self.series2)
-        forecast_mean = 0.5 * model_alone_1.predict(
-            5, num_samples=num_samples
-        ) + 0.5 * model_alone_2.predict(5, num_samples=num_samples)
+        base_values = [
+            model_alone_1.predict(5, num_samples=num_samples).all_values(),
+            model_alone_2.predict(5, num_samples=num_samples).all_values(),
+        ]
 
-        assert forecast_mean.values().shape == pred_proba_many_sample.values().shape
-        assert forecast_mean.n_samples == pred_proba_many_sample.n_samples
-        np.testing.assert_array_equal(
-            pred_proba_many_sample.values(), forecast_mean.values()
+        ens_values = pred_proba_many_sample.all_values()
+        assert ens_values.shape == base_values[0].shape
+
+        # every ensemble sample is the sample with the same index of exactly one base model (no averaging)
+        # the model uses the base models' trajectories
+        from_model_1 = (ens_values == base_values[0]).all(axis=(0, 1))
+        from_model_2 = (ens_values == base_values[1]).all(axis=(0, 1))
+        assert (from_model_1 | from_model_2).all()
+        # and both base models contribute to the mixture
+        assert (from_model_1 & ~from_model_2).any()
+        assert (from_model_2 & ~from_model_1).any()
+
+    @staticmethod
+    def _naive_ensemble_inputs(values: np.ndarray, n_components: int = 1):
+        """Build the inputs of `NaiveEnsembleModel.ensemble()` from stacked base predictions.
+
+        `values` has shape (n_timesteps, n_models * n_components, n_samples), with the predictions stacked
+        model by model along the component axis (as in `EnsembleModel.predict()`).
+        """
+        n_timesteps, n_stacked, _ = values.shape
+        n_models = n_stacked // n_components
+        model = NaiveEnsembleModel(
+            [
+                LinearRegressionModel(
+                    lags=i + 1,
+                    likelihood="quantile",
+                    quantiles=[0.1, 0.5, 0.9],
+                    random_state=i,
+                )
+                for i in range(n_models)
+            ],
+            random_state=42,
         )
+        series = TimeSeries.from_values(
+            np.arange(n_timesteps * n_components).reshape((n_timesteps, n_components)),
+            columns=[f"c{c}" for c in range(n_components)],
+        )
+        model.fit(series)
+
+        predictions = TimeSeries.from_values(
+            values,
+            columns=[
+                f"m{m}_c{c}" for m in range(n_models) for c in range(n_components)
+            ],
+        )
+        return model, predictions, series
+
+    @pytest.mark.parametrize(
+        "method,n_series,n_vars",
+        param_product(
+            ["ensemble", "predict"],
+            [1, 2],
+            [1, 2],
+        ),
+    )
+    def test_naive_ensemble_mixture_random_state(self, method, n_series, n_vars):
+        values = np.arange(5 * 3 * n_vars * 50).reshape((5, 3 * n_vars, 50))
+        model, predictions, series = self._naive_ensemble_inputs(values, n_vars)
+        if n_series > 1:
+            series = [series] * n_series
+            predictions = [predictions] * n_series
+        kwargs = {"n": 5, "series": series, "num_samples": 50}
+
+        if method == "ensemble":
+            kwargs["predictions"] = predictions
+
+        # without `random_state`, ensemble randomness progresses per model cal
+        out_a = getattr(model, method)(**kwargs)
+        out_b = getattr(model, method)(**kwargs)
+        assert out_a != out_b
+
+        # a new ensemble model
+        model, _, _ = self._naive_ensemble_inputs(values, n_vars)
+        out_c = getattr(model, method)(**kwargs)
+        assert out_c == out_a
+
+        # giving random state explicitly gives same results
+        out_d = getattr(model, method)(random_state=7, **kwargs)
+        out_e = getattr(model, method)(random_state=7, **kwargs)
+        assert out_d == out_e
+
+        # another random state gives different results
+        out_f = getattr(model, method)(random_state=8, **kwargs)
+        assert out_f != out_d
 
     def test_predict_likelihood_parameters_wrong_args(self):
         m_deterministic = LinearRegressionModel(lags=2, output_chunk_length=2)

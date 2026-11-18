@@ -1171,6 +1171,32 @@ class TestRegressionEnsembleModels:
         ensemble_model_median.fit([train, train + 100])
         ensemble_model_mean.predict(len(val), series=train)
 
+    def test_train_samples_reduction_quantile_with_deterministic_models(self):
+        """Quantile reduction of the training samples must leave the predictions of
+        deterministic forecasting models unchanged."""
+        model = RegressionEnsembleModel(
+            forecasting_models=[
+                LinearRegressionModel(lags=5),
+                LinearRegressionModel(
+                    lags=5,
+                    likelihood="quantile",
+                    quantiles=[0.1, 0.5, 0.9],
+                ),
+            ],
+            regression_train_n_points=10,
+            regression_train_num_samples=10,
+            regression_train_samples_reduction=0.5,
+        )
+        model.fit(self.ts_sum1)
+        assert model.predict(3).n_samples == 1
+
+        # deterministic predictions are unchanged, stochastic ones are reduced
+        pred_det = TimeSeries.from_values(np.arange(3))
+        pred_stoch = TimeSeries.from_values(np.arange(3 * 10).reshape(3, 1, 10))
+        reduced = model._predictions_reduction([pred_det, pred_stoch])
+        assert reduced[0] == pred_det
+        assert reduced[1] == pred_stoch.quantile(0.5)
+
     def test_predict_likelihood_parameters_univariate_regression_ensemble(self):
         quantiles = [0.05, 0.5, 0.95]
         ensemble = RegressionEnsembleModel(

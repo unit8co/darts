@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import BayesianRidge, LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 
 from darts import TimeSeries
@@ -1129,27 +1129,25 @@ class TestSKLearnModels:
 
         # inconsistent number of components in series Sequence[TimeSeries]
         training_series = [series.stack(series + 10), series]
+        model_instance = model(lags=4, multi_models=mode)
         with pytest.raises(ValueError) as err:
-            model_instance = model(lags=4, multi_models=mode)
             model_instance.fit(series=training_series)
         assert (
-            str(err.value)
-            == f"Expected {training_series[0].width} components but received {training_series[1].width} "
-            f"components at index 1 of `series`."
+            f"Encountered ({training_series[0].width}, {training_series[1].width}, ...) "
+            f"target_series components." in str(err.value)
         )
 
         # inconsistent number of components in past_covariates Sequence[TimeSeries]
         training_past_covs = [series, series.stack(series * 2)]
+        model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
         with pytest.raises(ValueError) as err:
-            model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
             model_instance.fit(
                 series=[series, series + 10],
                 past_covariates=training_past_covs,
             )
         assert (
-            str(err.value)
-            == f"Expected {training_past_covs[0].width} components but received {training_past_covs[1].width} "
-            f"components at index 1 of `past_covariates`."
+            f"Encountered ({training_past_covs[0].width}, {training_past_covs[1].width}, ...) "
+            f"past_covariates components." in str(err.value)
         )
 
         model_instance = model(lags=12, multi_models=mode)
@@ -1184,6 +1182,30 @@ class TestSKLearnModels:
             future_covariates=sine_multivariate1,
         )
         assert len(model_instance.lags.get("past")) == 3
+
+    def test_fit_rejects_cancelling_component_mismatches(self):
+        series = [self.sine_univariate1[:30], self.sine_univariate1[:30]]
+        past_covariates = [
+            self.sine_univariate1[:30],
+            self.sine_multivariate1[:30],
+        ]
+        future_covariates = [
+            self.sine_multivariate1[:30],
+            self.sine_univariate1[:30],
+        ]
+        model = LinearRegressionModel(
+            lags=2,
+            lags_past_covariates=2,
+            lags_future_covariates=[0, 1],
+        )
+
+        with pytest.raises(ValueError) as err:
+            model.fit(
+                series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
+        assert "Encountered (1, 2, ...) past_covariates components" in str(err.value)
 
     def helper_test_models_accuracy(
         self,
@@ -4383,6 +4405,16 @@ class TestProbabilisticSKLearnModels:
             },
             0.6,
         ),
+        (
+            LinearRegressionModel,
+            {
+                "lags": 2,
+                "likelihood": "gaussian",
+                "random_state": 42,
+                "multi_models": True,
+            },
+            0.05,
+        ),
     ]
     if XGB_AVAILABLE:
         models_cls_kwargs_errs += [
@@ -4540,7 +4572,7 @@ class TestProbabilisticSKLearnModels:
             _ = LinearRegressionModel(lags=1, likelihood="does_not_exist")
         assert (
             str(exc.value)
-            == "Invalid `likelihood='does_not_exist'`. Must be one of ['quantile', 'poisson']"
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ['quantile', 'poisson', 'gaussian']"
         )
 
         with pytest.raises(ValueError) as exc:
@@ -4649,6 +4681,51 @@ class TestProbabilisticSKLearnModels:
         assert (pred9 == pred10).all()
         assert (pred11 == pred7).all()
 
+    def test_probabilistic_predict_random_state_ar_sampling(self):
+        """`random_state` must seed `predict()` once and advance the RNG across AR steps."""
+        model = LinearRegressionModel(
+            lags=1,
+            output_chunk_length=1,
+            likelihood="quantile",
+            random_state=41,
+        )
+        series = self.constant_noisy_ts[:50]
+        model.fit(series)
+        horizon = 12
+        num_samples = 100
+        predict_seed = 7
+
+        uniform_leading: list[float] = []
+        original_uniform = np.random.uniform
+
+        def recording_uniform(*args, **kwargs):
+            sample = original_uniform(*args, **kwargs)
+            uniform_leading.append(float(sample.flat[0]))
+            return sample
+
+        with (
+            patch.object(np.random, "uniform", side_effect=recording_uniform),
+            patch.object(
+                np.random, "set_state", wraps=np.random.set_state
+            ) as set_state,
+        ):
+            model.predict(n=horizon, num_samples=num_samples, random_state=predict_seed)
+
+        # `@random_method` on `predict()` must not re-seed on each `_predict()` call.
+        assert set_state.call_count == 1
+        # one `QuantileRegression.sample()` call (one `np.random.uniform`) per AR step
+        assert len(uniform_leading) == horizon
+        # re-seeding would replay the same leading uniform every step
+        assert len(set(uniform_leading)) == horizon
+
+        pred_a = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        pred_b = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        assert (pred_a == pred_b).all()
+
     @pytest.mark.parametrize(
         "config", param_product(models_cls_kwargs_errs, [True, False])
     )
@@ -4701,6 +4778,77 @@ class TestProbabilisticSKLearnModels:
             new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
+
+    @pytest.mark.parametrize(
+        "config",
+        param_product(
+            [1, 2],
+            [1, 3],
+            [True, False],
+        ),
+    )
+    def test_linear_regression_gaussian_likelihood(self, config):
+        """`LinearRegressionModel` with `likelihood="gaussian"` uses a Bayesian linear regression and predicts the
+        mean and standard deviation of a Gaussian distribution."""
+        n_comp, ocl, multi_models = config
+
+        def make_series(seed):
+            rng = np.random.default_rng(seed)
+            values = np.stack(
+                [
+                    np.sin(np.arange(200) / 5 + i) + 0.3 * rng.normal(size=200)
+                    for i in range(n_comp)
+                ],
+                axis=1,
+            )
+            return TimeSeries.from_values(values)
+
+        series = [make_series(seed=1), make_series(seed=2) + 1.0]
+        model_kwargs = {
+            "lags": 4,
+            "output_chunk_length": ocl,
+            "multi_models": multi_models,
+            "random_state": 42,
+        }
+        model = LinearRegressionModel(likelihood="gaussian", **model_kwargs)
+        model.fit(series)
+        assert model.supports_probabilistic_prediction
+        assert isinstance(model.get_estimator(horizon=0, target_dim=0), BayesianRidge)
+
+        preds = model.predict(n=ocl, series=series)
+        preds_params = model.predict(
+            n=ocl, series=series, predict_likelihood_parameters=True
+        )
+        preds_sampled = model.predict(n=ocl, series=series, num_samples=5000)
+
+        # the Bayesian regression mean is close to the ordinary least squares prediction
+        model_det = LinearRegressionModel(**model_kwargs)
+        model_det.fit(series)
+        preds_det = model_det.predict(n=ocl, series=series)
+
+        for pred, pred_params, pred_sampled, pred_det in zip(
+            preds, preds_params, preds_sampled, preds_det
+        ):
+            assert pred_params.components.tolist() == [
+                f"{comp}_{param}"
+                for comp in pred.components
+                for param in ["mu", "sigma"]
+            ]
+            mu = pred_params.values()[:, 0::2]
+            sigma = pred_params.values()[:, 1::2]
+            assert (sigma > 0).all()
+            # the deterministic prediction is the mean of each series
+            np.testing.assert_allclose(pred.values(), mu)
+            np.testing.assert_allclose(pred.values(), pred_det.values(), atol=0.05)
+            # samples are drawn from the predicted distribution
+            np.testing.assert_allclose(pred_sampled.mean().values(), mu, atol=0.05)
+            np.testing.assert_allclose(
+                pred_sampled.all_values().std(axis=2), sigma, rtol=0.1
+            )
+
+        # auto-regression
+        pred = model.predict(n=2 * ocl + 1, series=series[0], num_samples=10)
+        assert pred.all_values().shape == (2 * ocl + 1, n_comp, 10)
 
     @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(

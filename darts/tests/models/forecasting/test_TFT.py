@@ -16,7 +16,10 @@ import torch
 import torch.nn as nn
 from torch.nn import MSELoss
 
-from darts.models.components.tft_submodels import get_embedding_size
+from darts.models.components.tft_submodels import (
+    _VariableSelectionNetwork,
+    get_embedding_size,
+)
 from darts.models.forecasting.tft_model import TFTModel
 from darts.utils.data import SequentialTorchTrainingDataset
 from darts.utils.likelihood_models.torch import QuantileRegression
@@ -522,6 +525,33 @@ class TestTFTModel:
         preds = model.predict(n=3, series=series)
         assert len(preds) == 3
         assert np.all(np.isfinite(preds.values()))
+
+
+class TestVariableSelectionNetwork:
+    @pytest.mark.parametrize("hidden_size", [4, 8, 16])
+    def test_input_size_total(self, hidden_size):
+        """Every variable contributes its `input_size` to the input of the flattened GRN, no matter whether it is an
+        embedded (categorical) variable or a prescaled continuous one, and independently of `hidden_size`."""
+        cat_size, real_size = 3, 5
+        batch_size, seq_len = 4, 7
+        vsn = _VariableSelectionNetwork(
+            input_sizes={"cat": cat_size, "real": real_size},
+            hidden_size=hidden_size,
+            input_embedding_flags={"cat": True},
+            prescalers={"real": nn.Linear(1, real_size)},
+        )
+        assert vsn.input_size_total == cat_size + real_size
+        assert vsn.flattened_grn.fc1.in_features == cat_size + real_size
+
+        # the forward pass concatenates the embedded and the prescaled variables; this only works if the width of the
+        # concatenation matches the input size of the flattened GRN
+        x = {
+            "cat": torch.randn(batch_size, seq_len, cat_size),
+            "real": torch.randn(batch_size, seq_len, 1),
+        }
+        out, weights = vsn(x)
+        assert out.shape == (batch_size, seq_len, hidden_size)
+        assert weights.shape == (batch_size, seq_len, 1, 2)
 
 
 class TestTFTModelInputValidation:

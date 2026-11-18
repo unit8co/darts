@@ -7,7 +7,12 @@ covariate series lags in order to obtain a forecast.
 """
 
 from scipy.optimize import linprog
-from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
+from sklearn.linear_model import (
+    BayesianRidge,
+    LinearRegression,
+    PoissonRegressor,
+    QuantileRegressor,
+)
 
 from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
@@ -21,6 +26,7 @@ from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _get_likelihood,
+    _ReturnStdGaussianLikelihood,
 )
 
 logger = get_logger(__name__)
@@ -114,7 +120,7 @@ class LinearRegressionModel(SKLearnModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -122,9 +128,11 @@ class LinearRegressionModel(SKLearnModel):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
-            Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
-            prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if
-            set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.
+            Can be set to `quantile`, `poisson` or `gaussian`. If set, the model will be probabilistic, allowing
+            sampling at prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used.
+            Similarly, if set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used. If set to `gaussian`,
+            the Bayesian linear regression `sklearn.linear_model.BayesianRidge` is used, which predicts the mean and
+            standard deviation of a Gaussian distribution.
         quantiles
             Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"``.
             Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
@@ -141,8 +149,9 @@ class LinearRegressionModel(SKLearnModel):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
-            `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
-            `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`).
+            `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), to
+            `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`), or to
+            `sklearn.linear_model.BayesianRidge` (if `likelihood="gaussian"`).
 
         Examples
         --------
@@ -181,10 +190,20 @@ class LinearRegressionModel(SKLearnModel):
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
-            available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
+            available_likelihoods=[
+                LikelihoodType.Quantile,
+                LikelihoodType.Poisson,
+                LikelihoodType.Gaussian,
+            ],
         )
 
-        if likelihood == LikelihoodType.Poisson.value:
+        if likelihood == LikelihoodType.Gaussian.value:
+            # Bayesian linear regression predicts the mean and standard deviation of a Gaussian distribution
+            self._likelihood = _ReturnStdGaussianLikelihood(
+                n_outputs=self._likelihood._n_outputs
+            )
+            model = BayesianRidge(**kwargs)
+        elif likelihood == LikelihoodType.Poisson.value:
             model = PoissonRegressor(**kwargs)
         elif likelihood == LikelihoodType.Quantile.value:
             model = QuantileRegressor(**kwargs)

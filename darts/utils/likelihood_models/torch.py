@@ -695,7 +695,7 @@ class DirichletLikelihood(TorchLikelihood):
         """
         self.prior_alphas = prior_alphas
         _check_strict_positive(self.prior_alphas)
-        self.softmax = nn.Softmax(dim=2)
+        self.softplus = nn.Softplus()
         super().__init__(
             likelihood_type=LikelihoodType.Dirichlet,
             parameter_names=["alpha"],
@@ -720,9 +720,7 @@ class DirichletLikelihood(TorchLikelihood):
     def _params_from_output(
         self, model_output: torch.Tensor
     ) -> tuple[torch.Tensor, ...]:
-        alphas = self.softmax(
-            model_output.squeeze(dim=-1)
-        )  # take softmax over components
+        alphas = self.softplus(model_output.squeeze(dim=-1))
         return (alphas,)
 
 

@@ -2542,7 +2542,7 @@ class TimeSeries:
     ):
         """Return a new series where everything after (and in-/excluding) the provided time `split_point` was dropped.
 
-        The timestamp may not be in the series. If it is, the timestamp will be dropped.
+        The timestamp does not have to be in the series. If it is, the timestamp will be dropped based on `keep_point`.
 
         Parameters
         ----------
@@ -2568,7 +2568,7 @@ class TimeSeries:
     ):
         """Return a new series where everything before (and in-/excluding) the provided time `split_point` was dropped.
 
-        The timestamp may not be in the series. If it is, the timestamp will be dropped.
+        The timestamp does not have to be in the series. If it is, the timestamp will be dropped based on `keep_point`.
 
         Parameters
         ----------
@@ -2588,12 +2588,10 @@ class TimeSeries:
         ]
 
     def slice(self, start_ts: TimeStamp, end_ts: TimeStamp):
-        """Return a slice of the series starting at `start_ts` and ending before `end_ts`.
+        """Return a slice of the series between `start_ts` and `end_ts`, both ends inclusive.
 
-        For series having DatetimeIndex, this is inclusive on both ends. For series having a RangeIndex,
-        `end_ts` is exclusive.
-
-        `start_ts` and `end_ts` don't have to be in the series.
+        `start_ts` and `end_ts` do not have to appear in the time index; points on the index from the first value
+        ``>= start_ts`` through the last value ``<= end_ts`` are kept.
 
         Parameters
         ----------
@@ -2605,7 +2603,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A new series, with indices greater or equal than `start_ts` and smaller or equal than `end_ts`.
+            A new series, with indices `>=start_ts` and `<=end_ts`.
         """
         if type(start_ts) is not type(end_ts):
             raise_log(
@@ -2621,45 +2619,28 @@ class TimeSeries:
                         "indexed using an integer-based RangeIndex."
                     ),
                 )
-            if start_ts in self._time_index and end_ts in self._time_index:
-                return self[
-                    start_ts:end_ts
-                ]  # we assume this is faster than the filtering below
-            else:
-                idx = self._time_index[
-                    (start_ts <= self._time_index) & (self._time_index <= end_ts)
-                ]
-                return self[idx]
-        else:
-            if self._has_datetime_index:
-                raise_log(
-                    ValueError(
-                        "start and end times have been provided as integers to slice(), but "
-                        "the series is indexed with a DatetimeIndex."
-                    ),
-                )
-            # get closest timestamp if either start or end are not in the index
-            effective_start_ts = (
-                min(self._time_index, key=lambda t: abs(t - start_ts))
-                if start_ts not in self._time_index
-                else start_ts
+        elif self._has_datetime_index:
+            raise_log(
+                ValueError(
+                    "start and end times have been provided as integers to slice(), but "
+                    "the series is indexed with a DatetimeIndex."
+                ),
             )
-            if effective_start_ts < start_ts:
-                # if the requested start_ts is smaller than the start argument,
-                # we have to increase it to be consistent with the docstring
-                effective_start_ts += self.freq
+        # positional indices of the first point >= `start_ts` and the last point <= `end_ts`
+        n_points = len(self)
+        start_time = self.start_time()
+        start_idx = n_steps_between(end=start_ts, start=start_time, freq=self.freq)
+        end_idx = n_steps_between(end=end_ts, start=start_time, freq=self.freq)
 
-            effective_end_ts = (
-                min(self._time_index, key=lambda t: abs(t - end_ts))
-                if end_ts not in self._time_index
-                else end_ts
-            )
-            if end_ts >= effective_end_ts + self.freq:
-                # if the requested end_ts is further off from the end of the time series,
-                # we have to increase effective_end_ts to make the last timestamp inclusive.
-                effective_end_ts += self.freq
-            idx = pd.RangeIndex(effective_start_ts, effective_end_ts, step=self.freq)
-            return self[idx]
+        # `n_steps_between()` counts whole steps, so a bound falling between two grid points
+        # can be off by one; correct it against the actual time index
+        start_idx = min(max(start_idx, 0), n_points)
+        end_idx = min(max(end_idx, -1), n_points - 1)
+        if 0 <= start_idx < n_points and self._time_index[start_idx] < start_ts:
+            start_idx += 1
+        if 0 <= end_idx < n_points and self._time_index[end_idx] > end_ts:
+            end_idx -= 1
+        return self[start_idx : end_idx + 1]
 
     def slice_n_points_after(self, start_ts: TimeStamp, n: int) -> Self:
         """Return a slice of the series starting at `start_ts` (inclusive) and having at most `n` points.
@@ -2812,16 +2793,24 @@ class TimeSeries:
             return time_index[time_index.isin(other._time_index)]
 
     def _slice_intersect_bounds(self, other: Self) -> tuple[int, int]:
-        """Find the start (absolute index) and end (index relative to the end) indices that represent the time
-        intersection from `self` and `other`."""
-        shift_start = n_steps_between(
-            other.start_time(), self.start_time(), freq=self.freq
-        )
-        shift_end = len(other) - (len(self) - shift_start)
+        """Find the slice start and end that represent the time intersection from `self` and `other`.
 
-        shift_start = shift_start if shift_start >= 0 else 0
-        shift_end = shift_end if shift_end < 0 else None
-        return shift_start, shift_end
+        Note: `self` and `other` must share the same frequency.
+        """
+        self_start, other_start = self.start_time(), other.start_time()
+        if self_start <= other_start:
+            try:
+                start_idx = int(self._time_index.get_loc(other_start))
+                max_end_idx = start_idx + len(other)
+            except KeyError:
+                return 0, 0
+        else:
+            try:
+                start_idx = 0
+                max_end_idx = len(other) - int(other._time_index.get_loc(self_start))
+            except KeyError:
+                return 0, 0
+        return start_idx, max_end_idx if max_end_idx <= len(self) else len(self)
 
     def strip(self, how: str = "all") -> Self:
         """Return a slice of the deterministic time series where NaN-containing entries at the beginning and the end
@@ -3838,6 +3827,14 @@ class TimeSeries:
         """
         if isinstance(times, TimeSeries):
             times = times.time_index
+
+        if isinstance(times, pd.DatetimeIndex) != self.has_datetime_index:
+            raise_log(
+                ValueError(
+                    "The target `times` must have the same type of time index as the series "
+                    "(either DatetimeIndex or RangeIndex)."
+                ),
+            )
 
         new_xa = self.data_array(copy=False).reindex(
             indexers={self._time_dim: times},

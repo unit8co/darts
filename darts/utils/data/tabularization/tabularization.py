@@ -349,6 +349,13 @@ def create_lagged_data(
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
 
+    # expected dimensions; all series must share the same number of components
+    dims_expected = {
+        _TARGET: target_series[0].width if target_series else None,
+        _PAST_COV: past_covariates[0].width if past_covariates else None,
+        _FUTURE_COV: future_covariates[0].width if future_covariates else None,
+    }
+
     # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
     lags_extract, lags_order = _get_lagged_indices(
         lags,
@@ -362,6 +369,25 @@ def create_lagged_data(
         future_i = future_covariates[i] if future_covariates else None
         sample_weight_i = sample_weight[i] if sample_weight else None
         series_equal_freq = _all_equal_freq(target_i, past_i, future_i)
+
+        # ensure all series types have the same number of components
+        shape_error_msg = []
+        for ts, ts_name in zip(
+            [target_i, past_i, future_i],
+            [_TARGET, _PAST_COV, _FUTURE_COV],
+        ):
+            if ts is not None and ts.width != dims_expected[ts_name]:
+                shape_error_msg.append(
+                    f"({dims_expected[ts_name]}, {ts.width}, ...) {ts_name} components"
+                )
+        if shape_error_msg:
+            raise_log(
+                ValueError(
+                    f"All series of the same series type must have identical number of components. "
+                    f"Encountered {', '.join(shape_error_msg)}."
+                )
+            )
+
         # component-wise lags extraction is not support with times intersection at the moment
         if use_moving_windows and lags_passed_as_dict and (not series_equal_freq):
             raise_log(

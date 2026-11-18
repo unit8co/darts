@@ -182,7 +182,7 @@ class GaussianLikelihood(SKLearnLikelihood):
         # `model_output` is of shape:
         #  - (n_series * n_samples, 2): if univariate & output_chunk_length == 1
         #  - (2, n_series * n_samples, n_components * output_chunk_length): otherwise
-        # where the axis with 2 dims is mu, sigma
+        # where the axis with 2 dims is [mu, variance]
         model_output = model.model.predict(x, **kwargs)
         output_dim = len(model_output.shape)
 
@@ -191,7 +191,7 @@ class GaussianLikelihood(SKLearnLikelihood):
             # embedding well shaped 2D output into 3D
             model_output = np.expand_dims(model_output, axis=0)
         else:
-            # we transpose to get mu, sigma couples on last axis
+            # we transpose to get [mu, variance] couples on last axis
             # shape becomes: (n_components * output_chunk_length, n_series * n_samples, 2)
             model_output = model_output.transpose()
 
@@ -200,12 +200,51 @@ class GaussianLikelihood(SKLearnLikelihood):
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_components * output_chunk_length, n_series * n_samples, 2)
-        # [mu, sigma] on the last dimension, grouped by component
+        # [mu, variance] on the last dimension, grouped by component
         k = model_output.shape[1]
         # extract mu (mean) per component
         component_medians = slice(0, None, self.num_parameters)
         # shape (n_series * n_samples, output_chunk_length, n_components)
-        return model_output[:, :, component_medians].reshape(k, self._n_outputs, -1)
+        return (
+            model_output[:, :, component_medians]
+            .transpose(1, 0, 2)
+            .reshape(k, self._n_outputs, -1)
+        )
+
+
+class _ReturnStdGaussianLikelihood(GaussianLikelihood):
+    """Gaussian likelihood for estimators that predict the standard deviation with `predict(x, return_std=True)`.
+
+    This is the case for Bayesian linear regressors such as `sklearn.linear_model.BayesianRidge` and
+    `sklearn.linear_model.ARDRegression`, which return the mean and the standard deviation of the predictive
+    distribution. The outputs are converted to the `[mean, variance]` format expected by `GaussianLikelihood`.
+    """
+
+    def _estimator_predict(
+        self,
+        model,
+        x: np.ndarray,
+        **kwargs,
+    ) -> np.ndarray:
+        # `x` is of shape (n_series * n_samples, n_regression_features)
+        # `model_output` is of shape:
+        #  - (2, n_series * n_samples): if univariate & output_chunk_length == 1
+        #  - (n_series * n_samples, 2, n_components * output_chunk_length): otherwise
+        # where the axis with 2 dims is [mu, sigma]
+        model_output = np.asarray(model.model.predict(x, return_std=True, **kwargs))
+        output_dim = len(model_output.shape)
+
+        # for GaussianLikelihood reshape to (n_components * output_chunk_length, n_series * n_samples, 2)
+        if output_dim <= 2:
+            # univariate & single-chunk output
+            model_output = np.expand_dims(model_output, 0).transpose(0, 2, 1)
+        else:
+            # multi-output
+            model_output = model_output.transpose(2, 0, 1)
+
+        # sigma -> variance
+        model_output[:, :, 1] = np.power(model_output[:, :, 1], 2)
+        return model_output
 
 
 class PoissonLikelihood(SKLearnLikelihood):
