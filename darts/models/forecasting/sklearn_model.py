@@ -185,7 +185,7 @@ class SKLearnModel(GlobalForecastingModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -1355,8 +1355,7 @@ class SKLearnModel(GlobalForecastingModel):
                     )
 
                 # use slice() instead of [] as for integer-indexed series [] does not act on time index
-                # for range indexes, we make the end timestamp inclusive here
-                end_ts = end_ts + ts.freq if ts.has_range_index else end_ts
+                # slice() is inclusive on both ends, for both index types
                 covariate_matrices[cov_type].append(
                     cov.slice(start_ts, end_ts).values(copy=False)
                 )
@@ -1733,7 +1732,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -2046,7 +2045,7 @@ class RegressionModel(SKLearnModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -2314,7 +2313,7 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
