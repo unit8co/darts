@@ -204,7 +204,6 @@ class ExponentialSmoothing(FutureCovariatesLocalForecastingModel):
         return self
 
     @random_method
-    @random_method
     def _predict(
         self,
         n: int,
