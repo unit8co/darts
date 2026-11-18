@@ -328,6 +328,13 @@ class TimeSeries:
         if fillna_value is not None:
             values[np.isnan(values)] = fillna_value
 
+        if copy and np.isnan(values).any():
+            logger.warning(
+                "The `TimeSeries` values contain NaNs. Some models and operations may not support NaNs; "
+                "consider filling missing values (e.g. with `fillna_value` or "
+                "`darts.utils.missing_values.fill_missing_values`)."
+            )
+
         if has_datetime_index:
             # frequency must be known or it can be inferred
             freq = times.freq

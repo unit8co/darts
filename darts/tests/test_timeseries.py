@@ -694,7 +694,8 @@ class TestTimeSeries:
             freq_expected = pd.tseries.frequencies.to_offset(expected)
             # apply trick to resample a timestamp to the desired frequency
             start = (
-                pd.Series(index=[pd.Timestamp("2000-01-01")])
+                pd
+                .Series(index=[pd.Timestamp("2000-01-01")])
                 .resample(freq_expected)
                 .mean()
                 .index[0]
@@ -2585,6 +2586,31 @@ class TestTimeSeries:
 
         assert msg not in caplog.text
         np.testing.assert_array_equal(values, ts.all_values()[:, :, 1])
+        caplog.clear()
+
+    def test_nan_warning(self, caplog):
+        msg = "The `TimeSeries` values contain NaNs."
+        vals_nan = np.array([1.0, np.nan, 3.0])
+        vals_clean = np.array([1.0, 2.0, 3.0])
+
+        with caplog.at_level(logging.WARNING):
+            TimeSeries.from_values(vals_nan)
+        assert msg in caplog.text
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            TimeSeries.from_values(vals_nan, fillna_value=0.0)
+        assert msg not in caplog.text
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            TimeSeries.from_values(vals_clean)
+        assert msg not in caplog.text
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            TimeSeries(pd.RangeIndex(3), vals_nan, copy=False)
+        assert msg not in caplog.text
         caplog.clear()
 
 
