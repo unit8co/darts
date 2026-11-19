@@ -99,3 +99,19 @@ class TestLayerNormVariants:
         x_denorm.sum().backward()
         assert torch.isfinite(rin.affine_weight.grad).all()
         assert torch.isfinite(rin.affine_bias.grad).all()
+
+    def test_rin_affine_weight_gradient_flows_through_clip(self):
+        """A weight in the clipped dead zone must still receive a non-zero gradient."""
+        rin = RINorm(input_dim=2, affine=True)
+        with torch.no_grad():
+            rin.affine_weight.fill_(5e-11)
+
+        x = torch.randn(4, 10, 2)
+        rin.forward(x)  # populate mean/stdev
+        out = rin.transform(x)
+        out.sum().backward()
+
+        assert rin.affine_weight.grad is not None
+        assert torch.all(rin.affine_weight.grad.abs() > 0), (
+            f"gradient collapsed to zero: {rin.affine_weight.grad}"
+        )

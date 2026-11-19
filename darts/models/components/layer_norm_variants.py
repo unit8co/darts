@@ -111,15 +111,20 @@ class RINorm(nn.Module):
     def _clipped_affine_weight(self) -> torch.Tensor:
         """Affine weight with its magnitude clipped to at least ``eps ** 2``; the sign is preserved.
 
-        Using this one weight in both :meth:`transform` and :meth:`inverse` makes the latter the exact inverse of the
-        former for any value of the learnable weight (including zero and negative values). For weights with
-        ``abs(weight) >= eps ** 2`` it equals the learnable weight.
+        Using this one weight in both :meth:`transform` and :meth:`inverse` makes the latter the exact
+        inverse of the former for any value of the learnable weight (including zero and negative values).
+        For weights with ``abs(weight) >= eps ** 2`` it equals the learnable weight.
+
+        The clipping is applied via a straight-through estimator: the forward value is the clipped
+        weight, but the gradient flows through the raw weight unchanged. This prevents the weight
+        from getting permanently stuck when its magnitude falls below ``eps ** 2``.
         """
         weight = self.affine_weight
         sign = torch.where(
             weight < 0, -torch.ones_like(weight), torch.ones_like(weight)
         )
-        return sign * weight.abs().clamp(min=self.eps * self.eps)
+        clipped = sign * weight.abs().clamp(min=self.eps * self.eps)
+        return weight + (clipped - weight).detach()
 
     def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Normalize ``x`` using statistics previously computed by :meth:`forward`.
