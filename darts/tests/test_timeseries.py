@@ -1,5 +1,6 @@
 import logging
 import math
+import operator
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
@@ -1101,6 +1102,58 @@ class TestTimeSeries:
         assert self.series1.diff(n=2, dropna=0) == diff2
         assert self.series1.diff(periods=2, dropna=True) == diff_shift2_no_na
         assert self.series1.diff(n=2, periods=2, dropna=False) == diff2_shift2
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            operator.add,
+            operator.sub,
+            operator.mul,
+            operator.truediv,
+            operator.pow,
+            operator.lt,
+            operator.le,
+            operator.gt,
+            operator.ge,
+        ],
+    )
+    def test_ops_different_time_index_warns(self, op, caplog):
+        series = TimeSeries.from_times_and_values(
+            generate_index("2020-01-01", length=5, freq="D"), np.arange(1.0, 6.0)
+        )
+        series_int = TimeSeries.from_values(np.arange(1.0, 6.0))
+        msg = "different time indexes"
+
+        def to_array(res):
+            # comparison operators return arrays, arithmetic operators return series
+            return res.all_values() if isinstance(res, TimeSeries) else res
+
+        vals = series.all_values()
+        expected = op(vals, vals)
+
+        # same length and shape, but shifted / different frequency / different start:
+        # the values are still combined by position, but a warning is raised
+        for other in [
+            series.shift(1),
+            TimeSeries.from_times_and_values(
+                generate_index("2020-01-01", length=5, freq="2D"), np.arange(1.0, 6.0)
+            ),
+        ]:
+            caplog.clear()
+            with caplog.at_level(logging.WARNING):
+                np.testing.assert_array_equal(to_array(op(series, other)), expected)
+            assert msg in caplog.text
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            op(series_int, series_int.shift(1))
+        assert msg in caplog.text
+
+        # same time index, or a plain array: no warning
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            np.testing.assert_array_equal(to_array(op(series, series)), expected)
+            np.testing.assert_array_equal(to_array(op(series, vals)), expected)
+        assert msg not in caplog.text
 
     def test_ops(self):
         seriesA = TimeSeries.from_series(
