@@ -46,16 +46,19 @@ class MultiOutputMixin:
     ):
         """Multi output / target mixin.
 
-        This strategy consists of fitting one estimator per horizon, target component and optional quantile /
-        parameter-specific model. It is a simple strategy for extending regressors that do not natively support
+        This strategy consists of fitting one estimator per horizon, target component and optional parameter-specific
+        model (e.g. quantiles). It is a simple strategy for extending regressors that do not natively support
         multi-target regression.
 
         Parameters
         ----------
         estimator
             An estimator object or list of estimator objects, each implementing :term:`fit` and :term:`predict`.
-            If a list (e.g. for multi-quantile regression), all estimators are expected to produce identical
-            `y` / output shape based on the same input `X`.
+            If an estimator object, :term:`predict` outputs an array of shape `(n_rows, n_targets)`.
+            If a list (e.g. for parameter-specific estimators such as multi-quantile regression), all estimators act on
+            the same `X`, `y` and are expected to produce identical `y` / output shape based on the same input `X`.
+            :term:`predict` then outputs an array of shape `(n_rows, n_targets, n_params)`, where `n_params` is the
+            length of the `estimator` list.
         eval_set_name
             Optionally (if available), the name of the evaluation set parameter passed to :term:`fit`. If a tuple,
             gives the X and y evaluation set parameter names.
