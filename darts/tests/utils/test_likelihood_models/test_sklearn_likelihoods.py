@@ -79,6 +79,66 @@ class TestSKLearnLikelihoodModel:
             )
 
 
+class TestQuantileRegressionEstimatorPredict:
+    @pytest.mark.parametrize(
+        "raw_shape,quantiles",
+        [
+            ((4, 6, 3), [0.1, 0.5, 0.9]),
+            ((2, 2, 3), [0.1, 0.5, 0.9]),
+        ],
+    )
+    def test_estimator_predict_reshapes_multioutput_output(self, raw_shape, quantiles):
+        k, n_flat, n_quantiles = raw_shape
+        n_outputs = 2
+        n_components = n_flat // n_outputs
+        assert len(quantiles) == n_quantiles
+        likelihood = QuantileRegression(n_outputs=n_outputs, quantiles=quantiles)
+        raw = np.arange(k * n_flat * n_quantiles, dtype=float).reshape(
+            k, n_flat, n_quantiles
+        )
+
+        class _Inner:
+            def predict(self, x, **kwargs):
+                return raw
+
+        out = likelihood._estimator_predict(
+            type("_M", (), {"model": _Inner()})(), np.zeros((k, 1))
+        )
+        expected = raw.reshape(k, n_outputs, n_components, n_quantiles)
+        assert out.shape == expected.shape
+        np.testing.assert_array_equal(out, expected)
+
+    def test_estimator_predict_reshapes_2d_flat_output(self):
+        likelihood = QuantileRegression(n_outputs=1, quantiles=[0.1, 0.5, 0.9])
+        k, n_targets, n_quantiles = 2, 3, 3
+        raw = np.arange(k * n_targets * n_quantiles, dtype=float).reshape(k, -1)
+
+        class _Inner:
+            def predict(self, x, **kwargs):
+                return raw
+
+        out = likelihood._estimator_predict(
+            type("_M", (), {"model": _Inner()})(), np.zeros((k, 1))
+        )
+        expected = raw.reshape(k, n_targets, n_quantiles).reshape(
+            k, 1, n_targets, n_quantiles
+        )
+        np.testing.assert_array_equal(out, expected)
+
+    def test_predict_likelihood_parameters_component_order(self):
+        likelihood = QuantileRegression(n_outputs=2, quantiles=[0.1, 0.5, 0.9])
+        k, n_times, n_components, n_quantiles = 2, 2, 2, 3
+        model_output = np.arange(k * n_times * n_components * n_quantiles, dtype=float)
+        model_output = model_output.reshape(k, n_times, n_components, n_quantiles)
+        flat = likelihood.predict_likelihood_parameters(model_output)
+        assert flat.shape == (k, n_times, n_components * n_quantiles)
+        for c in range(n_components):
+            np.testing.assert_array_equal(
+                flat[:, :, c * n_quantiles : (c + 1) * n_quantiles],
+                model_output[:, :, c, :],
+            )
+
+
 class TestSKLearnGaussianLikelihood:
     """The estimator (CatBoost's `RMSEWithUncertainty`) returns `[mu, variance]`,
     but the likelihood exposes the parameter as `sigma`."""

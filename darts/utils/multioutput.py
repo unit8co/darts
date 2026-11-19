@@ -70,10 +70,12 @@ class MultiOutputMixin:
             # parameter-specific models (e.g. quantile regression), each producing one output per target in `y`;
             # results in `y.shape[1] * len(estimator)` fitted estimators
             param_estimators = estimator
+            self._is_parameter_specific = True
         else:
             # one model producing one output per target in `y`;
             # results in `y.shape[1]` fitted estimators
             param_estimators = [estimator]
+            self._is_parameter_specific = False
         super().__init__(estimator=param_estimators[0], **kwargs)
         # according to sklearn, set only attributes in `__init__` that are known before fitting;
         # all other params at fitting time must have the suffix `"_"`
@@ -226,7 +228,7 @@ class MultiOutputMixin:
             delayed(e.predict)(X, **kwargs) for e in self.estimators_
         )
 
-        if len(self.param_estimators) == 1:
+        if not self.is_parameter_specific:
             # return shape (n series * n samples, output_chunk_length * n_targets)
             return np.asarray(y).T
 
@@ -237,10 +239,13 @@ class MultiOutputMixin:
 
     @property
     def supports_sample_weight(self) -> bool:
-        """
-        Whether model supports sample weight for training.
-        """
+        """Whether model supports sample weight for training."""
         return has_fit_parameter(self.estimator, "sample_weight")
+
+    @property
+    def is_parameter_specific(self):
+        """Whether model has parameter-specific estimators."""
+        return self._is_parameter_specific
 
 
 class MultiOutputRegressor(MultiOutputMixin, sk_MultiOutputRegressor):

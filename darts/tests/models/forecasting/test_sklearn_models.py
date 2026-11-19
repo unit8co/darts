@@ -1843,6 +1843,7 @@ class TestSKLearnModels:
         ) > 1
         if requires_multioutput:
             assert isinstance(m.model, MultiOutputRegressor)
+            assert m.model.is_parameter_specific
             assert len(m.model.param_estimators) == len(quantiles)
             assert (
                 len(m.model.estimators_)
@@ -1917,13 +1918,16 @@ class TestSKLearnModels:
         )
         model.fit(ts)
 
-        # Darts multioutput only used with `QuantileRegression` (not multi-quantile)
         if multi_models:
-            # one sub-model per component, per horizon
+            # one sub-model per component, per horizon (no parameter/quantile-specific multioutput)
+            assert isinstance(model.model, MultiOutputRegressor)
+            assert not model.model.is_parameter_specific
             assert len(model.model.estimators_) == ocl * ts.width
             assert len(model.model.param_estimators) == 1
         elif multi_components:
-            # one sub-model per component
+            # one sub-model per component (no parameter/quantile-specific multioutput)
+            assert isinstance(model.model, MultiOutputRegressor)
+            assert not model.model.is_parameter_specific
             assert len(model.model.estimators_) == ts.width
             assert len(model.model.param_estimators) == 1
         else:
