@@ -292,7 +292,9 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             quantiles_str = ", ".join(f"{q:.3f}" for q in self._likelihood.quantiles)
             self.kwargs["loss_function"] = f"MultiQuantile:alpha={quantiles_str}"
         elif isinstance(self._likelihood, QuantileRegression):
-            pass  # per-quantile estimators built by SKLearnModel
+            # use default quantile in case only a single quantile and target * ocl is fit
+            q_median = self._likelihood.quantiles[self._likelihood._median_idx]
+            self.kwargs["loss_function"] = f"Quantile:alpha={q_median}"
         else:
             self.kwargs["loss_function"] = likelihood_map[likelihood]
 

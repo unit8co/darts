@@ -261,6 +261,9 @@ class XGBModel(SKLearnModel):
             self.kwargs["quantile_alpha"] = self._likelihood.quantiles
         else:  # QuantileRegression — per-quantile estimators built by SKLearnModel
             self.kwargs["objective"] = "reg:quantileerror"
+            # use default quantile in case only a single quantile and target * ocl is fit
+            q_median = self._likelihood.quantiles[self._likelihood._median_idx]
+            self.kwargs["quantile_alpha"] = q_median
 
     def fit(
         self,

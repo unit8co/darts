@@ -1814,14 +1814,14 @@ class TestSKLearnModels:
             + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else []),
             [True, False],
             [True, False],
+            [[0.01, 0.5, 0.99], [0.5]],
         ),
     )
     def test_get_estimator_quantile(self, config):
         """Check estimator getter when using quantile value"""
-        (model_cls, kwargs), multi_models, multi_components = config
+        (model_cls, kwargs), multi_models, multi_components, quantiles = config
         ocl = 3
         lags = 3
-        quantiles = [0.01, 0.5, 0.99]
         ts = tg.sine_timeseries(length=100, column_name="sine")
         if multi_components:
             ts = ts.stack(
@@ -1838,12 +1838,18 @@ class TestSKLearnModels:
         )
         m.fit(ts)
 
-        assert isinstance(m.model, MultiOutputRegressor)
-        assert len(m.model.param_estimators) == len(quantiles)
-        assert (
-            len(m.model.estimators_)
-            == len(quantiles) * (ocl if multi_models else 1) * ts.width
-        )
+        requires_multioutput = (
+            len(quantiles) * (ocl if multi_models else 1) * ts.width
+        ) > 1
+        if requires_multioutput:
+            assert isinstance(m.model, MultiOutputRegressor)
+            assert len(m.model.param_estimators) == len(quantiles)
+            assert (
+                len(m.model.estimators_)
+                == len(quantiles) * (ocl if multi_models else 1) * ts.width
+            )
+        else:
+            assert not isinstance(m.model, MultiOutputRegressor)
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
         pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
