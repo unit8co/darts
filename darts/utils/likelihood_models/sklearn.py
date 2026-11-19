@@ -330,7 +330,7 @@ class QuantileRegression(SKLearnLikelihood):
         else:
             quantiles = sorted(quantiles)
             _check_quantiles(quantiles)
-        self.quantiles = quantiles
+        self.quantiles: list[float] = quantiles
         self._median_idx = quantiles.index(0.5)
 
         super().__init__(
@@ -414,15 +414,13 @@ class QuantileRegression(SKLearnLikelihood):
         **kwargs,
     ) -> np.ndarray:
         # `x` is of shape (n_series * n_samples, n_regression_features)
-        k = x.shape[0]
-        model_outputs = []
-        for quantile, fitted in model._model_container.items():
-            # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-            model_output = fitted.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
-            model_outputs.append(model_output)
-        model_outputs = np.stack(model_outputs, axis=-1)
-        # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
-        return model_outputs
+        k, _ = x.shape
+        n_quantiles = len(self.quantiles)
+        model_output = model.model.predict(x, **kwargs)
+        # bring `model_output` into shape: (n_series * n_samples, output_chunk_length * n_components, n_quantiles)
+        if model_output.ndim < 3:
+            model_output = model_output.reshape(k, -1, n_quantiles)
+        return model_output.reshape(k, self._n_outputs, -1, n_quantiles)
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)

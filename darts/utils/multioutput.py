@@ -4,6 +4,7 @@ Multi-Output Models for SKLearnModel
 """
 
 import inspect
+from typing import Any
 
 import numpy as np
 from sklearn.base import is_classifier
@@ -32,6 +33,9 @@ class MultiOutputMixin:
     - a modified ``predict()`` method which also accepts ``**kwargs`` that are passed along.
     """
 
+    estimator: Any
+    n_jobs: int | None
+
     def __init__(
         self,
         estimator,
@@ -40,7 +44,42 @@ class MultiOutputMixin:
         output_chunk_length: int | None = None,
         **kwargs,
     ):
-        super().__init__(estimator=estimator, **kwargs)
+        """Multi output / target mixin.
+
+        This strategy consists of fitting one estimator per horizon, target component and optional parameter-specific
+        model (e.g. quantiles). It is a simple strategy for extending regressors that do not natively support
+        multi-target regression.
+
+        Parameters
+        ----------
+        estimator
+            An estimator object or list of estimator objects, each implementing :term:`fit` and :term:`predict`.
+            If an estimator object, :term:`predict` outputs an array of shape `(n_rows, n_targets)`.
+            If a list (e.g. for parameter-specific estimators such as multi-quantile regression), all estimators act on
+            the same `X`, `y` and are expected to produce identical `y` / output shape based on the same input `X`.
+            :term:`predict` then outputs an array of shape `(n_rows, n_targets, n_params)`, where `n_params` is the
+            length of the `estimator` list.
+        eval_set_name
+            Optionally (if available), the name of the evaluation set parameter passed to :term:`fit`. If a tuple,
+            gives the X and y evaluation set parameter names.
+        eval_weight_name
+            Optionally (if available), the name of the sample weights parameter passed to :term:`fit`.
+        output_chunk_length
+            The forecasting model's output chunk length.
+        **kwargs
+            Optional keyword arguments used to instantiate the SKLearn multioutput estimator.
+        """
+        if isinstance(estimator, list):
+            # parameter-specific models (e.g. quantile regression), each producing one output per target in `y`;
+            # results in `y.shape[1] * len(estimator)` fitted estimators
+            param_estimators = estimator
+            self._is_parameter_specific = True
+        else:
+            # one model producing one output per target in `y`;
+            # results in `y.shape[1]` fitted estimators
+            param_estimators = [estimator]
+            self._is_parameter_specific = False
+        super().__init__(estimator=param_estimators[0], **kwargs)
         # according to sklearn, set only attributes in `__init__` that are known before fitting;
         # all other params at fitting time must have the suffix `"_"`
         self.eval_set_name = eval_set_name
@@ -50,35 +89,27 @@ class MultiOutputMixin:
         if isinstance(self.eval_set_name, tuple):
             self.eval_samples_name, self.eval_labels_name = self.eval_set_name
         self.output_chunk_length = output_chunk_length
+        self.param_estimators = param_estimators
 
     def fit(self, X, y, sample_weight=None, **fit_params):
         """Fit the model to data, separately for each output variable.
 
         Parameters
         ----------
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        X
+            Array-like, sparse matrix of shape (n_samples, n_features).
             The input data.
-
-        y : {array-like, sparse matrix} of shape (n_samples, n_outputs)
-            Multi-output targets. An indicator matrix turns on multilabel
-            estimation.
-
-        sample_weight : array-like of shape (n_samples, n_outputs), default=None
+        y
+            Array-like, sparse matrix of shape (n_samples, n_outputs).
+            Multi-output targets. An indicator matrix turns on multilabel estimation.
+        sample_weight
+            Array-like of shape (n_samples, n_outputs), default=None
             Sample weights. If `None`, then samples are equally weighted.
             Only supported if the underlying regressor supports sample
             weights.
-
         **fit_params : dict of string -> object
             Parameters passed to the ``estimator.fit`` method of each step.
-
-            .. versionadded:: 0.23
-
-        Returns
-        -------
-        self : object
-            Returns a fitted instance.
         """
-
         if not hasattr(self.estimator, "fit"):
             raise_log(
                 ValueError("The base estimator should implement a fit method"),
@@ -89,13 +120,21 @@ class MultiOutputMixin:
             check_classification_targets(y)
 
         if y.ndim == 1:
-            raise_log(
-                ValueError(
-                    "`y` must have at least two dimensions for multi-output but has only one."
-                ),
-            )
+            if len(self.param_estimators) > 1:
+                # multiple quantiles / parameter predictions for a single target
+                y = y.reshape(-1, 1)
+            else:
+                raise_log(
+                    ValueError(
+                        "`y` must have at least two dimensions for multi-output but has only one."
+                    ),
+                )
+
+        n_targets = y.shape[1]
+        n_params = len(self.param_estimators)
+        n_outputs = n_targets * n_params
         if sample_weight is not None and (
-            sample_weight.ndim == 1 or sample_weight.shape[1] != y.shape[1]
+            sample_weight.ndim == 1 or sample_weight.shape[1] != n_targets
         ):
             raise_log(
                 ValueError("`sample_weight` must have the same dimensions as `y`."),
@@ -121,31 +160,41 @@ class MultiOutputMixin:
             eval_set = fit_params_validated.pop(self.eval_set_name, None)
         eval_weight = fit_params_validated.pop(self.eval_weight_name, None)
 
+        def _estimator_idx(i: int) -> int:
+            return i % n_params
+
+        def _target_idx(i: int) -> int:
+            return i // n_params
+
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
             delayed(_fit_estimator)(
-                self.estimator,
+                self.param_estimators[_estimator_idx(i)],
                 X,
-                y[:, i],
-                sample_weight=sample_weight[:, i]
+                y[:, _target_idx(i)],
+                sample_weight=sample_weight[:, _target_idx(i)]
                 if sample_weight is not None
                 else None,
-                **({self.eval_set_name: [eval_set[i]]} if eval_set is not None else {}),
+                **(
+                    {self.eval_set_name: [eval_set[_target_idx(i)]]}
+                    if eval_set is not None
+                    else {}
+                ),
                 **(
                     {
-                        self.eval_samples_name: eval_samples[i],
-                        self.eval_labels_name: eval_labels[i],
+                        self.eval_samples_name: eval_samples[_target_idx(i)],
+                        self.eval_labels_name: eval_labels[_target_idx(i)],
                     }
                     if eval_samples is not None and eval_labels is not None
                     else {}
                 ),
                 **(
-                    {self.eval_weight_name: [eval_weight[i]]}
+                    {self.eval_weight_name: [eval_weight[_target_idx(i)]]}
                     if eval_weight is not None
                     else {}
                 ),
                 **fit_params_validated,
             )
-            for i in range(y.shape[1])
+            for i in range(n_outputs)
         )
 
         if hasattr(self.estimators_[0], "n_features_in_"):
@@ -160,20 +209,20 @@ class MultiOutputMixin:
 
         Parameters
         ----------
-        X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        X
+            Array-like, sparse matrix of shape (n_samples, n_features).
             The input data.
-        kwargs : dict of string -> object
+        **kwargs
             Parameters passed to the ``estimator.predict`` method of each step.
 
         Returns
         -------
-        y : {array-like, sparse matrix} of shape (n_samples, n_outputs)
+        y
+            Array-like, sparse matrix of shape (n_samples, n_outputs) or
+            (n_samples, n_outputs, n_params) if `estimator` was a list (of
+            length `n_params`) of estimators at model creation.
             Multi-output targets predicted across multiple predictors.
-            Note: Separate models are generated for each predictor.
         """
-        if not kwargs:
-            return super().predict(X)
-
         check_is_fitted(self)
         if not hasattr(self.estimators_[0], "predict"):
             raise ValueError("The base estimator should implement a predict method")
@@ -181,14 +230,25 @@ class MultiOutputMixin:
         y = Parallel(n_jobs=self.n_jobs)(
             delayed(e.predict)(X, **kwargs) for e in self.estimators_
         )
-        return np.asarray(y).T
+
+        if not self.is_parameter_specific:
+            # return shape (n series * n samples, output_chunk_length * n_targets)
+            return np.asarray(y).T
+
+        # return shape (n series * n samples, output_chunk_length * n_targets, n_parameters)
+        n_params = len(self.param_estimators)
+        n_targets = len(self.estimators_) // n_params
+        return np.asarray(y).T.reshape(-1, n_targets, n_params)
 
     @property
     def supports_sample_weight(self) -> bool:
-        """
-        Whether model supports sample weight for training.
-        """
+        """Whether model supports sample weight for training."""
         return has_fit_parameter(self.estimator, "sample_weight")
+
+    @property
+    def is_parameter_specific(self):
+        """Whether model has parameter-specific estimators."""
+        return self._is_parameter_specific
 
 
 class MultiOutputRegressor(MultiOutputMixin, sk_MultiOutputRegressor):

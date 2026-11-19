@@ -1660,6 +1660,8 @@ class TestSKLearnModels:
         models_repr = [model_1]
 
         if XGB_AVAILABLE:
+            quantiles = [0.1, 0.5, 0.9]
+            ocl = 2
             model_2 = XGBModel(
                 lags=4,
                 output_chunk_length=2,
@@ -1670,6 +1672,11 @@ class TestSKLearnModels:
             )
             model_2.fit(series=self.sine_univariate1)
             assert isinstance(model_2.model, MultiOutputRegressor)
+            assert len(model_2.model.param_estimators) == len(quantiles)
+            assert (
+                len(model_2.model.estimators_)
+                == len(quantiles) * ocl * self.sine_univariate1.width
+            )
             models_repr.append(model_2)
 
         for model in models_repr:
@@ -1693,6 +1700,8 @@ class TestSKLearnModels:
             )
             m.fit(ts)
 
+            assert isinstance(m.model, MultiOutputRegressor)
+            assert len(m.model.param_estimators) == 1  # number of quantiles
             assert len(m.model.estimators_) == ocl * ts.width
 
             dummy_feats = np.array([[0, 0, 0] * ts.width])
@@ -1805,14 +1814,14 @@ class TestSKLearnModels:
             + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else []),
             [True, False],
             [True, False],
+            [[0.01, 0.5, 0.99], [0.5]],
         ),
     )
     def test_get_estimator_quantile(self, config):
         """Check estimator getter when using quantile value"""
-        (model_cls, kwargs), multi_models, multi_components = config
+        (model_cls, kwargs), multi_models, multi_components, quantiles = config
         ocl = 3
         lags = 3
-        quantiles = [0.01, 0.5, 0.99]
         ts = tg.sine_timeseries(length=100, column_name="sine")
         if multi_components:
             ts = ts.stack(
@@ -1829,20 +1838,19 @@ class TestSKLearnModels:
         )
         m.fit(ts)
 
-        assert m._model_container is not None
-        assert len(m._model_container) == len(quantiles)
-        assert sorted(list(m._model_container.keys())) == sorted(quantiles)
-        for quantile_container in m._model_container.values():
-            if multi_models:
-                # one sub-model per quantile, per component, per horizon
-                assert len(quantile_container.estimators_) == ocl * ts.width
-            elif multi_components:
-                # one sub-model per quantile, per component
-                assert len(quantile_container.estimators_) == ts.width
-            else:
-                # only one sub-model per quantile (one component, one predicted horizon)
-                assert not isinstance(quantile_container, MultiOutputRegressor)
-                assert not hasattr(quantile_container, "estimators_")
+        requires_multioutput = (
+            len(quantiles) * (ocl if multi_models else 1) * ts.width
+        ) > 1
+        if requires_multioutput:
+            assert isinstance(m.model, MultiOutputRegressor)
+            assert m.model.is_parameter_specific
+            assert len(m.model.param_estimators) == len(quantiles)
+            assert (
+                len(m.model.estimators_)
+                == len(quantiles) * (ocl if multi_models else 1) * ts.width
+            )
+        else:
+            assert not isinstance(m.model, MultiOutputRegressor)
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
         pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
@@ -1910,14 +1918,18 @@ class TestSKLearnModels:
         )
         model.fit(ts)
 
-        # model container only used with `QuantileRegression` (not multi-quantile)
-        assert model._model_container is None
         if multi_models:
-            # one sub-model per component, per horizon
+            # one sub-model per component, per horizon (no parameter/quantile-specific multioutput)
+            assert isinstance(model.model, MultiOutputRegressor)
+            assert not model.model.is_parameter_specific
             assert len(model.model.estimators_) == ocl * ts.width
+            assert len(model.model.param_estimators) == 1
         elif multi_components:
-            # one sub-model per component
+            # one sub-model per component (no parameter/quantile-specific multioutput)
+            assert isinstance(model.model, MultiOutputRegressor)
+            assert not model.model.is_parameter_specific
             assert len(model.model.estimators_) == ts.width
+            assert len(model.model.param_estimators) == 1
         else:
             # only one sub-model per quantile (one component, one predicted horizon)
             assert not isinstance(model.model, MultiOutputRegressor)
