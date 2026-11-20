@@ -27,7 +27,12 @@ from darts.ad import (
 from darts.ad import DifferenceScorer as Difference
 from darts.ad import NormScorer as Norm
 from darts.ad.utils import eval_metric_from_scores, show_anomalies_from_scores
-from darts.models import MovingAverageFilter, NaiveSeasonal, SKLearnModel
+from darts.models import (
+    KalmanFilter,
+    MovingAverageFilter,
+    NaiveSeasonal,
+    SKLearnModel,
+)
 from darts.tests.parametrize_helpers import param_product
 
 filtering_am = [
@@ -549,6 +554,86 @@ class TestAnomalyDetectionModel:
             FilteringAnomalyModel(
                 model=MovingAverageFilter(window=10), scorer=[Norm(), "str"]
             )
+
+    def test_FilteringAnomalyModel_covariates(self):
+        """Covariates (control inputs) are passed to the filtering model in `fit()`, `score()`, `eval_metric()`,
+        and `show_anomalies()`."""
+        rng = np.random.default_rng(0)
+        n = 300
+        # target follows a linear system driven by a known control input
+        control = np.sign(np.sin(np.arange(n) / 7)) * 3
+        target = np.zeros(n)
+        for t in range(1, n):
+            target[t] = 0.8 * target[t - 1] + control[t - 1] + rng.normal() * 0.2
+        series = TimeSeries.from_values(target)
+        covariates = TimeSeries.from_values(control)
+
+        anomalies_idx = [250, 270, 290]
+        target_anomalous = target.copy()
+        target_anomalous[anomalies_idx] += 4
+        series_anomalous = TimeSeries.from_values(target_anomalous)
+        anomalies = np.zeros(n)
+        anomalies[anomalies_idx] = 1
+        anomalies = TimeSeries.from_values(anomalies)
+
+        def make_model():
+            return FilteringAnomalyModel(
+                model=KalmanFilter(dim_x=2), scorer=[Norm(), KMeansScorer(k=2)]
+            )
+
+        model = make_model()
+        model.fit(series[:200], allow_model_training=True, covariates=covariates[:200])
+        assert model.model._expect_covariates
+
+        # the filtered series uses the covariates
+        scores, pred = model.score(
+            series_anomalous, covariates=covariates, return_model_prediction=True
+        )
+        assert len(scores) == 2
+        expected_pred = model.model.filter(series_anomalous, covariates=covariates)
+        np.testing.assert_allclose(pred.values(), expected_pred.values())
+
+        # sequence of series
+        scores_seq, pred_seq = model.score(
+            [series_anomalous] * 2,
+            covariates=[covariates] * 2,
+            return_model_prediction=True,
+        )
+        assert len(scores_seq) == 2 and len(pred_seq) == 2
+        np.testing.assert_allclose(pred_seq[1].values(), expected_pred.values())
+
+        # covariates are required by the fitted Kalman filter
+        with pytest.raises(ValueError, match="these were not provided"):
+            model.score(series_anomalous)
+
+        # with the control inputs, all anomalies are detected perfectly
+        metrics_cov = model.eval_metric(
+            anomalies, series_anomalous, covariates=covariates
+        )
+        assert all(val == 1.0 for val in metrics_cov.values())
+
+        model_no_cov = make_model()
+        model_no_cov.fit(series[:200], allow_model_training=True)
+        metrics_no_cov = model_no_cov.eval_metric(anomalies, series_anomalous)
+        assert all(metrics_no_cov[key] < metrics_cov[key] for key in metrics_cov.keys())
+
+        model.show_anomalies(series_anomalous, anomalies, covariates=covariates)
+
+        # covariates must have the same number of series as `series`
+        with pytest.raises(ValueError):
+            model.score([series_anomalous] * 2, covariates=[covariates])
+
+        # filtering models without covariates support raise an error
+        model = FilteringAnomalyModel(
+            model=MovingAverageFilter(window=3), scorer=Norm()
+        )
+        with pytest.raises(ValueError, match="does not support `covariates`"):
+            model.score(series, covariates=covariates)
+        model = FilteringAnomalyModel(
+            model=MovingAverageFilter(window=3), scorer=KMeansScorer()
+        )
+        with pytest.raises(ValueError, match="does not support `covariates`"):
+            model.fit(series, covariates=covariates)
 
     def test_univariate_ForecastingAnomalyModel(self):
         np.random.seed(40)
