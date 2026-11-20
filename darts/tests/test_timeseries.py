@@ -1,5 +1,6 @@
 import logging
 import math
+import operator
 from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
@@ -1143,6 +1144,53 @@ class TestTimeSeries:
         assert 2 / self.series1 == targetrDiv
         assert self.series1**2 == targetPow
         assert self.series1 ** (-2) == targetnPow
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            operator.add,
+            operator.sub,
+            operator.mul,
+            operator.truediv,
+            operator.pow,
+            operator.lt,
+            operator.le,
+            operator.gt,
+            operator.ge,
+        ],
+    )
+    def test_ops_different_time_index_warns(self, op, caplog):
+        series = TimeSeries.from_times_and_values(
+            generate_index("2020-01-01", length=5, freq="D"), np.arange(1.0, 6.0)
+        )
+        series_p1 = series + 1.0
+        series_p1_int = TimeSeries.from_values(series_p1.all_values())
+
+        def to_array(res):
+            # comparison operators return arrays, arithmetic operators return series
+            return res.all_values() if isinstance(res, TimeSeries) else res
+
+        msg = "different time indexes"
+        expected = op(series.all_values(), series_p1.all_values())
+
+        with caplog.at_level(logging.WARNING):
+            np.testing.assert_array_equal(to_array(op(series, series_p1)), expected)
+            np.testing.assert_array_equal(
+                to_array(op(series, series_p1.all_values())), expected
+            )
+        assert msg not in caplog.text
+
+        with caplog.at_level(logging.WARNING):
+            np.testing.assert_array_equal(
+                to_array(op(series, series_p1.shift(1))), expected
+            )
+        assert msg in caplog.text
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            np.testing.assert_array_equal(to_array(op(series, series_p1_int)), expected)
+        assert msg in caplog.text
+        caplog.clear()
 
     def test_ops_array(self):
         # can work with xarray directly
