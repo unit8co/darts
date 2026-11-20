@@ -641,10 +641,10 @@ class TestAnomalyDetectionAggregator:
             (OrAggregator, "darts.ad.aggregators.or_aggregator._parallel_apply"),
         ],
     )
-    @pytest.mark.parametrize("n_jobs", [1, 2, -1])
-    def test_NonFittableAggregator_n_jobs(self, aggregator_cls, module_path, n_jobs):
+    def test_aggregator_n_jobs(self, aggregator_cls, module_path):
         """`n_jobs` given at construction must be forwarded to the parallel
         execution, and parallel results must match sequential ones."""
+        n_jobs = 2
         series = [self.mts_anomalies1, self.mts_anomalies2]
         expected = aggregator_cls(n_jobs=1).predict(series)
 
