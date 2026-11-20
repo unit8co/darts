@@ -75,7 +75,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
                     'position': {'future': ['relative']},
                     'custom': {'future': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
         random_state

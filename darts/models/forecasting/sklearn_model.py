@@ -57,7 +57,6 @@ For detailed examples and tutorials, see:
 
 import inspect
 from abc import ABC, abstractmethod
-from collections import OrderedDict
 from collections.abc import Callable, Sequence
 from typing import Any, Literal
 
@@ -185,7 +184,7 @@ class SKLearnModel(GlobalForecastingModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -253,10 +252,6 @@ class SKLearnModel(GlobalForecastingModel):
 
         # optionally, the model can be wrapped in a likelihood model
         self._likelihood: SKLearnLikelihood | None = getattr(self, "_likelihood", None)
-        # for quantile likelihood models, the model container is a dict of quantile -> model
-        self._model_container: _QuantileModelContainer | None = getattr(
-            self, "_model_container", None
-        )
 
         # check and set output_chunk_length
         if not (isinstance(output_chunk_length, int) and output_chunk_length > 0):
@@ -648,9 +643,9 @@ class SKLearnModel(GlobalForecastingModel):
         horizon and all target components jointly.
 
         .. note::
-            Internally, estimators are grouped by ``output_chunk_length`` position, then by component. For
-            probabilistic models fitting quantiles (``likelihood="quantile"``), there will be an additional
-            abstraction layer, grouping the estimators by ``quantile``. Models using a single native multi-quantile
+            Internally, estimators are grouped by ``output_chunk_length`` position, then by target component. For
+            probabilistic models fitting quantiles (``likelihood="quantile"``), each such group contains one
+            estimator per fitted quantile. Models using a single native multi-quantile
             estimator (``likelihood="multiquantile"``) do not use this extra quantile grouping, and ``quantile``
             must be set to ``None`` to obtain the correct estimator.
 
@@ -678,21 +673,20 @@ class SKLearnModel(GlobalForecastingModel):
                     "Ignoring passed `quantile` value."
                 )
 
+        model = self.model
+        q_idx = 0
         if type(likelihood) is QuantileRegression:
             # check for type `QuantileRegression` to ignore subclass `MultiQuantileRegression`.
-            # the estimators are grouped by quantiles
             if quantile is None:
                 quantile = likelihood.quantiles[likelihood._median_idx]
-            elif quantile not in self._model_container:
+            elif quantile not in likelihood.quantiles:
                 raise_log(
                     ValueError(
                         f"Invalid `quantile={quantile}`. Must be one of the fitted quantiles "
-                        f"`{list(self._model_container.keys())}`."
+                        f"`{likelihood.quantiles}`."
                     ),
                 )
-            model = self._model_container[quantile]
-        else:
-            model = self.model
+            q_idx = likelihood.quantiles.index(quantile)
 
         if not 0 <= horizon < self.output_chunk_length:
             raise_log(
@@ -713,10 +707,12 @@ class SKLearnModel(GlobalForecastingModel):
             )
             return model
 
-        # when multi_models=True, one model per horizon and target component
-        idx_estimator = (
+        # when multi_models=True, one model per horizon and target component (and optional quantile)
+        n_params = len(model.param_estimators)
+        flat_target = (
             self.multi_models * self.input_dim["target"] * horizon + target_dim
         )
+        idx_estimator = flat_target * n_params + q_idx
         return model.estimators_[idx_estimator]
 
     def _add_val_set_to_kwargs(
@@ -1057,6 +1053,9 @@ class SKLearnModel(GlobalForecastingModel):
         requires_multioutput = not series[0].is_univariate or (
             self.output_chunk_length > 1 and self.multi_models
         )
+        likelihood = self.likelihood
+        if type(likelihood) is QuantileRegression:
+            requires_multioutput = requires_multioutput or len(likelihood.quantiles) > 1
 
         # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputMixin
         if (
@@ -1068,16 +1067,21 @@ class SKLearnModel(GlobalForecastingModel):
                 is not None  # we have 2D sample (and time) weights, only supported in Darts
             )
         ):
+            if type(likelihood) is QuantileRegression:
+                # one specific model per quantile and output
+                estimator = [
+                    self._estimator_for_quantile(q) for q in likelihood.quantiles
+                ]
+            else:
+                # one model per output
+                estimator = self.model
             val_set_name, val_weight_name = self.val_set_params
-            mor_kwargs = {
-                "eval_set_name": val_set_name,
-                "eval_weight_name": val_weight_name,
-                "n_jobs": n_jobs_multioutput_wrapper,
-            }
-            mor_kwargs["output_chunk_length"] = self.output_chunk_length
-
             self.model = get_multioutput_estimator_cls(self._model_type)(
-                estimator=self.model, **mor_kwargs
+                estimator=estimator,
+                eval_set_name=val_set_name,
+                eval_weight_name=val_weight_name,
+                n_jobs=n_jobs_multioutput_wrapper,
+                output_chunk_length=self.output_chunk_length,
             )
 
         if (
@@ -1161,6 +1165,7 @@ class SKLearnModel(GlobalForecastingModel):
             likelihood.fit(self)
         return self
 
+    @random_method
     def predict(
         self,
         n: int,
@@ -1354,8 +1359,7 @@ class SKLearnModel(GlobalForecastingModel):
                     )
 
                 # use slice() instead of [] as for integer-indexed series [] does not act on time index
-                # for range indexes, we make the end timestamp inclusive here
-                end_ts = end_ts + ts.freq if ts.has_range_index else end_ts
+                # slice() is inclusive on both ends, for both index types
                 covariate_matrices[cov_type].append(
                     cov.slice(start_ts, end_ts).values(copy=False)
                 )
@@ -1424,7 +1428,6 @@ class SKLearnModel(GlobalForecastingModel):
                 x=X,
                 num_samples=num_samples,
                 predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
                 **kwargs,
             )
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
@@ -1459,13 +1462,11 @@ class SKLearnModel(GlobalForecastingModel):
 
         return predictions[0] if called_with_single_series else predictions
 
-    @random_method
     def _predict(
         self,
         x: np.ndarray,
         num_samples: int,
         predict_likelihood_parameters: bool,
-        random_state: int | None = None,
         verbose: bool | None = None,
         **kwargs,
     ) -> np.ndarray:
@@ -1543,7 +1544,7 @@ class SKLearnModel(GlobalForecastingModel):
 
     @property
     def supports_sample_weight(self) -> bool:
-        """Whether the model supports a validation set during training."""
+        """Whether the model supports sample weights during training."""
         return (
             self.model.supports_sample_weight
             if isinstance(self.model, MultiOutputMixin)
@@ -1567,6 +1568,7 @@ class SKLearnModel(GlobalForecastingModel):
         """Historical forecast can be optimized if no re-training is involved"""
         return _check_optimizable_historical_forecasts_global_models(retrain)
 
+    @random_method
     def _optimized_historical_forecasts(
         self,
         series: Sequence[TimeSeries],
@@ -1630,14 +1632,23 @@ class SKLearnModel(GlobalForecastingModel):
         )
         return model.__sklearn_tags__().target_tags.multi_output
 
+    def _estimator_for_quantile(self, quantile: float):
+        """Build an unfitted estimator configured for the given quantile level.
+
+        Subclasses that support ``likelihood="quantile"`` must override this
+        to return a fresh, unfitted sklearn-compatible estimator whose loss /
+        objective is set for *quantile*.
+        """
+        raise_log(
+            NotImplementedError(
+                f"{type(self).__name__} does not implement `_estimator_for_quantile`. "
+                "Override this method to support `likelihood='quantile'`."
+            ),
+        )
+
     @property
     def _model_type(self) -> ModelType:
         return ModelType.FORECASTING_REGRESSOR
-
-
-class _QuantileModelContainer(OrderedDict):
-    def __init__(self):
-        super().__init__()
 
 
 class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
@@ -1734,7 +1745,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -2047,7 +2058,7 @@ class RegressionModel(SKLearnModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -2315,7 +2326,7 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 

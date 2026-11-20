@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import BayesianRidge, LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 
 from darts import TimeSeries
@@ -1660,6 +1660,8 @@ class TestSKLearnModels:
         models_repr = [model_1]
 
         if XGB_AVAILABLE:
+            quantiles = [0.1, 0.5, 0.9]
+            ocl = 2
             model_2 = XGBModel(
                 lags=4,
                 output_chunk_length=2,
@@ -1670,6 +1672,11 @@ class TestSKLearnModels:
             )
             model_2.fit(series=self.sine_univariate1)
             assert isinstance(model_2.model, MultiOutputRegressor)
+            assert len(model_2.model.param_estimators) == len(quantiles)
+            assert (
+                len(model_2.model.estimators_)
+                == len(quantiles) * ocl * self.sine_univariate1.width
+            )
             models_repr.append(model_2)
 
         for model in models_repr:
@@ -1693,6 +1700,8 @@ class TestSKLearnModels:
             )
             m.fit(ts)
 
+            assert isinstance(m.model, MultiOutputRegressor)
+            assert len(m.model.param_estimators) == 1  # number of quantiles
             assert len(m.model.estimators_) == ocl * ts.width
 
             dummy_feats = np.array([[0, 0, 0] * ts.width])
@@ -1805,14 +1814,14 @@ class TestSKLearnModels:
             + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else []),
             [True, False],
             [True, False],
+            [[0.01, 0.5, 0.99], [0.5]],
         ),
     )
     def test_get_estimator_quantile(self, config):
         """Check estimator getter when using quantile value"""
-        (model_cls, kwargs), multi_models, multi_components = config
+        (model_cls, kwargs), multi_models, multi_components, quantiles = config
         ocl = 3
         lags = 3
-        quantiles = [0.01, 0.5, 0.99]
         ts = tg.sine_timeseries(length=100, column_name="sine")
         if multi_components:
             ts = ts.stack(
@@ -1829,20 +1838,19 @@ class TestSKLearnModels:
         )
         m.fit(ts)
 
-        assert m._model_container is not None
-        assert len(m._model_container) == len(quantiles)
-        assert sorted(list(m._model_container.keys())) == sorted(quantiles)
-        for quantile_container in m._model_container.values():
-            if multi_models:
-                # one sub-model per quantile, per component, per horizon
-                assert len(quantile_container.estimators_) == ocl * ts.width
-            elif multi_components:
-                # one sub-model per quantile, per component
-                assert len(quantile_container.estimators_) == ts.width
-            else:
-                # only one sub-model per quantile (one component, one predicted horizon)
-                assert not isinstance(quantile_container, MultiOutputRegressor)
-                assert not hasattr(quantile_container, "estimators_")
+        requires_multioutput = (
+            len(quantiles) * (ocl if multi_models else 1) * ts.width
+        ) > 1
+        if requires_multioutput:
+            assert isinstance(m.model, MultiOutputRegressor)
+            assert m.model.is_parameter_specific
+            assert len(m.model.param_estimators) == len(quantiles)
+            assert (
+                len(m.model.estimators_)
+                == len(quantiles) * (ocl if multi_models else 1) * ts.width
+            )
+        else:
+            assert not isinstance(m.model, MultiOutputRegressor)
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
         pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
@@ -1910,14 +1918,18 @@ class TestSKLearnModels:
         )
         model.fit(ts)
 
-        # model container only used with `QuantileRegression` (not multi-quantile)
-        assert model._model_container is None
         if multi_models:
-            # one sub-model per component, per horizon
+            # one sub-model per component, per horizon (no parameter/quantile-specific multioutput)
+            assert isinstance(model.model, MultiOutputRegressor)
+            assert not model.model.is_parameter_specific
             assert len(model.model.estimators_) == ocl * ts.width
+            assert len(model.model.param_estimators) == 1
         elif multi_components:
-            # one sub-model per component
+            # one sub-model per component (no parameter/quantile-specific multioutput)
+            assert isinstance(model.model, MultiOutputRegressor)
+            assert not model.model.is_parameter_specific
             assert len(model.model.estimators_) == ts.width
+            assert len(model.model.param_estimators) == 1
         else:
             # only one sub-model per quantile (one component, one predicted horizon)
             assert not isinstance(model.model, MultiOutputRegressor)
@@ -4405,6 +4417,16 @@ class TestProbabilisticSKLearnModels:
             },
             0.6,
         ),
+        (
+            LinearRegressionModel,
+            {
+                "lags": 2,
+                "likelihood": "gaussian",
+                "random_state": 42,
+                "multi_models": True,
+            },
+            0.05,
+        ),
     ]
     if XGB_AVAILABLE:
         models_cls_kwargs_errs += [
@@ -4562,7 +4584,7 @@ class TestProbabilisticSKLearnModels:
             _ = LinearRegressionModel(lags=1, likelihood="does_not_exist")
         assert (
             str(exc.value)
-            == "Invalid `likelihood='does_not_exist'`. Must be one of ['quantile', 'poisson']"
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ['quantile', 'poisson', 'gaussian']"
         )
 
         with pytest.raises(ValueError) as exc:
@@ -4671,6 +4693,51 @@ class TestProbabilisticSKLearnModels:
         assert (pred9 == pred10).all()
         assert (pred11 == pred7).all()
 
+    def test_probabilistic_predict_random_state_ar_sampling(self):
+        """`random_state` must seed `predict()` once and advance the RNG across AR steps."""
+        model = LinearRegressionModel(
+            lags=1,
+            output_chunk_length=1,
+            likelihood="quantile",
+            random_state=41,
+        )
+        series = self.constant_noisy_ts[:50]
+        model.fit(series)
+        horizon = 12
+        num_samples = 100
+        predict_seed = 7
+
+        uniform_leading: list[float] = []
+        original_uniform = np.random.uniform
+
+        def recording_uniform(*args, **kwargs):
+            sample = original_uniform(*args, **kwargs)
+            uniform_leading.append(float(sample.flat[0]))
+            return sample
+
+        with (
+            patch.object(np.random, "uniform", side_effect=recording_uniform),
+            patch.object(
+                np.random, "set_state", wraps=np.random.set_state
+            ) as set_state,
+        ):
+            model.predict(n=horizon, num_samples=num_samples, random_state=predict_seed)
+
+        # `@random_method` on `predict()` must not re-seed on each `_predict()` call.
+        assert set_state.call_count == 1
+        # one `QuantileRegression.sample()` call (one `np.random.uniform`) per AR step
+        assert len(uniform_leading) == horizon
+        # re-seeding would replay the same leading uniform every step
+        assert len(set(uniform_leading)) == horizon
+
+        pred_a = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        pred_b = model.predict(
+            n=horizon, num_samples=num_samples, random_state=38
+        ).values()
+        assert (pred_a == pred_b).all()
+
     @pytest.mark.parametrize(
         "config", param_product(models_cls_kwargs_errs, [True, False])
     )
@@ -4723,6 +4790,77 @@ class TestProbabilisticSKLearnModels:
             new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
+
+    @pytest.mark.parametrize(
+        "config",
+        param_product(
+            [1, 2],
+            [1, 3],
+            [True, False],
+        ),
+    )
+    def test_linear_regression_gaussian_likelihood(self, config):
+        """`LinearRegressionModel` with `likelihood="gaussian"` uses a Bayesian linear regression and predicts the
+        mean and standard deviation of a Gaussian distribution."""
+        n_comp, ocl, multi_models = config
+
+        def make_series(seed):
+            rng = np.random.default_rng(seed)
+            values = np.stack(
+                [
+                    np.sin(np.arange(200) / 5 + i) + 0.3 * rng.normal(size=200)
+                    for i in range(n_comp)
+                ],
+                axis=1,
+            )
+            return TimeSeries.from_values(values)
+
+        series = [make_series(seed=1), make_series(seed=2) + 1.0]
+        model_kwargs = {
+            "lags": 4,
+            "output_chunk_length": ocl,
+            "multi_models": multi_models,
+            "random_state": 42,
+        }
+        model = LinearRegressionModel(likelihood="gaussian", **model_kwargs)
+        model.fit(series)
+        assert model.supports_probabilistic_prediction
+        assert isinstance(model.get_estimator(horizon=0, target_dim=0), BayesianRidge)
+
+        preds = model.predict(n=ocl, series=series)
+        preds_params = model.predict(
+            n=ocl, series=series, predict_likelihood_parameters=True
+        )
+        preds_sampled = model.predict(n=ocl, series=series, num_samples=5000)
+
+        # the Bayesian regression mean is close to the ordinary least squares prediction
+        model_det = LinearRegressionModel(**model_kwargs)
+        model_det.fit(series)
+        preds_det = model_det.predict(n=ocl, series=series)
+
+        for pred, pred_params, pred_sampled, pred_det in zip(
+            preds, preds_params, preds_sampled, preds_det
+        ):
+            assert pred_params.components.tolist() == [
+                f"{comp}_{param}"
+                for comp in pred.components
+                for param in ["mu", "sigma"]
+            ]
+            mu = pred_params.values()[:, 0::2]
+            sigma = pred_params.values()[:, 1::2]
+            assert (sigma > 0).all()
+            # the deterministic prediction is the mean of each series
+            np.testing.assert_allclose(pred.values(), mu)
+            np.testing.assert_allclose(pred.values(), pred_det.values(), atol=0.05)
+            # samples are drawn from the predicted distribution
+            np.testing.assert_allclose(pred_sampled.mean().values(), mu, atol=0.05)
+            np.testing.assert_allclose(
+                pred_sampled.all_values().std(axis=2), sigma, rtol=0.1
+            )
+
+        # auto-regression
+        pred = model.predict(n=2 * ocl + 1, series=series[0], num_samples=10)
+        assert pred.all_values().shape == (2 * ocl + 1, n_comp, 10)
 
     @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(

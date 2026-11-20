@@ -270,6 +270,7 @@ extra_configs = [
                     random_state=42,
                 ),
             ],
+            "random_state": 42,
         },
         0.04,
         0.04,
@@ -604,7 +605,7 @@ class TestProbabilisticModels:
     @pytest.mark.parametrize(
         "config",
         param_product(
-            [(LinearRegressionModel, False, {})]
+            [(LinearRegressionModel, True, {})]
             + ([(XGBModel, False, xgb_test_params)] if XGB_AVAILABLE else [])
             + ([(LightGBMModel, False, lgbm_test_params)] if LGBM_AVAILABLE else [])
             + ([(CatBoostModel, True, cb_test_params)] if CB_AVAILABLE else []),

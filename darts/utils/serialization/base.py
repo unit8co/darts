@@ -354,12 +354,10 @@ def _darts_core_allowed_bases() -> type | tuple[type, ...] | None:
         )
         from darts.models.filtering.filtering_model import FilteringModel
         from darts.models.forecasting.forecasting_model import ForecastingModel
-        from darts.models.forecasting.sklearn_model import _QuantileModelContainer
         from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
     except Exception:  # pragma: no cover
         return None
     return (
-        _QuantileModelContainer,
         TimeSeries,
         CovariatesIndexGenerator,
         Encoder,

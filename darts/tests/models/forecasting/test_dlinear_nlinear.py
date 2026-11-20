@@ -1,3 +1,4 @@
+import logging
 from itertools import product
 
 import numpy as np
@@ -24,6 +25,12 @@ from darts.utils.likelihood_models.torch import GaussianLikelihood
 class TestDlinearNlinearModels:
     np.random.seed(42)
     torch.manual_seed(42)
+
+    def test_kernel_size_warning(self, caplog):
+        with caplog.at_level(logging.WARNING):
+            DLinearModel(input_chunk_length=5, output_chunk_length=1, kernel_size=6)
+
+        assert "excessive edge padding" in caplog.text
 
     def test_creation(self):
         with pytest.raises(ValueError):
