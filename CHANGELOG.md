@@ -71,6 +71,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed `darts.ad.utils.eval_metric_from_scores()` and `eval_metric_from_binary_prediction()` not detecting when the predicted and actual anomaly series have no overlapping time steps, which resulted in a misleading error. A clear `ValueError` is now raised. [#3399](https://github.com/unit8co/darts/pull/3399) by [Geovanny Basantes](https://github.com/COMPUMAX-EC).
 - Fixed some typos and docstrings for data transformers. [#3330](https://github.com/unit8co/darts/pull/3330) by [GolemCode](https://github.com/GolemCode).
 - Fixed `RegressionEnsembleModel` failing when `regression_train_samples_reduction` was set to a float (quantile) and `forecasting_models` contained a mixture of probabilistic and deterministic models. [#3356](https://github.com/unit8co/darts/pull/3356) by [Parth Kale](https://github.com/parthkale275).
+- Fixed `RINorm` (used when `use_reversible_instance_norm=True`) not exactly inverting its affine transformation. `inverse()` now divides by the same sign-preserving weight (clipped to a magnitude of at least `eps ** 2`) that is used for the normalization, instead of `weight + eps ** 2`. This also avoids sign flips and divisions by zero for affine weights close to zero. Also documented that the normalization is only scale invariant for samples with a variance much larger than `eps`. [#3375](https://github.com/unit8co/darts/pull/3375) by [Ankit Saha](https://github.com/Ankit-matrix).
 
 **Dependencies**
 
