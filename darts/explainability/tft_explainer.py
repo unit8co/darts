@@ -29,6 +29,8 @@ import matplotlib.axes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pytorch_lightning as pl
+import torch
 from matplotlib.figure import Figure
 from torch import Tensor
 
@@ -38,10 +40,29 @@ from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
 from darts.typing import TimeSeriesLike
-from darts.utils.ts_utils import SeriesType, get_series_seq_type
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
+
+
+class _TFTWeightsCollector(pl.Callback):
+    """Collects the attention and variable selection weights of every prediction batch."""
+
+    def __init__(self):
+        self.weights = []
+
+    def on_predict_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ):
+        self.weights.append([
+            None if weight is None else weight.detach().cpu()
+            for weight in (
+                pl_module._attn_out_weights,
+                pl_module._encoder_sparse_weights,
+                pl_module._decoder_sparse_weights,
+                pl_module._static_covariate_var,
+            )
+        ])
 
 
 class TFTExplainer(_ForecastingModelExplainer):
@@ -136,6 +157,9 @@ class TFTExplainer(_ForecastingModelExplainer):
         - encoder variable importances per timestep of the input chunk and decoder variable importances per timestep
           of the output chunk.
 
+        .. note::
+            Multi-device and multi-node prediction is not supported.
+
         Parameters
         ----------
         foreground_series
@@ -194,41 +218,71 @@ class TFTExplainer(_ForecastingModelExplainer):
             foreground_past_covariates,
             foreground_future_covariates,
         )
-        if (
-            get_series_seq_type(foreground_series) is SeriesType.SEQ
-            and len(foreground_series) > self.model.batch_size
-        ):
+        horizons, _ = self._process_horizons_and_targets(None, None)
+
+        # collect the weights of every prediction batch, so that more series than the
+        # model's batch size can be explained
+        collector = _TFTWeightsCollector()
+        trainer_params = dict(self.model.trainer_params)
+        trainer_params["callbacks"] = [
+            collector,
+            *(trainer_params.get("callbacks") or []),
+        ]
+        trainer = self.model._init_trainer(
+            trainer_params=trainer_params, max_epochs=self.model.n_epochs
+        )
+        if trainer.strategy.launcher is not None or trainer.world_size > 1:
             raise_log(
                 ValueError(
-                    f"The number of back- or foreground series to explain ({len(foreground_series)}) "
-                    f"must be smaller than or equal to the model's batch size ({self.model.batch_size})."
+                    "`TFTExplainer` does not support multi-device or multi-node prediction."
                 ),
             )
+        try:
+            preds = self.model.predict(
+                n=self.n,
+                series=foreground_series,
+                past_covariates=foreground_past_covariates,
+                future_covariates=foreground_future_covariates,
+                trainer=trainer,
+            )
+        finally:
+            # the model keeps a reference to the trainer, so the collected weights
+            # should not stay attached to it
+            trainer.callbacks.remove(collector)
+        (
+            attention_weights,
+            encoder_weights,
+            decoder_weights,
+            static_covariate_weights,
+        ) = (
+            None if weights[0] is None else torch.cat(weights)
+            for weights in zip(*collector.weights)
+        )
 
-        horizons, _ = self._process_horizons_and_targets(None, None)
-        preds = self.model.predict(
-            n=self.n,
-            series=foreground_series,
-            past_covariates=foreground_past_covariates,
-            future_covariates=foreground_future_covariates,
-        )
-        # get the weights and the attention head from the trained model for the prediction
         # aggregate over attention heads
-        attention_heads = (
-            self.model.model._attn_out_weights.detach().cpu().numpy().sum(axis=-2)
-        )
+        attention_heads = attention_weights.numpy().sum(axis=-2)
         # get the variable importances (pd.DataFrame with rows corresponding to the number of input series)
-        encoder_importance = self._encoder_importance
-        decoder_importance = self._decoder_importance
-        static_covariates_importance = self._static_covariates_importance
+        encoder_importance = self._get_importance(
+            weight=encoder_weights, names=self.model.model.encoder_variables
+        )
+        decoder_importance = self._get_importance(
+            weight=decoder_weights, names=self.model.model.decoder_variables
+        )
+        static_covariates_importance = self._get_importance(
+            weight=static_covariate_weights, names=self.model.model.static_variables
+        )
 
         # get the encoder/decoder importances over time;
         # static covariates have no time dimension, so there is no "over time" variant for them
         encoder_importance_over_time, encoder_var_names = (
-            self._encoder_importance_over_time
+            self._get_importance_over_time(
+                weight=encoder_weights, names=self.model.model.encoder_variables
+            )
         )
         decoder_importance_over_time, decoder_var_names = (
-            self._decoder_importance_over_time
+            self._get_importance_over_time(
+                weight=decoder_weights, names=self.model.model.decoder_variables
+            )
         )
 
         horizon_idx = [h - 1 for h in horizons]
@@ -468,68 +522,9 @@ class TFTExplainer(_ForecastingModelExplainer):
             return plotted_figures[0]
         return plotted_figures
 
-    @property
-    def _encoder_importance(self) -> pd.DataFrame:
-        """Returns the encoder variable importance of the TFT model.
-
-        The encoder_weights are calculated for the past inputs of the model.
-        The encoder_importance contains the weights of the encoder variable selection network.
-        The encoder variable selection network is used to select the most important static and time dependent
-        covariates. It provides insights which variable are most significant for the prediction problem.
-        See section 4.2 of the paper for more details.
-
-        Returns
-        -------
-        pd.DataFrame
-            The encoder variable importance.
-        """
-        return self._get_importance(
-            weight=self.model.model._encoder_sparse_weights,
-            names=self.model.model.encoder_variables,
-        )
-
-    @property
-    def _decoder_importance(self) -> pd.DataFrame:
-        """Returns the decoder variable importance of the TFT model.
-
-        The decoder_weights are calculated for the known future inputs of the model.
-        The decoder_importance contains the weights of the decoder variable selection network.
-        The decoder variable selection network is used to select the most important static and time dependent
-        covariates. It provides insights which variable are most significant for the prediction problem.
-        See section 4.2 of the paper for more details.
-
-        Returns
-        -------
-        pd.DataFrame
-            The importance of the decoder variables.
-        """
-        return self._get_importance(
-            weight=self.model.model._decoder_sparse_weights,
-            names=self.model.model.decoder_variables,
-        )
-
-    @property
-    def _static_covariates_importance(self) -> pd.DataFrame:
-        """Returns the static covariates importance of the TFT model.
-
-        The static covariate importances are calculated for the static inputs of the model (numeric and / or
-        categorical). The static variable selection network is used to select the most important static covariates.
-        It provides insights which variable are most significant for the prediction problem.
-        See section 4.2, and 4.3 of the paper for more details.
-
-        Returns
-        -------
-        pd.DataFrame
-            The static covariates importance.
-        """
-        return self._get_importance(
-            weight=self.model.model._static_covariate_var,
-            names=self.model.model.static_variables,
-        )
-
     def _get_importance(
         self,
-        weight: Tensor,
+        weight: Tensor | None,
         names: list[str],
         n_decimals=3,
     ) -> pd.DataFrame:
@@ -570,34 +565,6 @@ class TFTExplainer(_ForecastingModelExplainer):
 
         # return the importance sorted descending
         return importance.transpose().sort_values(0, ascending=True).transpose()
-
-    @property
-    def _encoder_importance_over_time(self) -> tuple[np.ndarray, list[str]]:
-        """Returns the encoder variable importance over time of the TFT model.
-
-        Returns
-        -------
-        tuple[np.ndarray, list[str]]
-            The importance over time of the encoder variables as well as the variable names.
-        """
-        return self._get_importance_over_time(
-            weight=self.model.model._encoder_sparse_weights,
-            names=self.model.model.encoder_variables,
-        )
-
-    @property
-    def _decoder_importance_over_time(self) -> tuple[np.ndarray, list[str]]:
-        """Returns the decoder variable importance over time of the TFT model.
-
-        Returns
-        -------
-        tuple[np.ndarray, list[str]]
-            The importance over time of the decoder variables as well as the variable names.
-        """
-        return self._get_importance_over_time(
-            weight=self.model.model._decoder_sparse_weights,
-            names=self.model.model.decoder_variables,
-        )
 
     def _get_importance_over_time(
         self,

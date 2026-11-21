@@ -36,6 +36,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - `FFT` now raises a clear `ValueError` when passing invalid `pandas.Timestamp` attributes to `required_matches` for phase matching. [#3363](https://github.com/unit8co/darts/pull/3363) by [nguille0307](https://github.com/nguille0307).
 - 🔴 Metric `qr()` (quantile risk) no longer raises a hard `ValueError` when the denominator is exactly zero (zero-sum target values). It now follows the `zero_division` convention of the other percentage metrics, returning `0.0` for a perfect forecast and `NaN` otherwise under `zero_division="warn"`, and raising under `zero_division="raise"`. [#3378](https://github.com/unit8co/darts/pull/3378) by [Shyam Sharma](https://github.com/shyamsharmas124-commits).
 - 🔴 `TimeSeries.slice()` is now inclusive on both ends for integer-indexed (`RangeIndex`) series, matching the same behavior as for datetime-indexed series. Previously, `end_ts` was exclusive for `RangeIndex` series. [#3382](https://github.com/unit8co/darts/pull/3382) by [Abhijeet Kumar](https://github.com/abhi478jeetur-rgb).
+- `TFTExplainer` can now explain more series than the model's batch size. [#3182](https://github.com/unit8co/darts/pull/3182) by [Mahimn](https://github.com/mahimn01).
 
 **Fixed**
 
