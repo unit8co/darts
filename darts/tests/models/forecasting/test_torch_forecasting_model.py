@@ -9,9 +9,11 @@ if not TORCH_AVAILABLE:
     )
 
 import copy
+import io
 import logging
 import math
 import os
+import pathlib
 from dataclasses import fields
 from typing import Any
 from unittest.mock import patch
@@ -480,6 +482,86 @@ class TestTorchForecastingModel:
         with pytest.raises(ValueError) as err:
             model_32_loaded.predict(n=4, series=series_64)
         assert all(el in str(err.value) for el in ["torch.float32", "torch.float64"])
+
+    def _fit_and_save_rnn(self, tmpdir_fn):
+        model = RNNModel(
+            input_chunk_length=4,
+            training_length=8,
+            n_epochs=1,
+            random_state=42,
+            **tfm_kwargs,
+        )
+        model.fit(self.series[:30])
+        path = os.path.join(tmpdir_fn, "rnn_model.pt")
+        model.save(path)
+        return model, path
+
+    @pytest.mark.parametrize("trusted", [False, True])
+    @pytest.mark.parametrize("in_memory", [False, True])
+    def test_load_from_file_handles(self, tmpdir_fn, in_memory, trusted):
+        model, path = self._fit_and_save_rnn(tmpdir_fn)
+
+        if in_memory:
+            with open(path, "rb") as f:
+                f_model = io.BytesIO(f.read())
+            with open(path + ".ckpt", "rb") as f:
+                f_ckpt = io.BytesIO(f.read())
+        else:
+            f_model, f_ckpt = open(path, "rb"), open(path + ".ckpt", "rb")
+
+        with f_model, f_ckpt:
+            loaded = RNNModel.load(f_model, ckpt_path=f_ckpt, trusted=trusted)
+
+        assert loaded.predict(n=4) == model.predict(n=4)
+
+    def test_load_from_file_handle_without_ckpt(self, tmpdir_fn, caplog):
+        _, path = self._fit_and_save_rnn(tmpdir_fn)
+
+        with open(path, "rb") as f_model, caplog.at_level(logging.WARNING):
+            loaded = RNNModel.load(f_model)
+
+        assert (
+            "no PyTorch LightningModule checkpoint ('.ckpt') was given" in caplog.text
+        )
+        assert not loaded._fit_called
+
+    def test_load_with_ckpt_path(self, tmpdir_fn):
+        model, path = self._fit_and_save_rnn(tmpdir_fn)
+        moved_ckpt_path = os.path.join(tmpdir_fn, "weights.ckpt")
+        os.rename(path + ".ckpt", moved_ckpt_path)
+
+        loaded = RNNModel.load(path, ckpt_path=moved_ckpt_path)
+        assert loaded.predict(n=4) == model.predict(n=4)
+
+        loaded = RNNModel.load(
+            pathlib.Path(path), ckpt_path=pathlib.Path(moved_ckpt_path)
+        )
+        assert loaded.predict(n=4) == model.predict(n=4)
+
+        with pytest.raises(ValueError, match="doesn't exist"):
+            RNNModel.load(path, ckpt_path=path + ".ckpt")
+
+        with pytest.raises(ValueError, match="Argument `path` has to be"):
+            RNNModel.load(1)
+
+    def test_load_from_file_handle_blocks_malicious_payload(self, tmpdir_fn):
+        _, path = self._fit_and_save_rnn(tmpdir_fn)
+        marker_path = os.path.join(tmpdir_fn, "cwe502_marker.txt")
+
+        class _MaliciousPayload:
+            def __reduce__(self):
+                return os.system, (f'echo pwned > "{marker_path}"',)
+
+        ckpt = torch.load(path + ".ckpt", weights_only=False)
+        ckpt["cwe502_payload"] = _MaliciousPayload()
+        f_ckpt = io.BytesIO()
+        torch.save(ckpt, f_ckpt)
+        f_ckpt.seek(0)
+
+        with open(path, "rb") as f_model:
+            with pytest.raises(UnpicklingError, match=r"unsafe global `\w+\.system`"):
+                RNNModel.load(f_model, ckpt_path=f_ckpt)
+        assert not os.path.exists(marker_path)
 
     def test_load_accelerator(self, tmpdir_fn):
         pass
