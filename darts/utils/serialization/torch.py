@@ -15,6 +15,7 @@ Two loading strategies, both guarded by the same :func:`~darts.utils.serializati
   subclasses used by Lightning callbacks) while still blocking arbitrary-code-execution (CWE-502).
 """
 
+import io
 from collections.abc import Callable
 from typing import Any
 
@@ -55,7 +56,7 @@ def load_wrapper_safely(
     Parameters
     ----------
     path
-        Filesystem path to the ``.pt`` wrapper file.
+        Filesystem path or binary file handle of the ``.pt`` wrapper file.
     trusted
         If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out) with
         `weights_only=False`. Only use for files from trusted sources. Default: ``False``.
@@ -106,7 +107,7 @@ def load_ckpt_safely(
     load_fn
         A ``torch.load``-backed callable.
     path
-        Filesystem path to the ``.ckpt`` file.
+        Filesystem path or binary file handle of the ``.ckpt`` file.
     trusted
         If ``True``, disables safe-loading restrictions and fully unpickles the file (CWE-502 opt-out) with
         `weights_only=False`. Only use for files from trusted sources. Default: ``False``.
@@ -168,7 +169,15 @@ def _safe_globals_for_torch_file(
     Anything else is left blocked so the load fails loudly instead of silently trusting an attacker-chosen global.
     Returns an empty mapping when the file has no unsafe globals.
     """
+    try:
+        start = path.tell()
+    except (AttributeError, io.UnsupportedOperation):
+        # a filesystem path, or a stream that torch rejects as not seekable
+        start = None
     unsafe_globals = torch.serialization.get_unsafe_globals_in_checkpoint(path)
+    if start is not None:
+        # the inspection reads through the file handle, so rewind it for the load itself
+        path.seek(start)
     if not unsafe_globals:
         return {}
 
