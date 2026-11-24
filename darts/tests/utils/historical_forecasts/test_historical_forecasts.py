@@ -1650,6 +1650,44 @@ class TestHistoricalforecast:
         assert ts == ts_copy
         assert ts_covs == ts_covs_copy
 
+    def test_optimized_historical_forecasts_autoregression_sparse_target_lags(self):
+        values = np.arange(13.0)
+        values[10:] += 100
+        series = TimeSeries.from_values(values)
+        model = LinearRegressionModel(lags=[-2]).fit(series[:8])
+
+        [forecast] = model.historical_forecasts(
+            series, start=10, forecast_horizon=3, retrain=False, last_points_only=False
+        )
+
+        assert forecast.time_index.equals(series[10:].time_index)
+        # The second step uses the observation at 9, and the third uses the forecast at 10.
+        np.testing.assert_allclose(forecast.univariate_values(), [10.0, 11.0, 12.0])
+
+    @pytest.mark.parametrize("lags", [[-8, -8, -2], {"a": [-8, -8], "b": [-2]}])
+    def test_optimized_historical_forecasts_repeated_target_lags(self, lags):
+        values = np.column_stack([
+            np.random.default_rng(0).normal(size=38),
+            np.arange(38),
+        ])
+        series = TimeSeries.from_values(values, columns=["a", "b"])
+        model = LinearRegressionModel(lags=lags, output_chunk_length=3).fit(series[:20])
+        expected = model.predict(9, series=series[:24])
+
+        # Time 28 is observed at later origins but is in the future at origin 24.
+        values[28, 1] += 1000
+        modified_series = TimeSeries.from_values(values, columns=["a", "b"])
+        forecast = model.historical_forecasts(
+            modified_series,
+            start=24,
+            forecast_horizon=9,
+            retrain=False,
+            last_points_only=False,
+        )[0]
+
+        assert forecast.time_index.equals(expected.time_index)
+        np.testing.assert_allclose(forecast.values(), expected.values())
+
     @pytest.mark.parametrize(
         "config",
         param_product(

@@ -39,6 +39,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed optimized historical forecasts losing observed target values during autoregression with sparse target lags. [#3394](https://github.com/unit8co/darts/issues/3394).
 - Fixed `NegativeBinomialLikelihood` producing NaN training loss or raising a `ValueError` on invalid distribution parameters when softplus underflowed `mu` and `alpha` to zero for very negative network outputs, e.g. when fitting torch models on unscaled count data. [#3322](https://github.com/unit8co/darts/pull/3322) by [hskl18](https://github.com/hskl18).
 - Fixed `TimeSeries.slice()` returning wrong slices for integer-indexed series with off-grid start or end values. [#3382](https://github.com/unit8co/darts/pull/3382) by [Abhijeet Kumar](https://github.com/abhi478jeetur-rgb).
 - Fixed probabilistic `SKLearnModel` sampled predictions producing unrealistically wide values when `random_state` was explicitely set and `n > output_chunk_length` (including optimized historical forecasts); the RNG was reset on each autoregressive `_predict()` call instead of once per forecast. [#3369](https://github.com/unit8co/darts/pull/3369) by [Dennis Bader](https://github.com/dennisbader).
