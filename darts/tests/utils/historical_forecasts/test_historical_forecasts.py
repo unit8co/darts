@@ -1650,6 +1650,16 @@ class TestHistoricalforecast:
         assert ts == ts_copy
         assert ts_covs == ts_covs_copy
 
+    def test_optimized_historical_forecasts_autoregression_sparse_target_lags(self):
+        series = TimeSeries.from_values(np.arange(10.0))
+        model = LinearRegressionModel(lags=[-2]).fit(series)
+        kwargs = dict(
+            series=series, forecast_horizon=3, retrain=False, last_points_only=False
+        )
+        forecast1 = model.historical_forecasts(**kwargs, enable_optimization=False)
+        forecast2 = model.historical_forecasts(**kwargs, enable_optimization=True)
+        assert forecast1 == forecast2
+
     @pytest.mark.parametrize(
         "config",
         param_product(

@@ -537,6 +537,15 @@ class TestSKLearnModels:
             model(lags=[3, 5], multi_models=mode)
         with pytest.raises(ValueError):
             model(lags=[-3, -5.0], multi_models=mode)
+        with pytest.raises(ValueError, match="lags must be unique per component"):
+            model(lags=[-8, -8, -2], multi_models=mode)
+        with pytest.raises(ValueError, match="lags must be unique per component"):
+            model(lags_past_covariates=[-8, -8, -2], multi_models=mode)
+        with pytest.raises(ValueError, match="lags must be unique per component"):
+            model(
+                lags={"comp0": [-8, -8], "comp1": [-2]},
+                multi_models=mode,
+            )
         with pytest.raises(ValueError):
             model(lags=-5, multi_models=mode)
         with pytest.raises(ValueError):

@@ -86,7 +86,14 @@ def _optimized_historical_forecasts_regression(
         target_lags, target_lag_positions = [], []
 
     # determine the forecast scenario
-    is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
+    n_extra_steps = max(forecast_horizon - output_chunk_length - output_chunk_shift, 0)
+    is_auto_regression = n_extra_steps > 0
+
+    # auto-regression may need target rows after `hist_fct_tgt_end`; if the target max(lag) is before -1,
+    # some of those rows must stay observed instead of NaN so lagged features still see real values.
+    target_lag_gap = -model.lags["target"][-1] - 1 if target_lags else 0
+    n_trailing_observed = min(n_extra_steps, target_lag_gap)
+    n_trailing_nan = n_extra_steps - n_trailing_observed
 
     if multi_models:
         # how many steps the model predicts in a single forecast
@@ -150,14 +157,17 @@ def _optimized_historical_forecasts_regression(
         )
 
         if target_lags or model.uses_static_covariates:
-            series_adjusted = series_[hist_fct_tgt_start:hist_fct_tgt_end]
-            if is_auto_regression:
-                # add values to end of target series, to get all examples for auto-regression
-                nan_values = np.array(
-                    [[np.nan] * series_.shape[1]]
-                    * (forecast_horizon - (output_chunk_length + output_chunk_shift))
+            if n_trailing_observed:
+                hist_fct_tgt_end += (
+                    n_trailing_observed
+                    if series_.has_range_index
+                    else n_trailing_observed * freq
                 )
-                series_adjusted = series_adjusted.append_values(nan_values)
+            series_adjusted = series_[hist_fct_tgt_start:hist_fct_tgt_end]
+            if n_trailing_nan:
+                series_adjusted = series_adjusted.append_values(
+                    np.full((n_trailing_nan, series_.n_components), np.nan)
+                )
         else:
             series_adjusted = None
 
