@@ -436,6 +436,15 @@ class SKLearnModel(GlobalForecastingModel):
                         ),
                     )
 
+                component_lag_list = tmp_components_lags[comp_name]
+                if len(component_lag_list) != len(set(component_lag_list)):
+                    raise_log(
+                        ValueError(
+                            f"`{lags_name}` - `{comp_name}`: lags must be unique "
+                            f"per component. Given: {component_lag_list}."
+                        ),
+                    )
+
                 # extracting min and max lags va
                 if min_lags is None:
                     min_lags = tmp_components_lags[comp_name][0]

@@ -65,32 +65,31 @@ def _optimized_historical_forecasts_regression(
     output_chunk_length = model.output_chunk_length
     output_chunk_shift = model.output_chunk_shift
 
-    # Match the tabularizer's feature order, including each repeated lag.
-    lags = model._get_lags("target")
-    if lags is None:
-        target_lags, target_lag_positions = [], []
-    elif isinstance(lags, dict):
-        target_lags = list(lags.values())
-        target_lag_positions = [[] for _ in target_lags]
-        ordered_lags = sorted(
-            (lag, comp_idx)
-            for comp_idx, comp_lags in enumerate(target_lags)
-            for lag in comp_lags
-        )
-        for position, (_, comp_idx) in enumerate(ordered_lags):
-            target_lag_positions[comp_idx].append(position)
+    # get target lags and X positions for auto-regression
+    if model._get_lags("target") is not None:
+        if "target" in model.component_lags:
+            target_lags = model.component_lags["target"].values()
+        else:
+            target_lags = [model.lags["target"]] * get_single_series(
+                series
+            ).n_components
+
+        # map which target component lag belongs to which position in X
+        counter = 0
+        target_lag_positions = [[] for _ in range(len(target_lags))]
+        for lag in range(min(model.lags["target"]), max(model.lags["target"]) + 1):
+            for comp_idx, comp_lags in enumerate(target_lags):
+                if lag in comp_lags:
+                    target_lag_positions[comp_idx].append(counter)
+                    counter += 1
     else:
-        n_components = get_single_series(series).n_components
-        target_lags = [lags] * n_components
-        target_lag_positions = [
-            range(comp_idx, len(lags) * n_components, n_components)
-            for comp_idx in range(n_components)
-        ]
+        target_lags, target_lag_positions = [], []
 
     # determine the forecast scenario
     n_extra_steps = max(forecast_horizon - output_chunk_length - output_chunk_shift, 0)
     is_auto_regression = n_extra_steps > 0
-    # A sparse target lag can leave observed values between the slice end and the last origin.
+
+    # a sparse target lag can leave observed values between the slice end and the last origin.
     target_lag_gap = -model.lags["target"][-1] - 1 if target_lags else 0
     n_observed = min(n_extra_steps, target_lag_gap)
     n_padding = n_extra_steps - n_observed
