@@ -60,6 +60,11 @@ class TestReconciliation:
         columns=components_complex,
         hierarchy=hierarchy_complex,
     )
+    residuals_complex = TimeSeries.from_values(
+        values=np.random.randn(50, len(components_complex)),
+        columns=components_complex,
+        hierarchy=hierarchy_complex,
+    )
 
     def _assert_reconciliation(self, fitted_recon):
         pred_r = fitted_recon.transform(self.pred)
@@ -133,6 +138,65 @@ class TestReconciliation:
         # fit_transform() should also work
         recon = MinTReconciliator()
         _ = recon.fit_transform(self.series)
+
+    def test_mint_nonnegative_closed_form(self):
+        # with W = I, minimizing (10 - a - b)^2 + (0.5 - a)^2 + (20 - b)^2 gives a = -3 and b = 16.5;
+        # under the constraint a, b >= 0 the solution is a = 0 and b = 15
+        series = TimeSeries.from_values(
+            np.array([[10.0, 0.5, 20.0], [3.0, 1.0, 2.0]]),
+            columns=["total", "a", "b"],
+            hierarchy={"a": ["total"], "b": ["total"]},
+        )
+        unconstrained = MinTReconciliator("ols").fit_transform(series).values()
+        np.testing.assert_almost_equal(unconstrained[0], [13.5, -3.0, 16.5])
+
+        recon = MinTReconciliator("ols", nonnegative=True)
+        reconciled = recon.fit_transform(series).values()
+        np.testing.assert_almost_equal(reconciled[0], [15.0, 0.0, 15.0])
+        # the second time step has no negative values and is left unchanged
+        np.testing.assert_array_equal(reconciled[1], unconstrained[1])
+
+    @pytest.mark.parametrize(
+        "method, fit_on",
+        [
+            ("ols", "series_complex"),
+            ("wls_struct", "series_complex"),
+            ("wls_val", "series_complex"),
+            ("wls_var", "residuals_complex"),
+            ("mint_cov", "residuals_complex"),
+        ],
+    )
+    def test_mint_nonnegative(self, method, fit_on):
+        # incoherent stochastic base forecasts, some of them negative
+        base = self.series_complex - 0.2
+        y_hat = base.all_values()
+        series_fit = getattr(self, fit_on)
+        out = MinTReconciliator(method).fit(series_fit).transform(base).all_values()
+        recon = MinTReconciliator(method, nonnegative=True).fit(series_fit)
+        out_nn = recon.transform(base).all_values()
+
+        # (time step, sample) pairs with a negative value without the constraint
+        resolved = (out < 0).any(axis=1)
+        assert resolved.any() and not resolved.all()
+        assert (out_nn >= 0).all()
+        # all other values are unchanged
+        np.testing.assert_array_equal(
+            out_nn.transpose(0, 2, 1)[~resolved], out.transpose(0, 2, 1)[~resolved]
+        )
+
+        # the reconciled forecasts are coherent
+        S = _get_summation_matrix(base)
+        bottom = [list(base.components).index(c) for c in base.bottom_level_components]
+        b = out_nn[:, bottom, :]
+        np.testing.assert_allclose(out_nn, S @ b, atol=1e-12)
+
+        # KKT conditions of min_b (y_hat - S b)' inv(W) (y_hat - S b) s.t. b >= 0: the gradient is zero
+        # for positive values of b and non-negative for values at zero
+        _, _, W_inv = MinTReconciliator._get_matrices(series_fit, method)
+        grad = (S.T @ W_inv @ (S @ b - y_hat)).transpose(0, 2, 1)
+        b = b.transpose(0, 2, 1)
+        assert np.abs(grad[b > 0]).max() < 1e-8
+        assert grad[b == 0].min() > -1e-8
 
     def test_summation_matrix(self):
         np.testing.assert_equal(
@@ -227,6 +291,8 @@ class TestReconciliation:
                 (MinTReconciliator("wls_val"), "series"),
                 (MinTReconciliator("wls_var"), "residuals"),
                 (MinTReconciliator("mint_cov"), "residuals"),
+                (MinTReconciliator("ols", nonnegative=True), "series"),
+                (MinTReconciliator("mint_cov", nonnegative=True), "residuals"),
             ],
         ),
     )
@@ -262,6 +328,14 @@ class TestReconciliationInputValidation:
         reconciliator = MinTReconciliator(method="wls_var")
         with pytest.raises(ValueError, match="stochastic"):
             reconciliator.fit(ts)
+
+    def test_mint_nonnegative_requires_positive_definite_w(self):
+        # `wls_val` weights by the average component values, which are negative here
+        values = -np.random.rand(50, 3)
+        ts = TimeSeries.from_values(values, columns=["total", "a", "b"])
+        ts = ts.with_hierarchy({"a": ["total"], "b": ["total"]})
+        with pytest.raises(ValueError, match="positive definite"):
+            MinTReconciliator(method="wls_val", nonnegative=True).fit(ts)
 
     def test_mint_unknown_method_in_get_matrices(self):
         values = np.random.rand(50, 3)

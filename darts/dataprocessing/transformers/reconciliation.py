@@ -13,6 +13,7 @@ from collections.abc import Mapping
 from typing import Any
 
 import numpy as np
+from scipy.optimize import nnls
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import (
@@ -68,14 +69,45 @@ def _get_summation_matrix(series: TimeSeries):
     return S
 
 
+def _get_whitening_matrix(W_inv: np.ndarray) -> np.ndarray:
+    """
+    Returns the matrix `L` with `L.T @ L = W_inv`, so that `r.T @ W_inv @ r = ||L @ r||^2` for any vector `r`.
+    """
+    W_inv = np.asarray(W_inv, dtype=np.float64)
+    try:
+        C = np.linalg.cholesky((W_inv + W_inv.T) / 2)
+    except np.linalg.LinAlgError:
+        raise_log(
+            ValueError(
+                "Non-negative MinT reconciliation requires the matrix `W` of the chosen method "
+                "to be positive definite."
+            ),
+        )
+    return C.T
+
+
 def _reconcile_from_S_and_G(
-    series: TimeSeries, S: np.ndarray, G: np.ndarray
+    series: TimeSeries,
+    S: np.ndarray,
+    G: np.ndarray,
+    L: np.ndarray | None = None,
 ) -> TimeSeries:
     """
     Returns the TimeSeries linearly reconciled from the projection matrix G and the summation matrix S.
+
+    If the whitening matrix `L` (with `L.T @ L = inv(W)`) is given, every time step and sample with a negative
+    reconciled value is reconciled again by solving `min_b ||L @ (y_hat - S @ b)||^2` subject to `b >= 0` with
+    non-negative least squares. All other values are left unchanged.
     """
     y_hat = series.all_values(copy=False)
     reconciled_values = S @ G @ y_hat  # (n, m) * (m, n) * (time, n, samples)
+    if L is not None:
+        negative = (reconciled_values < 0).any(axis=1)  # (time, samples)
+        if negative.any():
+            L_S = L @ S
+            for t, s in zip(*np.nonzero(negative)):
+                b, _ = nnls(L_S, L @ y_hat[t, :, s])
+                reconciled_values[t, :, s] = S @ b
     return TimeSeries(
         times=series.time_index,
         values=_maybe_cast_array_dtype(reconciled_values, series.dtype),
@@ -158,7 +190,7 @@ class TopDownReconciliator(FittableDataTransformer):
 
 
 class MinTReconciliator(FittableDataTransformer):
-    def __init__(self, method="ols"):
+    def __init__(self, method="ols", nonnegative: bool = False):
         """
         MinT Reconcilator.
 
@@ -188,18 +220,29 @@ class MinTReconciliator(FittableDataTransformer):
               component values. This method assumes that the series provided to ``fit()`` contains
               an example of the actual values (e.g., either the training series or the forecasts).
               This method is not presented in [2]_.
+        nonnegative
+            Whether to constrain the reconciled forecasts to be non-negative. MinT reconciliation can produce
+            negative values even when all base forecasts are non-negative. If ``True``, at every time step and
+            sample where the reconciled forecast has a negative value, the bottom-level forecasts are instead
+            obtained by minimizing the same objective as MinT (the squared differences to the base forecasts,
+            weighted by the inverse of ``W``) under the constraint that they are non-negative, as in [3]_. All
+            other values are the same as with ``nonnegative=False``. Only use this if all components are
+            non-negative by nature (e.g., sales). Requires ``W`` to be positive definite.
 
         References
         ----------
         .. [1] `Optimal forecast reconciliation for hierarchical and grouped time series through
                 trace minimization <https://robjhyndman.com/papers/MinT.pdf>`__
         .. [2] https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach
+        .. [3] `Optimal non-negative forecast reconciliation
+                <https://doi.org/10.1007/s11222-020-09930-0>`__, Wickramasuriya, Turlach and Hyndman (2020)
         """
         known_methods = ["ols", "wls", "wls_var", "wls_struct", "wls_val", "mint_cov"]
         if method not in known_methods:
             raise_log(ValueError(f"The method must be one of {known_methods}."))
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self.method = method
+        self.nonnegative = nonnegative
         super().__init__()
 
     @staticmethod
@@ -207,15 +250,16 @@ class MinTReconciliator(FittableDataTransformer):
         series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
     ) -> np.ndarray:
         method = params["fixed"]["method"]
-        S, G = MinTReconciliator.get_matrices(series, method)
-        return S, G
+        if not params["fixed"]["nonnegative"]:
+            return MinTReconciliator.get_matrices(series, method)
+        S, G, W_inv = MinTReconciliator._get_matrices(series, method)
+        return S, G, _get_whitening_matrix(W_inv)
 
     @staticmethod
     def ts_transform(
         series: TimeSeries, params: Mapping[str, Any], *args, **kwargs
     ) -> TimeSeries:
-        S, G = params["fitted"]
-        return _reconcile_from_S_and_G(series, S, G)
+        return _reconcile_from_S_and_G(series, *params["fitted"])
 
     @staticmethod
     def _assert_deterministic(series: TimeSeries):
@@ -231,11 +275,17 @@ class MinTReconciliator(FittableDataTransformer):
     @staticmethod
     def get_matrices(series: TimeSeries | None, method: str):
         """Returns the G matrix given a specified reconciliation method."""
+        S, G, _ = MinTReconciliator._get_matrices(series, method)
+        return S, G
+
+    @staticmethod
+    def _get_matrices(series: TimeSeries | None, method: str):
+        """Returns the S, G and inverse W matrices given a specified reconciliation method."""
         S = _get_summation_matrix(series)
         if method == "ols":
             # G = inv(S'*S)*S'
             G = np.linalg.inv(S.T @ S) @ S.T
-            return S, G
+            return S, G, np.eye(len(S), dtype=S.dtype)
         elif method == "wls_struct":
             # Wh is a diagonal matrix with entry i,i being the sum of row i of S_mat
             Wh = np.diag(np.sum(S, axis=1))
@@ -260,4 +310,4 @@ class MinTReconciliator(FittableDataTransformer):
 
         Wh_inv = np.linalg.inv(Wh)
         G = np.linalg.inv(S.T @ Wh_inv @ S) @ S.T @ Wh_inv
-        return S, G
+        return S, G, Wh_inv
