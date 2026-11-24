@@ -68,9 +68,16 @@ class RINorm(nn.Module):
         input_dim
             The dimension of the input axis being normalized
         eps
-            The epsilon value for numerical stability
+            The epsilon value for numerical stability. It is added to the variance of each sample before taking the
+            square root. Hence, normalized samples only have unit variance if their variance is much larger than
+            ``eps``; for samples with a variance close to (or below) ``eps`` the normalization is *not* scale
+            invariant. If ``affine=True``, ``eps ** 2`` is also the smallest magnitude the affine weight can take
+            when normalizing and denormalizing (see ``affine``).
         affine
-            Whether to apply an affine transformation after normalization
+            Whether to apply an affine transformation after normalization. The magnitude of the learnable weight is
+            clipped to at least ``eps ** 2`` (its sign is preserved), using the same clipped weight when normalizing
+            and denormalizing. This guarantees that denormalization is the exact inverse of the normalization, and
+            avoids divisions by zero (or sign flips) for weights close to zero.
 
         References
         ----------
@@ -101,6 +108,24 @@ class RINorm(nn.Module):
 
         return self.transform(x)
 
+    def _clipped_affine_weight(self) -> torch.Tensor:
+        """Affine weight with its magnitude clipped to at least ``eps ** 2``; the sign is preserved.
+
+        Using this one weight in both :meth:`transform` and :meth:`inverse` makes the latter the exact
+        inverse of the former for any value of the learnable weight (including zero and negative values).
+        For weights with ``abs(weight) >= eps ** 2`` it equals the learnable weight.
+
+        The clipping is applied via a straight-through estimator: the forward value is the clipped
+        weight, but the gradient flows through the raw weight unchanged. This prevents the weight
+        from getting permanently stuck when its magnitude falls below ``eps ** 2``.
+        """
+        weight = self.affine_weight
+        sign = torch.where(
+            weight < 0, -torch.ones_like(weight), torch.ones_like(weight)
+        )
+        clipped = sign * weight.abs().clamp(min=self.eps * self.eps)
+        return weight + (clipped - weight).detach()
+
     def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Normalize ``x`` using statistics previously computed by :meth:`forward`.
 
@@ -119,7 +144,7 @@ class RINorm(nn.Module):
         x = x - self.mean
         x = x / self.stdev
         if self.affine:
-            x = x * self.affine_weight
+            x = x * self._clipped_affine_weight()
             x = x + self.affine_bias
         return x
 
@@ -127,11 +152,9 @@ class RINorm(nn.Module):
         # x is assumed to be the output of PLForecastingModule.forward(), and has shape
         # (batch_size, output_chunk_length, n_targets, nr_params).
         if self.affine:
+            weight = self._clipped_affine_weight()
             x = x - self.affine_bias.view(self.affine_bias.shape + (1,))
-            x = x / (
-                self.affine_weight.view(self.affine_weight.shape + (1,))
-                + self.eps * self.eps
-            )
+            x = x / weight.view(weight.shape + (1,))
         x = x * self.stdev.view(self.stdev.shape + (1,))
         x = x + self.mean.view(self.mean.shape + (1,))
         return x
