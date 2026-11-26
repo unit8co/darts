@@ -18,6 +18,7 @@ from darts.typing import TimeSeriesLike
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_data_from_config,
 )
+from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.multioutput import MultiOutputMixin
 
 logger = get_logger(__name__)
@@ -75,31 +76,25 @@ class SKLearnShapAdapter(ShapAdapter):
         shap_method: SHAPMethod,
         **kwargs,
     ) -> shap.Explainer | dict[int, dict[int, shap.Explainer]]:
-        likelihood = model.likelihood
-        has_quantile_container = model._model_container is not None
-
-        if has_quantile_container:
-            first_q_model = next(iter(model._model_container.values()))
-            uses_multi_output = isinstance(first_q_model, MultiOutputMixin)
-        else:
-            uses_multi_output = isinstance(model.model, MultiOutputMixin)
-
-        if not uses_multi_output and not has_quantile_container:
-            # native multioutput, no per-quantile models -> single explainer
+        estimator = model.model
+        if not isinstance(estimator, MultiOutputMixin):
+            # native multioutput -> single explainer
             return self._build_explainer_sklearn(
-                model_sklearn=model.model,
+                model_sklearn=estimator,
                 background_arr=background_arr,
                 shap_method=shap_method,
                 **kwargs,
             )
 
-        # per-estimator explainers (MultiOutputMixin and/or QuantileRegression)
+        # per-estimator explainers (MultiOutputMixin)
+        likelihood = model.likelihood
         n_params = likelihood.num_parameters if likelihood is not None else 1
+        is_quantile_regression = type(likelihood) is QuantileRegression
         explainers = {}
         for i in range(self.n):
             explainers[i] = {}
             for j in range(self.n_targets_likelihood):
-                if has_quantile_container:
+                if is_quantile_regression:
                     target_dim = j // n_params
                     quantile = likelihood.quantiles[j % n_params]
                 else:
@@ -214,14 +209,7 @@ class SKLearnShapAdapter(ShapAdapter):
         }
 
     def _get_default_shap_method(self, model: SKLearnModel) -> SHAPMethod:
-        if model._model_container is not None:
-            # quantile models
-            q = model.likelihood.quantiles[model.likelihood._median_idx]
-            actual_model = model._model_container[q]
-        else:
-            # regular models
-            actual_model = model.model
-
+        actual_model = model.model
         if isinstance(actual_model, MultiOutputMixin):
             sklearn_model = actual_model.estimator
         else:

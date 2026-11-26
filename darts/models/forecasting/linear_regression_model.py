@@ -6,21 +6,23 @@ A forecasting model using a linear regression of some of the target series' lags
 covariate series lags in order to obtain a forecast.
 """
 
-from scipy.optimize import linprog
-from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
+from sklearn.linear_model import (
+    BayesianRidge,
+    LinearRegression,
+    PoissonRegressor,
+    QuantileRegressor,
+)
 
 from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
     SKLearnModel,
-    _QuantileModelContainer,
 )
-from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
-    QuantileRegression,
     _get_likelihood,
+    _ReturnStdGaussianLikelihood,
 )
 
 logger = get_logger(__name__)
@@ -114,7 +116,7 @@ class LinearRegressionModel(SKLearnModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -122,9 +124,11 @@ class LinearRegressionModel(SKLearnModel):
                 To enable past and / or future encodings for any `SKLearnModel`, you must also define the
                 corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
-            Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
-            prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if
-            set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.
+            Can be set to `quantile`, `poisson` or `gaussian`. If set, the model will be probabilistic, allowing
+            sampling at prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used.
+            Similarly, if set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used. If set to `gaussian`,
+            the Bayesian linear regression `sklearn.linear_model.BayesianRidge` is used, which predicts the mean and
+            standard deviation of a Gaussian distribution.
         quantiles
             Fit the model to these quantiles if the ``likelihood`` is set to ``"quantile"``.
             Default is ``None`` and will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s
@@ -141,8 +145,9 @@ class LinearRegressionModel(SKLearnModel):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
-            `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
-            `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`).
+            `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), to
+            `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`), or to
+            `sklearn.linear_model.BayesianRidge` (if `likelihood="gaussian"`).
 
         Examples
         --------
@@ -181,14 +186,23 @@ class LinearRegressionModel(SKLearnModel):
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
-            available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
+            available_likelihoods=[
+                LikelihoodType.Quantile,
+                LikelihoodType.Poisson,
+                LikelihoodType.Gaussian,
+            ],
         )
 
-        if likelihood == LikelihoodType.Poisson.value:
+        if likelihood == LikelihoodType.Gaussian.value:
+            # Bayesian linear regression predicts the mean and standard deviation of a Gaussian distribution
+            self._likelihood = _ReturnStdGaussianLikelihood(
+                n_outputs=self._likelihood._n_outputs
+            )
+            model = BayesianRidge(**kwargs)
+        elif likelihood == LikelihoodType.Poisson.value:
             model = PoissonRegressor(**kwargs)
         elif likelihood == LikelihoodType.Quantile.value:
             model = QuantileRegressor(**kwargs)
-            self._model_container = _QuantileModelContainer()
         else:  # likelihood is None
             model = LinearRegression(**kwargs)
 
@@ -205,70 +219,6 @@ class LinearRegressionModel(SKLearnModel):
             random_state=random_state,
         )
 
-    def fit(
-        self,
-        series: TimeSeriesLike,
-        past_covariates: TimeSeriesLike | None = None,
-        future_covariates: TimeSeriesLike | None = None,
-        max_samples_per_ts: int | None = None,
-        n_jobs_multioutput_wrapper: int | None = None,
-        sample_weight: TimeSeriesLike | str | None = None,
-        verbose: bool | None = None,
-        **kwargs,
-    ):
-        likelihood = self.likelihood
-        if isinstance(likelihood, QuantileRegression):
-            # set solver for linear program
-            if "solver" not in self.kwargs:
-                # set default fast solver
-                self.kwargs["solver"] = "highs"
-
-            # test solver availability with dummy problem
-            c = [1]
-            try:
-                linprog(c=c, method=self.kwargs["solver"])
-            except ValueError as ve:
-                logger.warning(
-                    f"{ve}. Upgrading scipy enables significantly faster solvers"
-                )
-                # set solver to slow legacy
-                self.kwargs["solver"] = "interior-point"
-
-            # empty model container in case of multiple calls to fit, e.g. when backtesting
-            self._model_container.clear()
-
-            for quantile in likelihood.quantiles:
-                self.kwargs["quantile"] = quantile
-                # assign the Quantile regressor to self.model to leverage existing logic
-                self.model = QuantileRegressor(**self.kwargs)
-                super().fit(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                    max_samples_per_ts=max_samples_per_ts,
-                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-                    sample_weight=sample_weight,
-                    verbose=verbose,
-                    **kwargs,
-                )
-                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
-                self._model_container[quantile] = self.model
-
-            # replace the last trained QuantileRegressor with the dictionary of Regressors.
-            self.model = self._model_container
-
-            return self
-
-        else:
-            super().fit(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                max_samples_per_ts=max_samples_per_ts,
-                n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-                sample_weight=sample_weight,
-                verbose=verbose,
-                **kwargs,
-            )
-
-            return self
+    def _estimator_for_quantile(self, quantile: float):
+        """Return a fresh ``QuantileRegressor`` configured for *quantile*."""
+        return QuantileRegressor(**{**self.kwargs, "quantile": quantile})

@@ -27,5 +27,5 @@ def validate_mode(
     if (value is None or isinstance(value, str)) and value in allowed:
         return value
     raise_log(
-        ValueError(f"Unknown value for `{param}`: None. Expected one of {allowed}."),
+        ValueError(f"Unknown value for `{param}`: {value}. Expected one of {allowed}."),
     )

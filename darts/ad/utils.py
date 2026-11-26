@@ -247,7 +247,7 @@ def _eval_metric(
         s_pred_vals = s_pred.slice_intersect_values(s_anomalies, copy=False)
         s_anomalies_vals = s_anomalies.slice_intersect_values(s_pred, copy=False)
 
-        if not len(s_pred_vals) == len(s_anomalies_vals):
+        if len(s_pred_vals) == 0:
             raise_log(
                 ValueError(
                     f"The two time series `{pred_name}` and `{name}` "

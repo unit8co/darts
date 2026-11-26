@@ -1650,6 +1650,51 @@ class TestHistoricalforecast:
         assert ts == ts_copy
         assert ts_covs == ts_covs_copy
 
+    def test_optimized_historical_forecasts_autoregression_sparse_target_lags(self):
+        series = TimeSeries.from_values(np.arange(10.0))
+        model = LinearRegressionModel(lags=[-2]).fit(series)
+        kwargs = dict(
+            series=series, forecast_horizon=3, retrain=False, last_points_only=False
+        )
+        forecast1 = model.historical_forecasts(**kwargs, enable_optimization=False)
+        forecast2 = model.historical_forecasts(**kwargs, enable_optimization=True)
+        assert forecast1 == forecast2
+
+    @pytest.mark.parametrize(
+        "config",
+        param_product(
+            [
+                # component-specific sparse lags
+                {"a": [-8], "b": [-3]},
+                # component-specific lags with sparse `default_lags` used by a component
+                {"a": [-6], "default_lags": [-3]},
+            ],
+            [True, False],
+        ),
+    )
+    def test_optimized_historical_forecasts_autoregression_sparse_component_lags(
+        self, config
+    ):
+        """The optimized auto-regression keeps the observed target values needed by sparse
+        component-specific lags (`max(lags) < -1`)."""
+        lags, multi_models = config
+        series = tg.sine_timeseries(length=60, column_name="a").stack(
+            tg.linear_timeseries(length=60, column_name="b")
+        )
+        model = LinearRegressionModel(
+            lags=lags, output_chunk_length=2, multi_models=multi_models
+        ).fit(series)
+        kwargs = dict(
+            series=series,
+            start=30,
+            forecast_horizon=7,
+            retrain=False,
+            last_points_only=False,
+        )
+        forecast1 = model.historical_forecasts(**kwargs, enable_optimization=False)
+        forecast2 = model.historical_forecasts(**kwargs, enable_optimization=True)
+        self.helper_compare_hf(forecast1, forecast2)
+
     @pytest.mark.parametrize(
         "config",
         param_product(

@@ -28,7 +28,7 @@ There are two main types of encoder classes: `SingleEncoder` and `SequentialEnco
                 input_chunk_length=24,
                 output_chunk_length=12,
                 attribute='month'
-                tz='CET'
+                tz='Europe/Berlin'
             )
 
             past_covariates_train = encoder.encode_train(
@@ -149,7 +149,7 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
         'position': {'past': ['relative'], 'future': ['relative']},
         'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
         'transformer': Scaler(),
-        'tz': 'CET',
+        'tz': 'Europe/Berlin',
     }
 
     model = SomeTorchForecastingModel(..., add_encoders=add_encoders)
@@ -961,7 +961,7 @@ class SequentialEncoder(Encoder):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler(),
-                    'tz': 'CET',
+                    'tz': 'Europe/Berlin',
                 }
 
         Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
@@ -1608,7 +1608,7 @@ class SequentialEncoder(Encoder):
         ----------
         params
             Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:
-            * params={'tz': 'CET'}
+            * params={'tz': 'Europe/Berlin'}
         """
         if not params:
             return None

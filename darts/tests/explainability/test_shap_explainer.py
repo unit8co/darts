@@ -1524,6 +1524,72 @@ class TestShapExplainer:
             atol=1e-8,
         )
 
+    def test_explain_probabilistic_model_with_output_chunk_shift(self):
+        """Each quantile component is explained by the estimator of its quantile, with the features of the
+        forecast, also when the output chunk is shifted and future covariate lags are relative to it."""
+        quantiles = [0.1, 0.5, 0.9]
+        ocl = 2
+        series = self.target_ts
+        foreground_series = series[-20:]
+
+        # `alpha=0.0` avoids the default L1 penalty that collapses the quantile regressors to constants
+        model = LinearRegressionModel(
+            lags=3,
+            lags_future_covariates=[-3, -2],
+            output_chunk_length=ocl,
+            output_chunk_shift=1,
+            likelihood="quantile",
+            quantiles=quantiles,
+            alpha=0.0,
+        )
+        model.fit(series=series, future_covariates=self.fut_cov_ts)
+
+        results = ShapExplainer(model).explain(
+            foreground_series=foreground_series,
+            foreground_future_covariates=self.fut_cov_ts,
+        )
+
+        for horizon in range(1, ocl + 1):
+            prediction = model.historical_forecasts(
+                series=foreground_series,
+                future_covariates=self.fut_cov_ts,
+                forecast_horizon=horizon,
+                last_points_only=True,
+                overlap_end=True,
+                retrain=False,
+                enable_optimization=False,
+                predict_likelihood_parameters=True,
+            )
+            for component in model.likelihood.component_names(series):
+                explanation = results.get_explanation(
+                    horizon=horizon, component=component
+                )
+                feature_values = results.get_feature_values(
+                    horizon=horizon, component=component
+                )
+                assert list(feature_values.components) == model.lagged_feature_names
+
+                # SHAP additivity against the model's own forecast of this quantile component
+                base_values = results.get_shap_explanation_object(
+                    horizon=horizon, component=component
+                ).base_values
+                predicted = prediction[component].values().ravel()
+                assert len(predicted) == explanation.n_timesteps
+                np.testing.assert_allclose(
+                    explanation.values().sum(axis=1) + base_values,
+                    predicted,
+                    rtol=1e-5,
+                    atol=1e-5,
+                )
+
+            # the quantile forecasts are not degenerate: the check above can tell the quantiles apart
+            for name in series.columns:
+                quantile_values = [
+                    prediction[f"{name}_q{q:.3f}"].values() for q in quantiles
+                ]
+                assert not np.allclose(quantile_values[0], quantile_values[1])
+                assert not np.allclose(quantile_values[1], quantile_values[2])
+
     def test_invalid_model_or_shap_method(self):
         with pytest.raises(
             ValueError,

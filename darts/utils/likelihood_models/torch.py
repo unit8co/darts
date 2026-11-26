@@ -455,8 +455,10 @@ class NegativeBinomialLikelihood(TorchLikelihood):
     def _params_from_output(
         self, model_output: torch.Tensor
     ) -> tuple[torch.Tensor, ...]:
-        mu = self.softplus(model_output[:, :, :, 0])
-        alpha = self.softplus(model_output[:, :, :, 1])
+        # softplus underflows to 0 for very negative outputs, which makes r = 1 / alpha or the logits infinite
+        eps = torch.finfo(model_output.dtype).eps
+        mu = self.softplus(model_output[:, :, :, 0]).clamp_min(eps)
+        alpha = self.softplus(model_output[:, :, :, 1]).clamp_min(eps)
         return mu, alpha
 
 

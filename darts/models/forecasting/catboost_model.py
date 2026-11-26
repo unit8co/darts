@@ -35,7 +35,6 @@ from darts.models.forecasting.sklearn_model import (
     LAGS_TYPE,
     SKLearnModelWithCategoricalFeatures,
     _ClassifierMixin,
-    _QuantileModelContainer,
 )
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
@@ -137,7 +136,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
@@ -249,6 +248,12 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
     def _create_model(**kwargs):
         return CatBoostRegressor(**kwargs)
 
+    def _estimator_for_quantile(self, quantile: float):
+        """Return a fresh ``CatBoostRegressor`` configured for *quantile*."""
+        # we mutate `self.kwargs` as `loss_function` is required by `_supports_native_multioutput()`
+        self.kwargs["loss_function"] = f"Quantile:alpha={quantile}"
+        return self._create_model(**self.kwargs)
+
     def _set_likelihood(
         self,
         likelihood: str | None,
@@ -280,14 +285,16 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             "poisson": "Poisson",
             "gaussian": "RMSEWithUncertainty",
         }
-        # set `loss_function` and `._model_container` as per the likelihood instance
+        # set `loss_function` as per the likelihood instance
         if isinstance(self._likelihood, MultiQuantileRegression):
             # this condition must come before `QuantileRegression` because
             # `MultiQuantileRegression` is a subclass of `QuantileRegression`
             quantiles_str = ", ".join(f"{q:.3f}" for q in self._likelihood.quantiles)
             self.kwargs["loss_function"] = f"MultiQuantile:alpha={quantiles_str}"
         elif isinstance(self._likelihood, QuantileRegression):
-            self._model_container = _QuantileModelContainer()
+            # use default quantile in case only a single quantile and target * ocl is fit
+            q_median = self._likelihood.quantiles[self._likelihood._median_idx]
+            self.kwargs["loss_function"] = f"Quantile:alpha={q_median}"
         else:
             self.kwargs["loss_function"] = likelihood_map[likelihood]
 
@@ -356,35 +363,6 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             Additional kwargs passed to `catboost.CatBoostRegressor.fit()`
         """
         verbose = verbose if verbose is not None else 0
-        likelihood = self.likelihood
-        if type(likelihood) is QuantileRegression:
-            # must check for type `QuantileRegression` to not include subclass `MultiQuantileRegression`
-            # empty model container in case of multiple calls to fit, e.g. when backtesting
-            self._model_container.clear()
-            for quantile in likelihood.quantiles:
-                this_quantile = str(quantile)
-                # translating to catboost argument
-                self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
-                self.model = self._create_model(**self.kwargs)
-                super().fit(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                    val_series=val_series,
-                    val_past_covariates=val_past_covariates,
-                    val_future_covariates=val_future_covariates,
-                    max_samples_per_ts=max_samples_per_ts,
-                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-                    sample_weight=sample_weight,
-                    val_sample_weight=val_sample_weight,
-                    stride=stride,
-                    verbose=verbose,
-                    **kwargs,
-                )
-                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
-                self._model_container[quantile] = self.model
-            return self
-
         super().fit(
             series=series,
             past_covariates=past_covariates,
@@ -569,7 +547,7 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
                     'position': {'past': ['relative'], 'future': ['relative']},
                     'custom': {'past': [encode_year]},
                     'transformer': Scaler(),
-                    'tz': 'CET'
+                    'tz': 'Europe/Berlin'
                 }
             ..
 
