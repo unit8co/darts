@@ -336,7 +336,7 @@ class EnsembleModel(GlobalForecastingModel):
         """
         if self.ensemble_model is None:
             return n
-        ens_lags = self.ensemble_model.lags["future"]
+        ens_lags = self.ensemble_model._config.extreme_lags("future")
         base_shift = self.output_chunk_shift
         return (
             max(ens_lags)

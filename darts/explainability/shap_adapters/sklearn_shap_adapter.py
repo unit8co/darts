@@ -15,7 +15,9 @@ from darts.explainability.shap_adapters.shap_adapter import (
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.typing import TimeSeriesLike
-from darts.utils.data.tabularization import create_lagged_prediction_data
+from darts.utils.data.tabularization.tabularization import (
+    _create_lagged_data_from_config,
+)
 from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.multioutput import MultiOutputMixin
 
@@ -155,26 +157,24 @@ class SKLearnShapAdapter(ShapAdapter):
         n_samples: int | None = None,
         input_type: str = "background",
     ) -> tuple[np.ndarray, pd.Index]:
-        lags_list = self.model._get_lags("target")
-        lags_past_covariates_list = self.model._get_lags("past")
-        lags_future_covariates_list = self.model._get_lags("future")
-
-        X, indexes = create_lagged_prediction_data(
-            target_series=series if lags_list else None,
-            past_covariates=past_covariates if lags_past_covariates_list else None,
+        # use the fitted model's config as is: re-resolving it against the input series
+        # would change the model's state
+        config = self.model._config
+        data = _create_lagged_data_from_config(
+            config,
+            target_series=series if config.has_lags("target") else None,
+            past_covariates=(past_covariates if config.has_lags("past") else None),
             future_covariates=(
-                future_covariates if lags_future_covariates_list else None
-            ),
-            lags=lags_list,
-            lags_past_covariates=lags_past_covariates_list if past_covariates else None,
-            lags_future_covariates=(
-                lags_future_covariates_list if future_covariates else None
+                future_covariates if config.has_lags("future") else None
             ),
             uses_static_covariates=self.model.uses_static_covariates,
             last_static_covariates_shape=self.model._static_covariates_shape,
+            check_inputs=True,
+            is_training=False,
         )
+        indexes = data.times
         # Remove sample axis:
-        X = X[:, :, 0]
+        X = data.X[:, :, 0]
 
         if input_type == "background" and len(X) <= MIN_BACKGROUND_SAMPLE:
             raise_log(
