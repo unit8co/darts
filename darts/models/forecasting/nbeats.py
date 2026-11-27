@@ -245,6 +245,7 @@ class _Stack(nn.Module):
         batch_norm: bool,
         dropout: float,
         activation: str,
+        shared_weights: bool = False,
     ):
         """PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
 
@@ -272,6 +273,8 @@ class _Stack(nn.Module):
             Dropout probability
         activation
             The activation function of encoder/decoder intermediate layer.
+        shared_weights
+            Whether to share block weights within a generic stack.
 
         Inputs
         ------
@@ -296,7 +299,7 @@ class _Stack(nn.Module):
         self.batch_norm = batch_norm
         self.activation = activation
 
-        if g_type == _GType.GENERIC:
+        if g_type == _GType.GENERIC and not shared_weights:
             self.blocks_list = [
                 _Block(
                     num_layers,
@@ -316,7 +319,7 @@ class _Stack(nn.Module):
             ]
         else:
             # same block instance is used for weight sharing
-            interpretable_block = _Block(
+            shared_block = _Block(
                 num_layers,
                 layer_width,
                 nr_params,
@@ -328,7 +331,7 @@ class _Stack(nn.Module):
                 dropout=self.dropout,
                 activation=self.activation,
             )
-            self.blocks_list = [interpretable_block] * num_blocks
+            self.blocks_list = [shared_block] * num_blocks
 
         self.blocks = nn.ModuleList(self.blocks_list)
 
@@ -373,6 +376,7 @@ class _NBEATSModule(PLForecastingModule):
         batch_norm: bool,
         dropout: float,
         activation: str,
+        shared_weights: bool = False,
         **kwargs,
     ):
         """PyTorch module implementing the N-BEATS architecture.
@@ -412,6 +416,8 @@ class _NBEATSModule(PLForecastingModule):
             Dropout probability
         activation
             The activation function of encoder/decoder intermediate layer.
+        shared_weights
+            Whether to share block weights within each generic stack.
         **kwargs
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
@@ -454,6 +460,7 @@ class _NBEATSModule(PLForecastingModule):
                     ),  # batch norm only on first block of first stack
                     dropout=self.dropout,
                     activation=self.activation,
+                    shared_weights=shared_weights,
                 )
                 for i in range(num_stacks)
             ]
@@ -489,11 +496,10 @@ class _NBEATSModule(PLForecastingModule):
 
         self.stacks = nn.ModuleList(self.stacks_list)
 
-        # setting the last backcast "branch" to be not trainable (without next block/stack, it doesn't need to be
-        # backpropagated). Removing this lines would cause logtensorboard to crash, since no gradient is stored
-        # on this params (the last block backcast is not part of the final output of the net).
-        self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
-        self.stacks_list[-1].blocks[-1].backcast_g.requires_grad_(False)
+        # Keep the last generic backcast trainable when earlier blocks reuse it.
+        if not (generic_architecture and shared_weights and num_blocks > 1):
+            self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
+            self.stacks_list[-1].blocks[-1].backcast_g.requires_grad_(False)
 
     @io_processor
     def forward(self, x_in: PLModuleInput) -> PLModuleOutput:
@@ -550,6 +556,7 @@ class NBEATSModel(PastCovariatesTorchModel):
         trend_polynomial_degree: int = 2,
         dropout: float = 0.0,
         activation: str = "ReLU",
+        shared_weights: bool = False,
         **kwargs,
     ):
         """Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
@@ -612,6 +619,9 @@ class NBEATSModel(PastCovariatesTorchModel):
             The activation function of encoder/decoder intermediate layer (default='ReLU').
             Supported activations: ['ReLU', 'RReLU', 'PReLU', 'ELU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU', 'Sigmoid',
             'GELU']
+        shared_weights
+            Whether blocks within each generic stack share their weights. Defaults to ``False``, giving each
+            block its own weights. The interpretable architecture always shares weights within each stack.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -808,6 +818,7 @@ class NBEATSModel(PastCovariatesTorchModel):
                 ),
             )
 
+        self.shared_weights = shared_weights
         self.generic_architecture = generic_architecture
         self.num_stacks = num_stacks
         self.num_blocks = num_blocks
@@ -828,6 +839,11 @@ class NBEATSModel(PastCovariatesTorchModel):
         if isinstance(layer_widths, int):
             self.layer_widths = [layer_widths] * self.num_stacks
 
+    def __setstate__(self, state):
+        super().__setstate__(state)
+        # load_weights() compares model parameters, including those from older checkpoints.
+        self.shared_weights = self._model_params.setdefault("shared_weights", False)
+
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         past_target = train_sample.past_target
         past_covariates = train_sample.past_covariates
@@ -842,6 +858,7 @@ class NBEATSModel(PastCovariatesTorchModel):
             output_dim=output_dim,
             nr_params=nr_params,
             generic_architecture=self.generic_architecture,
+            shared_weights=self.shared_weights,
             num_stacks=self.num_stacks,
             num_blocks=self.num_blocks,
             num_layers=self.num_layers,
