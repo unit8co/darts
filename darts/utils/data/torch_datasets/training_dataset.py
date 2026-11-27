@@ -11,6 +11,8 @@ Training Datasets
 from abc import ABC, abstractmethod
 from math import ceil
 
+import torch
+
 from darts.logging import raise_log
 from darts.typing import TimeSeriesLike
 from darts.utils.data.torch_datasets.dataset import TorchDataset
@@ -71,6 +73,7 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
         sample_weight: TimeSeriesLike | str | None = None,
+        ts_sampling_method: str = "latest",
     ):
         """Shifted Training Dataset
 
@@ -87,11 +90,8 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
 
         The output chunk starts `shift` after the input chunk's start.
 
-        The sample index determines:
-
-        - the position / time of the extracted chunks relative to the end of a single target `series`
-        - the index (which series and covariates) to use in case `series` (and covariates) are
-          passed as a sequence of series.
+        The sample index selects the target series and its covariates. By default, it also determines
+        the position of the window relative to the end of the series.
 
         The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
         a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
@@ -127,11 +127,8 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             series), applied starting from the end of the series. This should be used with caution as it might
             introduce bias in the forecasts.
         max_samples_per_ts
-            This is an upper bound on the number of samples that can be produced per time series. It can be used to
-            limit the total size of the dataset and ensure proper sampling. If `None`, will read all individual time
-            series in advance (at dataset creation) to check their sizes. This might be expensive on big datasets.
-            If not `None`, will only keep a maximum of `max_samples_per_ts` samples per series, extracted from the most
-            recent past.
+            An upper bound on the number of samples per series. The dataset reads all series lengths at
+            construction time. If `None`, the longest series determines the number of samples per series.
         use_static_covariates
             Whether to use/include static covariate data from the target `series`.
         sample_weight
@@ -144,6 +141,10 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
+        ts_sampling_method
+            How to select windows when `max_samples_per_ts` is set. The default `"latest"` takes the most recent
+            windows. With `"uniform"`, each access draws a window uniformly at random with replacement from all
+            stride-aligned windows of the indexed series.
         """
         super().__init__()
 
@@ -152,6 +153,11 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         if not (isinstance(stride, int) and stride > 0):
             raise_log(
                 ValueError("`stride` must be a positive integer greater than 0."),
+            )
+
+        if ts_sampling_method not in ("latest", "uniform"):
+            raise_log(
+                ValueError('`ts_sampling_method` must be either "latest" or "uniform".')
             )
 
         # setup target and sequence
@@ -197,6 +203,9 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         max_available_indices = max_length - size_of_both_chunks + 1
         max_available_samples = ceil(max_available_indices / stride)
 
+        self._sample_uniformly = (
+            max_samples_per_ts is not None and ts_sampling_method == "uniform"
+        )
         if max_samples_per_ts is None:
             max_samples_per_ts = max_available_samples
         else:
@@ -329,14 +338,14 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             (len(series) - self.size_of_both_chunks + 1) / self.stride
         )
 
-        # determine the index at the end of the output chunk
-        # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
-        return (
-            len(series)
-            - (index - (series_idx * self.max_samples_per_ts))
-            % n_samples_in_ts
-            * self.stride
-        )
+        if self._sample_uniformly:
+            window_idx = torch.randint(n_samples_in_ts, ()).item()
+        else:
+            # Wrap around when a shorter series has fewer windows than its share of the dataset.
+            window_idx = (
+                index - series_idx * self.max_samples_per_ts
+            ) % n_samples_in_ts
+        return len(series) - window_idx * self.stride
 
 
 class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
@@ -352,6 +361,7 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
         max_samples_per_ts: int | None = None,
         use_static_covariates: bool = True,
         sample_weight: TimeSeriesLike | str | None = None,
+        ts_sampling_method: str = "latest",
     ):
         """Sequential Training Dataset
 
@@ -368,11 +378,8 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
 
         The output chunk starts `input_chunk_length + output_chunk_shift` after the input chunk's start.
 
-        The sample index determines:
-
-        - the position / time of the extracted chunks relative to the end of a single target `series`
-        - the index (which series and covariates) to use in case `series` (and covariates) are
-          passed as a sequence of series.
+        The sample index selects the target series and its covariates. By default, it also determines
+        the position of the window relative to the end of the series.
 
         The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
         a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
@@ -408,11 +415,8 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             series), applied starting from the end of the series. This should be used with caution as it might
             introduce bias in the forecasts.
         max_samples_per_ts
-            This is an upper bound on the number of samples that can be produced per time series. It can be used to
-            limit the total size of the dataset and ensure proper sampling. If `None`, will read all individual time
-            series in advance (at dataset creation) to check their sizes. This might be expensive on big datasets.
-            If not `None`, will only keep a maximum of `max_samples_per_ts` samples per series, extracted from the most
-            recent past.
+            An upper bound on the number of samples per series. The dataset reads all series lengths at
+            construction time. If `None`, the longest series determines the number of samples per series.
         use_static_covariates
             Whether to use/include static covariate data from the target `series`.
         sample_weight
@@ -425,6 +429,10 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
+        ts_sampling_method
+            How to select windows when `max_samples_per_ts` is set. The default `"latest"` takes the most recent
+            windows. With `"uniform"`, each access draws a window uniformly at random with replacement from all
+            stride-aligned windows of the indexed series.
         """
         _, max_icl = _parse_input_chunk_length(input_chunk_length)
         shift = max_icl + output_chunk_shift
@@ -439,6 +447,7 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
+            ts_sampling_method=ts_sampling_method,
         )
 
 

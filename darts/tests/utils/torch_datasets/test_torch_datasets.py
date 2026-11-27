@@ -1021,6 +1021,56 @@ class TestDataset:
             "with `1 <= min_lh <= max_lh`."
         )
 
+    def test_uniform_sampling(self):
+        # Five stride-aligned windows in the long series, one in the short series.
+        series = [
+            TimeSeries.from_values(np.arange(12, dtype=float)),
+            TimeSeries.from_values(np.arange(4, dtype=float) + 20),
+        ]
+        dataset = SequentialTorchTrainingDataset(
+            series=series,
+            future_covariates=[s + 100 for s in series],
+            sample_weight=[s + 200 for s in series],
+            input_chunk_length=3,
+            output_chunk_length=1,
+            stride=2,
+            max_samples_per_ts=2,
+            ts_sampling_method="uniform",
+        )
+        assert len(dataset) == 4
+        labels = []
+        with torch.random.fork_rng(devices=[]):
+            torch.default_generator.manual_seed(42)
+            for _ in range(32):
+                sample = dataset[0]
+                label = sample.future_target.item()
+                labels.append(label)
+                np.testing.assert_array_equal(
+                    sample.past_target[:, 0], np.arange(label - 3, label)
+                )
+                np.testing.assert_array_equal(
+                    sample.future_covariates, sample.future_target + 100
+                )
+                np.testing.assert_array_equal(
+                    sample.sample_weight, sample.future_target + 200
+                )
+            assert set(labels) == {3, 5, 7, 9, 11}
+            assert [dataset[i].future_target.item() for i in (2, 3)] == [23, 23]
+            torch.default_generator.manual_seed(42)
+            assert [dataset[0].future_target.item() for _ in labels] == labels
+
+    def test_ts_sampling_method_without_cap(self):
+        dataset = SequentialTorchTrainingDataset(
+            series=TimeSeries.from_values(np.arange(6, dtype=float)),
+            input_chunk_length=3,
+            ts_sampling_method="uniform",
+        )
+        assert [sample.future_target.item() for sample in dataset] == [5, 4, 3]
+
+    def test_invalid_ts_sampling_method(self):
+        with pytest.raises(ValueError, match="ts_sampling_method"):
+            ShiftedTorchTrainingDataset(series=self.target1, ts_sampling_method="other")
+
     def test_max_samples_per_ts_upper_bound(self):
         # Use cov1 with length 100
         series = self.cov1

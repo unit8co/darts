@@ -2826,6 +2826,35 @@ class TestTorchForecastingModel:
             "Trying to load dtype `<class 'numpy.float64'>`."
         )
 
+    @pytest.mark.parametrize(
+        "model_cls, model_kwargs",
+        [
+            (DLinearModel, {"output_chunk_length": 1}),
+            (RNNModel, {"training_length": 5}),
+            (TCNModel, {"output_chunk_length": 1}),
+            (GlobalNaiveDrift, {"output_chunk_length": 1}),
+        ],
+    )
+    def test_fit_with_uniform_sampling(self, model_cls, model_kwargs):
+        model = model_cls(input_chunk_length=5, **model_kwargs)
+        series = TimeSeries.from_values(np.arange(40, dtype=float))
+        with patch.object(model, "fit_from_dataset") as fit:
+            model.fit(
+                series,
+                val_series=series,
+                max_samples_per_ts=2,
+                ts_sampling_method="uniform",
+            )
+        train = fit.call_args.kwargs["train_dataset"]
+        val = fit.call_args.kwargs["val_dataset"]
+        assert len(train) == len(val) == 2
+        # Compare input windows so this also works for the global baseline (no output chunk).
+        latest = [val[i].past_target[-1, 0] for i in range(2)]
+        assert latest[1] == latest[0] - 1
+        with torch.random.fork_rng(devices=[]):
+            torch.default_generator.manual_seed(42)
+            assert min(train[0].past_target[-1, 0] for _ in range(8)) < min(latest)
+
     @pytest.mark.parametrize("stride", [1, 2])
     def test_fit_with_stride(self, stride):
         # mocking `fit_from_dataset` to check that `stride` was passed properly

@@ -639,6 +639,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         sample_weight: Sequence[TimeSeries] | str | None,
         max_samples_per_ts: int | None,
         stride: int = 1,
+        ts_sampling_method: str = "latest",
     ) -> TorchTrainingDataset:
         """
         Models can override this method to return a custom `TorchTrainingDataset`.
@@ -659,6 +660,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             output_chunk_shift=ocs,
             stride=stride,
             max_samples_per_ts=max_samples_per_ts,
+            ts_sampling_method=ts_sampling_method,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
         )
@@ -959,6 +961,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_sample_weight: TimeSeriesLike | str | None = None,
         stride: int = 1,
         load_best: bool = False,
+        ts_sampling_method: str = "latest",
     ) -> "TorchForecastingModel":
         """Fit/train the model on one or multiple series.
 
@@ -1012,8 +1015,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
             by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
             large number of training samples. This parameter upper-bounds the number of training samples per time
-            series (taking only the most recent samples in each series). Leaving to None does not apply any
-            upper bound.
+            series. Leaving it at `None` does not apply any upper bound.
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
             training and validation datasets. For more information on `DataLoader`, check out `this link
@@ -1040,6 +1042,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Whether the model should automatically load the best checkpoint found during training according to the
             validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a
             validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
+        ts_sampling_method
+            How to select training windows when `max_samples_per_ts` is set. The default `"latest"` takes the most
+            recent windows. With `"uniform"`, each training sample is drawn uniformly with replacement from all
+            stride-aligned windows of its series. Validation always uses the most recent windows.
+
         Returns
         -------
         self
@@ -1066,6 +1073,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             epochs=epochs,
             max_samples_per_ts=max_samples_per_ts,
+            ts_sampling_method=ts_sampling_method,
             dataloader_kwargs=dataloader_kwargs,
             load_best=load_best,
         )
@@ -1095,6 +1103,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         max_samples_per_ts: int | None = None,
         dataloader_kwargs: dict[str, Any] | None = None,
         load_best: bool = False,
+        ts_sampling_method: str = "latest",
     ) -> tuple[
         tuple[
             Sequence[TimeSeries],
@@ -1152,6 +1161,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
         )
 
+        # Keep the default call compatible with custom dataset builders.
+        sampling_kwargs = (
+            {}
+            if ts_sampling_method == "latest"
+            else {"ts_sampling_method": ts_sampling_method}
+        )
         train_dataset = self._build_train_dataset(
             series=series,
             past_covariates=past_covariates,
@@ -1159,6 +1174,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             sample_weight=sample_weight,
             max_samples_per_ts=max_samples_per_ts,
             stride=stride,
+            **sampling_kwargs,
         )
 
         if val_series is not None:
