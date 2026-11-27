@@ -50,6 +50,57 @@ class TestKalmanFilter:
         # check that filter did not mutate input series
         assert testing_signal_with_noise_ts == series_copy
 
+    def test_return_state(self):
+        system = state_space.StateSpace(
+            a=np.ones((1, 1)),
+            b=np.ones((1, 1)),
+            c=np.array([[1.0], [2.0]]),
+            d=np.array([[1.0], [0.0]]),
+        )
+        model = KalmanFilter(kf=kalman.Kalman(system, np.eye(3)))
+        series = TimeSeries(
+            times=pd.date_range("2020-01-01", periods=2, freq="D"),
+            values=np.array([[4, 6], [np.nan, np.nan]], dtype=np.float32),
+            components=["sensor", "total"],
+            hierarchy={"sensor": ["total"]},
+            static_covariates=pd.DataFrame({"scale": [1, 2]}),
+            metadata={"site": "A"},
+        )
+        control = TimeSeries(times=series.time_index, values=np.ones(2))
+
+        state = model.filter(series, covariates=control, return_state=True)
+        # The first update uses gain [1, 2] / 6 and innovation [3, 6].
+        # With the second observation missing, only the control advances the state.
+        np.testing.assert_allclose(state.univariate_values(), [2.5, 3.5])
+        assert state.components.tolist() == ["state_0"]
+        assert state.has_same_time_as(series)
+        assert state.dtype == series.dtype
+        assert state.metadata == series.metadata
+        assert state.hierarchy is None
+        assert state.static_covariates is None
+
+        output = model.filter(series, covariates=control)
+        np.testing.assert_allclose(output.values(), [[3.5, 5], [4.5, 7]])
+        assert output.components.equals(series.components)
+        assert output.hierarchy == series.hierarchy
+        assert output.static_covariates.equals(series.static_covariates)
+
+    def test_return_state_samples(self, fix_random_state):
+        system = state_space.StateSpace(
+            a=np.eye(2), b=np.empty((2, 0)), c=np.ones((1, 2)), d=np.empty((1, 0))
+        )
+        model = KalmanFilter(kf=kalman.Kalman(system, np.eye(3)))
+        series = TimeSeries.from_values(np.array([3.0]))
+        state = model.filter(series, num_samples=8000, return_state=True)
+
+        # Observing the sum of the two states couples their posterior errors.
+        samples = state.all_values()[0]
+        assert samples.shape == (2, 8000)
+        np.testing.assert_allclose(samples.mean(axis=1), [1, 1], atol=0.04)
+        np.testing.assert_allclose(
+            np.cov(samples), np.array([[2, -1], [-1, 2]]) / 3, atol=0.04
+        )
+
     def test_kalman_covariates(self, fix_random_state):
         kf = KalmanFilter(dim_x=2)
 

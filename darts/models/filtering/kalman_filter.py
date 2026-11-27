@@ -27,6 +27,7 @@ class KalmanFilter(FilteringModel, ABC):
         (possibly noisy) linear dynamical system with hidden state x. The function `filter(series)` returns a new
         `TimeSeries` describing the distribution of the output z (without noise), as inferred by the Kalman filter from
         sequentially observing z from `series`, and the dynamics of the linear system of order dim_x.
+        Use `filter(series, return_state=True)` to obtain the distribution of the hidden state x.
 
         This filter also supports missing values in the observation series, in which case the underlying
         Kalman filter will carry on using its mean estimate.
@@ -146,6 +147,7 @@ class KalmanFilter(FilteringModel, ABC):
         series: TimeSeries,
         covariates: TimeSeries | None = None,
         num_samples: int = 1,
+        return_state: bool = False,
     ) -> TimeSeries:
         """
         Sequentially applies the Kalman filter on the provided series of observations.
@@ -159,13 +161,17 @@ class KalmanFilter(FilteringModel, ABC):
             An optional series of inputs (control signal), necessary if the Kalman filter was initialized with
             covariates. This must be a deterministic series (containing one sample).
         num_samples
-            The number of samples to generate from the inferred distribution of the output z. If this is set to 1, the
+            The number of samples to generate from the inferred distribution at each time step. If this is set to 1, the
             output is a `TimeSeries` containing a single sample using the mean of the distribution.
+        return_state
+            If True, return the filtered hidden state x. By default, return the inferred output z.
 
         Returns
         -------
         TimeSeries
-            A (stochastic) `TimeSeries` of the inferred output z, of the same width as the input series.
+            A (stochastic) `TimeSeries` on the input time index. The inferred output has the same components as
+            the input series. The hidden state has `dim_x` components named `state_0`, `state_1`, etc., and
+            carries over only the series metadata.
         """
         super().filter(series)
 
@@ -226,7 +232,8 @@ class KalmanFilter(FilteringModel, ABC):
 
         # For each time step, we'll sample "n_samples" from a multivariate Gaussian
         # whose mean vector and covariance matrix come from the Kalman filter.
-        sampled_outputs = np.zeros((len(y_values), self.dim_y, num_samples))
+        width = self.dim_x if return_state else self.dim_y
+        sampled_outputs = np.zeros((len(y_values), width, num_samples))
 
         for i in range(len(y_values)):
             y = y_values[i, :].reshape(-1, 1)
@@ -236,18 +243,18 @@ class KalmanFilter(FilteringModel, ABC):
                 y = None
 
             kf.step(y, u)
-            mean_vec = kf.y_filtereds[-1].reshape(
-                self.dim_y,
-            )
+            mean = kf.x_filtereds[-1] if return_state else kf.y_filtereds[-1]
+            mean_vec = mean.ravel()
 
             if num_samples == 1:
                 sampled_outputs[i, :, 0] = mean_vec
             else:
-                # The measurement covariance matrix is given by the sum of the covariance matrix of the
-                # state estimate (transformed by C) and the covariance matrix of the measurement noise.
-                cov_matrix = (
-                    kf.state_space.c @ kf.p_filtereds[-1] @ kf.state_space.c.T + kf.r
-                )
+                cov_matrix = kf.p_filtereds[-1]
+                if not return_state:
+                    # Project state uncertainty into measurement space and add measurement noise.
+                    cov_matrix = (
+                        kf.state_space.c @ cov_matrix @ kf.state_space.c.T + kf.r
+                    )
                 sampled_outputs[i, :, :] = np.random.multivariate_normal(
                     mean_vec, cov_matrix, size=num_samples
                 ).T
@@ -255,7 +262,9 @@ class KalmanFilter(FilteringModel, ABC):
         return TimeSeries(
             times=series.time_index,
             values=_maybe_cast_array_dtype(sampled_outputs, series.dtype),
-            components=series.components,
+            components=[f"state_{i}" for i in range(width)]
+            if return_state
+            else series.components,
             copy=False,
-            **series._attrs,
+            **({"metadata": series.metadata} if return_state else series._attrs),
         )
