@@ -32,6 +32,82 @@ class TestNbeatsNhitsModel:
                 layer_widths=[1, 2],
             )
 
+    @pytest.mark.parametrize(
+        "generic, options, num_blocks, shared",
+        [
+            (True, {}, 2, False),
+            (True, {"shared_weights": True}, 2, True),
+            (True, {"shared_weights": True}, 1, True),
+            (False, {}, 2, True),
+            (False, {"shared_weights": True}, 2, True),
+        ],
+    )
+    def test_nbeats_weight_sharing(
+        self, generic, options, num_blocks, shared, tmp_path
+    ):
+        series = tg.linear_timeseries(length=8)
+        model = NBEATSModel(
+            input_chunk_length=4,
+            output_chunk_length=2,
+            generic_architecture=generic,
+            num_stacks=2,
+            num_blocks=num_blocks,
+            num_layers=1,
+            layer_widths=4,
+            n_epochs=1,
+            random_state=42,
+            **options,
+            **tfm_kwargs,
+        )
+        model.fit(series)
+        prediction = model.predict(2)
+        assert prediction.all_values().shape == (2, 1, 1)
+
+        first, last = model.model.stacks
+        assert first.blocks[0] is not last.blocks[0]
+        for stack in (first, last):
+            assert len(stack.blocks) == num_blocks
+            assert len(set(stack.blocks)) == (1 if shared else num_blocks)
+            block_size = sum(p.numel() for p in stack.blocks[0].parameters())
+            assert sum(p.numel() for p in stack.parameters()) == block_size * (
+                1 if shared else num_blocks
+            )
+
+        # Earlier calls to a shared generic backcast contribute to the forecast.
+        train_backcast = generic and shared and num_blocks > 1
+        assert (
+            last.blocks[-1].backcast_linear_layer.weight.requires_grad == train_backcast
+        )
+        if generic:
+            assert last.blocks[-1].backcast_g.weight.requires_grad == train_backcast
+
+        if train_backcast:
+            path = str(tmp_path / "nbeats.pt")
+            model.save(path)
+            loaded = NBEATSModel.load(path)
+            for stack in loaded.model.stacks:
+                assert stack.blocks[0] is stack.blocks[1]
+            np.testing.assert_array_equal(
+                loaded.predict(2).values(), prediction.values()
+            )
+
+    def test_nbeats_load_weights_before_shared_weights(self, tmp_path):
+        series = tg.linear_timeseries(length=8)
+        model = NBEATSModel(
+            4, 2, num_stacks=1, num_layers=1, layer_widths=4, n_epochs=1, **tfm_kwargs
+        )
+        fresh_model = model.untrained_model()
+        model.fit(series)
+        # Older checkpoints have no sharing option in the saved model configuration.
+        model.model_params.pop("shared_weights")
+        del model.shared_weights
+        path = str(tmp_path / "nbeats.pt")
+        model.save(path)
+        fresh_model.load_weights(path)
+        np.testing.assert_array_equal(
+            fresh_model.predict(2, series=series).values(), model.predict(2).values()
+        )
+
     def test_fit(self):
         large_ts = tg.constant_timeseries(length=100, value=1000)
         small_ts = tg.constant_timeseries(length=100, value=10)
